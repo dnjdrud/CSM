@@ -305,6 +305,9 @@ export async function getPinnedPost(currentUserId: string | null): Promise<PostW
   } as PostWithAuthor;
 }
 
+const POSTS_INSERT_SELECT = "id, author_id, category, title, content, visibility, tags, created_at" as const;
+const POSTS_INSERT_SELECT_NO_TITLE = "id, author_id, category, content, visibility, tags, created_at" as const;
+
 export async function createPost(input: {
   authorId: string;
   category: DomainPost["category"];
@@ -315,20 +318,30 @@ export async function createPost(input: {
 }): Promise<DomainPost> {
   const supabase = await supabaseServer();
   const tags = [...new Set((input.tags ?? []).map(normalizeTag).filter(Boolean))].slice(0, 5);
-  const { data: row, error } = await supabase
+  const payloadWithTitle = {
+    author_id: input.authorId,
+    category: input.category,
+    content: input.content.trim(),
+    title: input.title?.trim() || null,
+    visibility: input.visibility ?? "MEMBERS",
+    tags,
+  };
+  let result = await supabase
     .from("posts")
-    .insert({
-      author_id: input.authorId,
-      category: input.category,
-      content: input.content.trim(),
-      title: input.title?.trim() || null,
-      visibility: input.visibility ?? "MEMBERS",
-      tags,
-    })
-    .select("id, author_id, category, title, content, visibility, tags, created_at")
+    .insert(payloadWithTitle)
+    .select(POSTS_INSERT_SELECT)
     .single();
-  if (error) throw new Error(error.message);
-  return rowToPost(row);
+  if (result.error && (result.error.message.includes("title") || result.error.message.includes("schema cache"))) {
+    const { title: _t, ...payloadWithoutTitle } = payloadWithTitle;
+    result = await supabase
+      .from("posts")
+      .insert(payloadWithoutTitle)
+      .select(POSTS_INSERT_SELECT_NO_TITLE)
+      .single();
+  }
+  if (result.error) throw new Error(result.error.message);
+  const row = result.data as Record<string, unknown>;
+  return rowToPost({ ...row, title: row.title ?? null } as Parameters<typeof rowToPost>[0]);
 }
 
 export async function updatePost(

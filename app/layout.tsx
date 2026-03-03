@@ -5,6 +5,8 @@ import { HeaderWrapper } from "@/common";
 import { RightContextPanel } from "@/components/RightContextPanel";
 import { ToastProvider } from "@/components/ui/Toast";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "CSM — A digital sanctuary for Christian community",
   description:

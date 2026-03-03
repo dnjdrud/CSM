@@ -57,7 +57,7 @@ export async function requestSignupAction(formData: {
     if (msg.includes("not configured") || msg.includes("Server not configured")) {
       return {
         errorMessage:
-          "가입 기능이 서버에 설정되지 않았습니다. 관리자에게 문의하세요. (서버: .env에 SUPABASE_SERVICE_ROLE_KEY 확인 / Supabase 대시보드: Authentication → Providers → Email에서 'Enable email signups' 활성화)",
+          "가입 기능이 서버에 설정되지 않았습니다. .env.local에 SUPABASE_SERVICE_ROLE_KEY를 넣고 개발 서버를 재시작해 주세요. (배포 환경에서는 호스팅 쪽 환경 변수에 추가)",
       };
     }
     return { errorMessage: msg };

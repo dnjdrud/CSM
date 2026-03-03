@@ -141,8 +141,11 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
           <nav className="flex items-center gap-4 flex-wrap" aria-label="Main navigation">
             {user ? (
               <>
+                <span className="text-[15px] text-gray-700" aria-label={`Welcome, ${user.name}`}>
+                  {user.name}, Welcome
+                </span>
                 <Link href={`/profile/${user.id}`} className="text-[15px] text-gray-700 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
-                  {user.name}
+                  Profile
                 </Link>
                 {user.isAdmin && (
                   <Link href="/admin" className="text-[15px] font-medium text-gray-800 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
@@ -204,8 +207,11 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
         <div className="mt-auto pt-6 border-t border-gray-200">
           {user ? (
             <div className="space-y-3">
-              <Link href={`/profile/${user.id}`} className="block text-[15px] font-medium text-gray-900 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
-                {user.name}
+              <p className="text-[15px] font-medium text-gray-900">
+                {user.name}, Welcome
+              </p>
+              <Link href={`/profile/${user.id}`} className="block text-[13px] text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
+                My profile
               </Link>
               <div className="text-[12px] text-gray-500 leading-snug space-y-1">
                 <p className="font-medium text-gray-600">Welcome to CSM</p>
