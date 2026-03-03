@@ -17,7 +17,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-52 shrink-0 border-r border-gray-200 bg-gray-50 p-4" aria-label="Admin navigation">
+    <aside className="w-52 shrink-0 border-r border-theme-border bg-theme-surface-2 p-4" aria-label="Admin navigation">
       <nav className="flex flex-col gap-1">
         {NAV.map(({ href, label }) => {
           const isActive = pathname === href || (href !== "/admin" && pathname.startsWith(href));
@@ -25,8 +25,8 @@ export function AdminSidebar() {
             <Link
               key={href}
               href={href}
-              className={`rounded-md px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 ${
-                isActive ? "bg-gray-200 text-gray-900" : "text-gray-700 hover:bg-gray-100"
+              className={`rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${
+                isActive ? "bg-theme-primary text-white" : "text-theme-text hover:bg-theme-surface"
               }`}
             >
               {label}
@@ -34,10 +34,10 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <div className="mt-8 pt-4 border-t border-gray-200">
+      <div className="mt-8 pt-4 border-t border-theme-border">
         <Link
           href="/feed"
-          className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+          className="text-sm text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
         >
           ← Back to app
         </Link>

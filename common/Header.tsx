@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { logoutAction } from "@/app/actions/auth";
+import { CellahLogo } from "@/components/CellahLogo";
 
 export type HeaderUser = { id: string; name: string; isAdmin: boolean } | null;
 
@@ -17,6 +18,15 @@ type HeaderProps = {
   /** Initial unread count from server; updated by polling and read-all event. */
   initialUnreadCount?: number;
 };
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  );
+}
 
 const NAV_LINKS = [
   { href: "/feed", label: "Community" },
@@ -51,7 +61,7 @@ function NotificationsNavLink({
         <span>Notifications</span>
         {unreadCount > 0 && (
           <span
-            className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-gray-200 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 tabular-nums"
+            className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-theme-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-theme-primary tabular-nums"
             aria-hidden
           >
             {badgeLabel}
@@ -137,62 +147,61 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
 
   return (
     <>
-      {/* Mobile: single top bar (only under md) */}
-      <header className="md:hidden border-b border-gray-200 bg-white sticky top-0 z-20" role="banner">
+      {/* Mobile: top bar — Cellah logo left, search + nav right */}
+      <header className="md:hidden border-b border-theme-border/60 bg-theme-surface sticky top-0 z-20" role="banner">
         <div className="flex items-center justify-between gap-2 px-4 py-3">
-          <Link href="/" className="text-gray-900 font-semibold text-[15px] tracking-tight hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
-            CSM
-          </Link>
-          <nav className="flex items-center gap-4 flex-wrap" aria-label="Main navigation">
+          <CellahLogo className="text-[17px]" />
+          <nav className="flex items-center gap-3 flex-wrap" aria-label="Main navigation">
+            <Link href="/search" className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Search">
+              <SearchIcon className="w-5 h-5" />
+            </Link>
             {user ? (
               <>
-                <span className="text-[15px] text-gray-700" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
-                  {user.name ? `${user.name}, welcome` : "Welcome"}
+                <span className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
+                  {user.name || "Welcome"}
                 </span>
-                <Link href={`/profile/${user.id}`} className="text-[15px] text-gray-700 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
+                <Link href={`/profile/${user.id}`} className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                   Profile
                 </Link>
                 {user.isAdmin && (
-                  <Link href="/admin" className="text-[15px] font-medium text-gray-800 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
-                    Admin Console
+                  <Link href="/admin" className="text-[15px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
+                    Admin
                   </Link>
                 )}
                 <form action={logoutAction} className="inline">
-                  <button type="submit" className="text-[15px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
+                  <button type="submit" className="text-[15px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                     Sign out
                   </button>
                 </form>
               </>
             ) : (
-              <Link href="/onboarding" className="text-[15px] text-gray-700 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
+              <Link href="/onboarding" className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                 Sign in
               </Link>
             )}
-            <Link href="/feed" className="text-[15px] text-gray-700 hover:text-gray-900">Community</Link>
-            <Link href="/write" className="text-[15px] font-medium text-gray-900 hover:text-gray-700">Write</Link>
+            <Link href="/feed" className="text-[15px] text-theme-primary hover:opacity-80">Feed</Link>
+            <Link href="/write" className="text-[15px] font-medium text-theme-primary hover:text-theme-accent">Write</Link>
           </nav>
         </div>
       </header>
 
-      {/* Desktop: left fixed sidebar (md and up) */}
-      <aside className="hidden md:flex md:flex-col md:w-[220px] md:shrink-0 md:sticky md:top-0 md:h-screen md:border-r md:border-gray-200 md:bg-white md:py-6 md:px-4" aria-label="Main navigation">
-        <Link href="/" className="text-gray-900 font-semibold text-[17px] tracking-tight hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded mb-6">
-          CSM
-        </Link>
+      {/* Desktop: left fixed sidebar (md and up) — Cellah */}
+      <aside className="hidden md:flex md:flex-col md:w-[220px] md:shrink-0 md:sticky md:top-0 md:h-screen md:border-r md:border-theme-border/60 md:bg-theme-surface md:py-6 md:px-4" aria-label="Main navigation">
+        <CellahLogo className="text-[17px] mb-6" showIcon />
         <nav className="flex flex-col gap-1">
           {NAV_LINKS.map(({ href, label }) =>
             href === "/notifications" ? (
               <NotificationsNavLink
                 key={href}
                 unreadCount={displayCount}
-                className="text-[15px] py-2 px-2 -mx-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+                className="text-[15px] py-2 px-2 -mx-2 rounded-md text-theme-primary hover:opacity-80 hover:bg-theme-border/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
               />
             ) : (
               <Link
                 key={href}
                 href={href}
-                className={`text-[15px] py-2 px-2 -mx-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 ${
-                  label === "Write" ? "font-medium text-gray-900 hover:bg-gray-100" : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                className={`text-[15px] py-2 px-2 -mx-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 ${
+                  label === "Write" ? "font-medium text-theme-primary hover:bg-theme-border/30" : "text-theme-primary hover:opacity-80 hover:bg-theme-border/30"
                 }`}
               >
                 {label}
@@ -202,40 +211,39 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
           {user?.isAdmin && (
             <Link
               href="/admin"
-              className="text-[15px] py-2 px-2 -mx-2 rounded-md font-medium text-gray-800 hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+              className="text-[15px] py-2 px-2 -mx-2 rounded-md font-medium text-theme-primary hover:text-theme-primary hover:bg-theme-border/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
               aria-label="Admin Console"
             >
-              Admin Console
+              Admin
             </Link>
           )}
         </nav>
-        <div className="mt-auto pt-6 border-t border-gray-200">
+        <div className="mt-auto pt-6 border-t border-theme-border/60">
           {user ? (
             <div className="space-y-3">
-              <p className="text-[15px] font-medium text-gray-900">
+              <p className="text-[15px] font-medium text-theme-primary">
                 {user.name ? `${user.name}, welcome` : "Welcome"}
               </p>
-              <Link href={`/profile/${user.id}`} className="block text-[13px] text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
+              <Link href={`/profile/${user.id}`} className="block text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                 My profile
               </Link>
-              <div className="text-[12px] text-gray-500 leading-snug space-y-1">
-                <p className="font-medium text-gray-600">Welcome to CSM</p>
+              <div className="text-[12px] text-theme-muted leading-snug space-y-1">
+                <p className="font-medium text-theme-primary">Haven for Digital Exodus</p>
                 <ul className="list-none space-y-0.5 pl-0" aria-label="Community guidelines">
-                  <li>• Share prayers, reflections, and ministry updates</li>
-                  <li>• Respond with presence, not performance</li>
-                  <li>• “Public” means all logged-in members — not the open internet</li>
+                  <li>• Minimalism — less noise, more presence</li>
+                  <li>• Organic connection — cells of community</li>
+                  <li>• Space for contemplation — Selah&apos;s rest</li>
                   <li>• If something feels unsafe, please report it</li>
-                  <li>• This community grows through trust and care</li>
                 </ul>
               </div>
               <form action={logoutAction}>
-                <button type="submit" className="text-[13px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
+                <button type="submit" className="text-[13px] text-theme-muted hover:text-theme-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                   Sign out
                 </button>
               </form>
             </div>
           ) : (
-            <Link href="/onboarding" className="text-[15px] font-medium text-gray-900 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
+            <Link href="/onboarding" className="text-[15px] font-medium text-theme-primary hover:text-theme-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
               Sign in
             </Link>
           )}

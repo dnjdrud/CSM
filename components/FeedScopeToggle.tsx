@@ -14,7 +14,7 @@ export function FeedScopeToggle({ initialScope = "all" }: { initialScope?: Scope
     router.push(value === "all" ? "/feed" : "/feed?scope=following");
   }
 
-  const tabBase = `${PADDING.tab} ${TYPOGRAPHY.tab} border-b-2 -mb-px rounded-t ${TRANSITION} ${FOCUS_RING} active:bg-gray-100`;
+  const tabBase = `${PADDING.tab} ${TYPOGRAPHY.tab} border-b-2 -mb-px rounded-t ${TRANSITION} ${FOCUS_RING} active:bg-theme-surface-2`;
 
   return (
     <div role="tablist" aria-label="Feed scope" className={`flex border-b ${BORDER.default}`}>
@@ -25,8 +25,8 @@ export function FeedScopeToggle({ initialScope = "all" }: { initialScope?: Scope
         onClick={() => setScope("all")}
         className={`${tabBase} transition-[color,border-color,background-color] duration-200 ${
           validScope === "all"
-            ? "text-gray-900 border-gray-900"
-            : "text-neutral-500 hover:text-gray-700 hover:bg-gray-50/50 border-transparent"
+            ? "text-theme-primary border-theme-primary"
+            : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-2/50 border-transparent"
         }`}
       >
         All
@@ -38,8 +38,8 @@ export function FeedScopeToggle({ initialScope = "all" }: { initialScope?: Scope
         onClick={() => setScope("following")}
         className={`${tabBase} ${
           validScope === "following"
-            ? "text-gray-900 border-gray-900"
-            : "text-neutral-500 hover:text-gray-700 hover:bg-gray-50/50 border-transparent"
+            ? "text-theme-primary border-theme-primary"
+            : "text-theme-muted hover:text-theme-text hover:bg-theme-surface-2/50 border-transparent"
         }`}
       >
         Following

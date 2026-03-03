@@ -100,10 +100,10 @@ export default async function FeedPage({
           />
         )}
       </div>
-      <p className="py-6 px-4 text-center border-t border-gray-200">
+      <p className="py-6 px-4 text-center border-t border-theme-border">
         <Link
           href="/search"
-          className="text-xs text-neutral-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+          className="text-xs text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
         >
           Search posts & people →
         </Link>

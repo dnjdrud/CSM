@@ -5,7 +5,7 @@
  */
 export function TimelineContainer({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-[680px] min-h-screen border-x border-gray-200 bg-white px-3 sm:px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div className="mx-auto w-full max-w-2xl min-h-screen border-x border-theme-border bg-theme-surface px-4 sm:px-6 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       {children}
     </div>
   );

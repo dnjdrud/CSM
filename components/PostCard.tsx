@@ -160,25 +160,25 @@ export function PostCard({
       data-post-id={post.id}
       className={
         isTodayDailyPrayer
-          ? "border-sky-200/70 bg-sky-50/40"
+          ? "border-theme-accent/50 bg-theme-surface-2/60"
           : pinned
-            ? "border-gray-200 bg-gray-50/30"
+            ? "border-l-4 border-l-theme-accent bg-theme-surface-2/40"
             : isDailyPrayer && !isTestimony
-              ? "border-sky-200/60 bg-sky-50/20"
+              ? "border-theme-accent/30 bg-theme-surface-2/30"
               : undefined
       }
     >
-      <CardContent className="py-3 px-3 sm:px-4">
+      <CardContent className="py-4 px-4 sm:px-5">
       {/* Single primary label: today's daily prayer = badge + highlight; pinned = muted meta; testimony = badge; daily prayer = soft callout */}
       {isTodayDailyPrayer && (
         <div className="mb-2">
-          <span className="inline-flex items-center rounded-md bg-sky-100/80 px-2 py-0.5 text-[12px] font-medium text-sky-800">
+          <span className="inline-flex items-center rounded-full border border-theme-accent/50 bg-theme-accent/20 px-2.5 py-0.5 text-[12px] font-medium text-theme-primary">
             Today&apos;s Daily Prayer
           </span>
         </div>
       )}
       {!isTodayDailyPrayer && pinned && (
-        <p className="mb-2 text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
+        <p className="mb-2 text-[11px] font-medium text-theme-muted uppercase tracking-wider">
           Pinned by community
         </p>
       )}
@@ -188,7 +188,7 @@ export function PostCard({
         </div>
       )}
       {!pinned && isDailyPrayer && !isTestimony && !isTodayDailyPrayer && (
-        <p className="mb-2 text-[12px] text-sky-700/90">
+        <p className="mb-2 text-[12px] text-theme-muted">
           Daily Prayer
         </p>
       )}
@@ -199,20 +199,20 @@ export function PostCard({
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
             <Link
               href={`/profile/${post.author.id}`}
-              className="text-[15px] font-medium text-gray-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+              className="text-[15px] font-medium text-theme-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
             >
               {post.author.name}
             </Link>
-            <span className="text-[12px] text-neutral-500">
+            <span className="text-[12px] text-theme-muted">
               {ROLE_DISPLAY[post.author.role]}
             </span>
             {post.author.affiliation && (
-              <span className="text-[12px] text-neutral-500 truncate" title={post.author.affiliation}>
+              <span className="text-[12px] text-theme-muted truncate" title={post.author.affiliation}>
                 · {post.author.affiliation}
               </span>
             )}
           </div>
-          <time dateTime={post.createdAt} className="mt-0.5 block text-[11px] text-neutral-400">
+          <time dateTime={post.createdAt} className="mt-0.5 block text-[11px] text-theme-muted">
             {relativeTime(post.createdAt)}
           </time>
         </div>
@@ -231,7 +231,7 @@ export function PostCard({
       {post.title && (
         <Link
           href={`/post/${post.id}`}
-          className="mt-2 block text-[15px] font-medium text-gray-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+          className="mt-2 block text-[15px] font-medium text-theme-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
         >
           {post.title}
         </Link>
@@ -240,18 +240,18 @@ export function PostCard({
       <div className={post.title ? "mt-1.5" : "mt-2"}>
         {shouldClamp ? (
           <>
-            <div className="line-clamp-6 text-[15px] leading-7 text-gray-900 whitespace-pre-wrap font-sans">
+            <div className="line-clamp-6 text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans">
               {post.content}
             </div>
             <Link
               href={`/post/${post.id}`}
-              className="mt-1 inline-block text-xs font-medium text-neutral-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+              className="mt-1 inline-block text-xs font-medium text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
             >
               Show more
             </Link>
           </>
         ) : (
-          <div className="text-[15px] leading-7 text-gray-900 whitespace-pre-wrap font-sans">
+          <div className="text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans">
             {post.content}
           </div>
         )}
@@ -263,7 +263,7 @@ export function PostCard({
             <Link
               key={tag}
               href={`/topics/${encodeURIComponent(tag)}`}
-              className="inline-flex items-center rounded-md border border-gray-200 bg-gray-50/80 px-2 py-0.5 text-[12px] text-neutral-600 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+              className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-0.5 text-[12px] text-theme-text hover:bg-theme-surface hover:border-theme-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2"
             >
               #{tag}
             </Link>
@@ -272,7 +272,7 @@ export function PostCard({
       )}
 
       <div
-        className="mt-4 flex flex-wrap items-center gap-4 sm:gap-6 border-t border-gray-100 pt-3 text-[12px] text-neutral-400"
+        className="mt-4 flex flex-wrap items-center gap-4 sm:gap-6 border-t border-theme-border pt-3 text-[12px] text-theme-muted"
         role="group"
         aria-label="Respond to this post"
       >
@@ -281,12 +281,12 @@ export function PostCard({
             <button
               type="button"
               onClick={handlePrayed}
-              className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:bg-gray-200/80 ${justActivated === "prayed" ? "animate-reaction-on font-medium text-gray-900" : ""} ${responses.prayed ? "font-medium text-gray-900" : ""}`}
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "prayed" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.prayed ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
             >
               <span aria-hidden>🙏</span>
               Prayed
               {counts.prayed > 0 && (
-                <span className="ml-1 tabular-nums text-neutral-500" aria-label={`${counts.prayed} prayed`}>
+                <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.prayed} prayed`}>
                   {counts.prayed}
                 </span>
               )}
@@ -294,12 +294,12 @@ export function PostCard({
             <button
               type="button"
               onClick={handleWithYou}
-              className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:bg-gray-200/80 ${justActivated === "withYou" ? "animate-reaction-on font-medium text-gray-900" : ""} ${responses.withYou ? "font-medium text-gray-900" : ""}`}
+              className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "withYou" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.withYou ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
             >
               <span aria-hidden>🤍</span>
               With you
               {counts.withYou > 0 && (
-                <span className="ml-1 tabular-nums text-neutral-500" aria-label={`${counts.withYou} with you`}>
+                <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.withYou} with you`}>
                   {counts.withYou}
                 </span>
               )}
@@ -310,7 +310,7 @@ export function PostCard({
           <button
             type="button"
             onClick={toggleComments}
-            className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:bg-gray-200/80 ${commentsOpen ? "font-medium text-gray-900" : ""}`}
+            className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${commentsOpen ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
           >
             <span aria-hidden>💬</span>
             Comment
@@ -318,7 +318,7 @@ export function PostCard({
         ) : (
           <Link
             href={`/post/${post.id}`}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:bg-gray-200/80"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2"
           >
             <span aria-hidden>💬</span>
             Comment
@@ -327,11 +327,11 @@ export function PostCard({
       </div>
 
       {canCommentInline && commentsOpen && (
-        <div className="mt-4 border-t border-gray-100 pt-4 pb-2">
-          <h3 id={`comments-${post.id}`} className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-3">
+        <div className="mt-4 border-t border-theme-border pt-4 pb-2">
+          <h3 id={`comments-${post.id}`} className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-3">
             Comments
           </h3>
-          <div className="pl-3 sm:pl-4 text-[13px] leading-6 text-gray-700">
+          <div className="pl-3 sm:pl-4 text-[13px] leading-6 text-theme-text">
           {commentsLoading && comments === null ? (
             <>
               <CommentForm

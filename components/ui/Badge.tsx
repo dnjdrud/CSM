@@ -8,11 +8,11 @@ import * as React from "react";
 type Variant = "default" | "muted" | "subtle" | "testimony" | "daily-prayer";
 
 const variantStyles: Record<Variant, string> = {
-  default: "bg-gray-800 text-white border border-transparent",
-  muted: "bg-gray-100 text-gray-600 border border-gray-200",
-  subtle: "bg-gray-100 text-gray-600 border border-gray-200",
-  testimony: "bg-amber-50 text-amber-800 border border-amber-200",
-  "daily-prayer": "bg-sky-50 text-sky-800 border border-sky-200",
+  default: "bg-theme-primary text-white border border-transparent",
+  muted: "bg-theme-surface-2 text-theme-muted border border-theme-border",
+  subtle: "bg-theme-surface-2 text-theme-muted border border-theme-border",
+  testimony: "bg-theme-accent/20 text-theme-primary border border-theme-accent/40",
+  "daily-prayer": "bg-theme-surface-2 text-theme-primary border border-theme-border",
 };
 
 export function Badge({

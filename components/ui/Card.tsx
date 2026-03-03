@@ -13,7 +13,7 @@ export function Card({
 }: React.ComponentProps<"div">) {
   return (
     <div
-      className={`${RADIUS.card} border ${BORDER.default} ${BG.surface} ${TRANSITION} hover:bg-gray-50/50 ${className}`}
+      className={`${RADIUS.card} border ${BORDER.default} ${BG.surface} shadow-soft ${TRANSITION} hover:bg-theme-surface-2/50 ${className}`}
       {...props}
     >
       {children}
