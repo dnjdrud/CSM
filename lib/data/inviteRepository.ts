@@ -72,23 +72,18 @@ export interface CreateInviteInput {
   note?: string | null;
 }
 
-/** True if error looks like a missing column / schema cache issue (Supabase/PostgREST). */
-function isColumnOrSchemaError(message: string): boolean {
-  const m = String(message).toLowerCase();
-  return (
-    /column.*does not exist|does not exist.*column/i.test(m) ||
-    /could not find.*column|schema cache/i.test(m) ||
-    /column .* of .* (in|does not exist)/i.test(m)
-  );
-}
-
 /**
  * Create a new invite. Generates unique code; logs CREATE_INVITE.
- * Uses admin client when available (bypasses RLS). Tries full schema first; on column-not-found errors, retries with minimal columns for older DBs.
+ * Uses admin client (service role) so RLS does not block. Tries full schema first; on any insert error, retries with minimal columns (code, created_by) for older DBs.
  */
 export async function createInvite(input: CreateInviteInput): Promise<InviteCode> {
   const admin = getSupabaseAdmin();
-  const supabase = admin ?? (await supabaseServer());
+  if (!admin) {
+    throw new Error(
+      "Invite creation requires SUPABASE_SERVICE_ROLE_KEY. Add it to .env.local (from Supabase Dashboard → Project Settings → API → service_role) and restart the dev server."
+    );
+  }
+  const supabase = admin;
   let attempts = 0;
   const maxAttempts = 5;
   const fullPayload = {
@@ -119,12 +114,15 @@ export async function createInvite(input: CreateInviteInput): Promise<InviteCode
       .select()
       .single();
 
-    if (result.error && isColumnOrSchemaError(result.error.message)) {
-      result = await supabase
+    if (result.error) {
+      const minimalResult = await supabase
         .from("invite_codes")
         .insert({ code: minimalPayload.code, created_by: minimalPayload.created_by })
         .select()
         .single();
+      if (!minimalResult.error && minimalResult.data) {
+        result = minimalResult;
+      }
     }
 
     if (!result.error && result.data) {

@@ -146,8 +146,8 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
           <nav className="flex items-center gap-4 flex-wrap" aria-label="Main navigation">
             {user ? (
               <>
-                <span className="text-[15px] text-gray-700" aria-label={`Welcome, ${user.name}`}>
-                  {user.name}, Welcome
+                <span className="text-[15px] text-gray-700" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
+                  {user.name ? `${user.name}, welcome` : "Welcome"}
                 </span>
                 <Link href={`/profile/${user.id}`} className="text-[15px] text-gray-700 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
                   Profile
@@ -213,7 +213,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
           {user ? (
             <div className="space-y-3">
               <p className="text-[15px] font-medium text-gray-900">
-                {user.name}, Welcome
+                {user.name ? `${user.name}, welcome` : "Welcome"}
               </p>
               <Link href={`/profile/${user.id}`} className="block text-[13px] text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">
                 My profile

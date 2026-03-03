@@ -32,6 +32,17 @@ import { tokenize, sortByScore } from "@/lib/search";
 
 const SEARCH_MAX = 30;
 
+/** Select list for feed/list queries. Fallback order: FULL → NO_TITLE → MINIMAL (base schema only). */
+const POSTS_FEED_SELECT = "id, author_id, category, title, content, visibility, tags, created_at, is_daily_prayer, daily_prayer_date" as const;
+const POSTS_FEED_SELECT_NO_TITLE = "id, author_id, category, content, visibility, tags, created_at, is_daily_prayer, daily_prayer_date" as const;
+/** Minimal: only columns in base posts table (no title, pinned, daily_prayer). */
+const POSTS_FEED_SELECT_MINIMAL = "id, author_id, category, content, visibility, tags, created_at" as const;
+
+function isColumnOrSchemaError(message: string): boolean {
+  const m = String(message).toLowerCase();
+  return /column.*does not exist|does not exist.*column|schema cache|could not find.*column/i.test(m);
+}
+
 function normalizeTag(tag: string): string {
   return tag.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -114,7 +125,7 @@ export async function listFeedPosts(options: {
 }): Promise<PostWithAuthor[]> {
   const supabase = await supabaseServer();
   const uid = options.currentUserId ?? null;
-  let query = supabase.from("posts").select("id, author_id, category, title, content, visibility, tags, created_at, is_daily_prayer, daily_prayer_date").order("created_at", { ascending: false });
+  let query = supabase.from("posts").select(POSTS_FEED_SELECT).order("created_at", { ascending: false });
   query = query.is("pinned_at", null);
   if (options.scope === "FOLLOWING" && uid) {
     const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
@@ -124,15 +135,39 @@ export async function listFeedPosts(options: {
   }
   let { data: rows, error } = await query;
   if (error && /pinned_at|column.*does not exist/i.test(String(error.message))) {
-    query = supabase.from("posts").select("id, author_id, category, title, content, visibility, tags, created_at, is_daily_prayer, daily_prayer_date").order("created_at", { ascending: false });
+    let qNoPinned = supabase.from("posts").select(POSTS_FEED_SELECT).order("created_at", { ascending: false });
     if (options.scope === "FOLLOWING" && uid) {
       const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
       const followingIds = (followRows ?? []).map((r) => r.following_id);
       const authorIds = [...new Set([uid, ...followingIds])];
-      query = query.in("author_id", authorIds);
+      qNoPinned = qNoPinned.in("author_id", authorIds);
     }
-    const next = await query;
+    const next = await qNoPinned;
     rows = next.data;
+    error = next.error;
+  }
+  if (error && isColumnOrSchemaError(error.message)) {
+    let qNoTitle = supabase.from("posts").select(POSTS_FEED_SELECT_NO_TITLE).order("created_at", { ascending: false }).is("pinned_at", null);
+    if (options.scope === "FOLLOWING" && uid) {
+      const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
+      const followingIds = (followRows ?? []).map((r) => r.following_id);
+      const authorIds = [...new Set([uid, ...followingIds])];
+      qNoTitle = qNoTitle.in("author_id", authorIds);
+    }
+    const next = await qNoTitle;
+    rows = (next.data ?? []).map((r) => ({ ...r, title: null }));
+    error = next.error;
+  }
+  if (error && isColumnOrSchemaError(error.message)) {
+    let qMinimal = supabase.from("posts").select(POSTS_FEED_SELECT_MINIMAL).order("created_at", { ascending: false });
+    if (options.scope === "FOLLOWING" && uid) {
+      const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
+      const followingIds = (followRows ?? []).map((r) => r.following_id);
+      const authorIds = [...new Set([uid, ...followingIds])];
+      qMinimal = qMinimal.in("author_id", authorIds);
+    }
+    const next = await qMinimal;
+    rows = (next.data ?? []).map((r) => ({ ...r, title: null })) as typeof rows;
     error = next.error;
   }
   if (error || !rows?.length) return [];
@@ -181,10 +216,10 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
   const uid = params.currentUserId ?? null;
   const limit = Math.min(Math.max(params.limit || 20, 1), 100);
 
-  const runQuery = async (usePinnedFilter: boolean) => {
+  const runQuery = async (usePinnedFilter: boolean, selectColumns: string = POSTS_FEED_SELECT) => {
     let q = supabase
       .from("posts")
-      .select("id, author_id, category, title, content, visibility, tags, created_at, is_daily_prayer, daily_prayer_date")
+      .select(selectColumns)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .limit(limit + 1);
@@ -208,11 +243,37 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
     rows = next.data;
     error = next.error;
   }
+  if (error && isColumnOrSchemaError(error.message)) {
+    const withTitle = await runQuery(true, POSTS_FEED_SELECT_NO_TITLE);
+    if (!withTitle.error && withTitle.data?.length) {
+      rows = withTitle.data;
+      error = null;
+    } else if (withTitle.error && /pinned_at|column.*does not exist/i.test(String(withTitle.error.message))) {
+      const noPinned = await runQuery(false, POSTS_FEED_SELECT_NO_TITLE);
+      rows = noPinned.data;
+      error = noPinned.error;
+    } else {
+      rows = withTitle.data;
+      error = withTitle.error;
+    }
+  }
+  if (error && isColumnOrSchemaError(error.message)) {
+    const minimal = await runQuery(false, POSTS_FEED_SELECT_MINIMAL);
+    if (!minimal.error && minimal.data?.length) {
+      rows = minimal.data;
+      error = null;
+    } else {
+      rows = minimal.data;
+      error = minimal.error;
+    }
+  }
   if (error) return { items: [], nextCursor: null };
   if (!rows?.length) return { items: [], nextCursor: null };
 
-  const hasMore = rows.length > limit;
-  const pageRows = hasMore ? rows.slice(0, limit) : rows;
+  type FeedPostRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null; title?: string | null; is_daily_prayer?: boolean | null; daily_prayer_date?: string | null };
+  const normalizedRows: FeedPostRow[] = (rows ?? []) as unknown as FeedPostRow[];
+  const hasMore = normalizedRows.length > limit;
+  const pageRows = hasMore ? normalizedRows.slice(0, limit) : normalizedRows;
   const authorIds = [...new Set(pageRows.map((r) => r.author_id))];
   const postIds = pageRows.map((r) => r.id);
   const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
@@ -251,9 +312,23 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
   return { items, nextCursor };
 }
 
+const POSTS_SINGLE_SELECT = "id, author_id, category, title, content, visibility, tags, created_at, pinned_at, pinned_by, is_daily_prayer, daily_prayer_date" as const;
+const POSTS_SINGLE_SELECT_NO_TITLE = "id, author_id, category, content, visibility, tags, created_at, pinned_at, pinned_by, is_daily_prayer, daily_prayer_date" as const;
+const POSTS_SINGLE_SELECT_MINIMAL = "id, author_id, category, content, visibility, tags, created_at" as const;
+
 export async function getPostById(id: string): Promise<PostWithAuthor | null> {
   const supabase = await supabaseServer();
-  const { data: row, error } = await supabase.from("posts").select("id, author_id, category, title, content, visibility, tags, created_at, pinned_at, pinned_by, is_daily_prayer, daily_prayer_date").eq("id", id).single();
+  let { data: row, error } = await supabase.from("posts").select(POSTS_SINGLE_SELECT).eq("id", id).single();
+  if (error && isColumnOrSchemaError(error.message)) {
+    let next = await supabase.from("posts").select(POSTS_SINGLE_SELECT_NO_TITLE).eq("id", id).single();
+    if (next.error && isColumnOrSchemaError(next.error.message)) {
+      next = await supabase.from("posts").select(POSTS_SINGLE_SELECT_MINIMAL).eq("id", id).single();
+    }
+    if (next.data && typeof next.data === "object" && "id" in next.data) {
+      row = { ...next.data, title: null } as unknown as NonNullable<typeof row>;
+    }
+    error = next.error;
+  }
   if (error || !row) return null;
   const currentUserId = (await supabase.auth.getUser()).data.user?.id ?? null;
   const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
@@ -278,13 +353,20 @@ export async function getPostById(id: string): Promise<PostWithAuthor | null> {
 /** Pinned post for feed top (at most one). Returns null if none. */
 export async function getPinnedPost(currentUserId: string | null): Promise<PostWithAuthor | null> {
   const supabase = await supabaseServer();
-  const { data: row, error } = await supabase
+  let { data: row, error } = await supabase
     .from("posts")
-    .select("id, author_id, category, title, content, visibility, tags, created_at, pinned_at, pinned_by, is_daily_prayer, daily_prayer_date")
+    .select(POSTS_SINGLE_SELECT)
     .not("pinned_at", "is", null)
     .order("pinned_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (error && isColumnOrSchemaError(error.message)) {
+    const next = await supabase.from("posts").select(POSTS_SINGLE_SELECT_NO_TITLE).not("pinned_at", "is", null).order("pinned_at", { ascending: false }).limit(1).maybeSingle();
+    if (next.data && typeof next.data === "object" && "id" in next.data) {
+      row = { ...next.data, title: null } as unknown as NonNullable<typeof row>;
+    }
+    error = next.error;
+  }
   if (error || !row) return null;
   const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
     getAuthorMap(supabase, [row.author_id]),
@@ -331,17 +413,20 @@ export async function createPost(input: {
     .insert(payloadWithTitle)
     .select(POSTS_INSERT_SELECT)
     .single();
-  if (result.error && (result.error.message.includes("title") || result.error.message.includes("schema cache"))) {
+  if (result.error && isColumnOrSchemaError(result.error.message)) {
     const { title: _t, ...payloadWithoutTitle } = payloadWithTitle;
+    result = await supabase.from("posts").insert(payloadWithoutTitle).select(POSTS_INSERT_SELECT_NO_TITLE).single();
+  }
+  if (result.error && isColumnOrSchemaError(result.error.message)) {
     result = await supabase
       .from("posts")
-      .insert(payloadWithoutTitle)
+      .insert({ author_id: input.authorId, category: input.category, content: input.content.trim(), tags })
       .select(POSTS_INSERT_SELECT_NO_TITLE)
       .single();
   }
   if (result.error) throw new Error(result.error.message);
   const row = result.data as Record<string, unknown>;
-  return rowToPost({ ...row, title: row.title ?? null } as Parameters<typeof rowToPost>[0]);
+  return rowToPost({ ...row, title: row?.title ?? null } as Parameters<typeof rowToPost>[0]);
 }
 
 export async function updatePost(
