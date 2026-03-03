@@ -20,10 +20,17 @@ function isAdminPath(pathname: string): boolean {
   return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
+/** Next.js sends this header for Server Action POSTs. Do not redirect these or client gets "unexpected response". */
+function isServerActionRequest(request: NextRequest): boolean {
+  return request.headers.get("Next-Action") != null;
+}
+
 export async function middleware(request: NextRequest) {
   try {
     const pathname = request.nextUrl.pathname;
     if (isPublicPath(pathname)) return NextResponse.next();
+
+    if (isServerActionRequest(request)) return NextResponse.next();
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
