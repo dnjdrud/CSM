@@ -186,17 +186,19 @@ export async function listFeedPosts(options: {
       withYou: userReactions.some((r) => r.type === "WITH_YOU"),
     });
   });
-  return rows.map((r) => {
-    const post = rowToPost(r);
-    const author = authorMap.get(r.author_id);
-    if (!author) throw new Error(`Author ${r.author_id} not found`);
-    return {
-      ...post,
-      author,
-      reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-    } as PostWithAuthor;
-  });
+  return rows
+    .map((r) => {
+      const post = rowToPost(r);
+      const author = authorMap.get(r.author_id);
+      if (!author) return null;
+      return {
+        ...post,
+        author,
+        reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
+        reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+      } as PostWithAuthor;
+    })
+    .filter((x): x is PostWithAuthor => x != null);
 }
 
 export type ListFeedPostsPageParams = {
@@ -289,17 +291,19 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
       withYou: userReactions.some((r) => r.type === "WITH_YOU"),
     });
   });
-  const items = pageRows.map((r) => {
-    const post = rowToPost(r);
-    const author = authorMap.get(r.author_id);
-    if (!author) throw new Error(`Author ${r.author_id} not found`);
-    return {
-      ...post,
-      author,
-      reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-    } as PostWithAuthor;
-  });
+  const items = pageRows
+    .map((r) => {
+      const post = rowToPost(r);
+      const author = authorMap.get(r.author_id);
+      if (!author) return null;
+      return {
+        ...post,
+        author,
+        reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
+        reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+      } as PostWithAuthor;
+    })
+    .filter((x): x is PostWithAuthor => x != null);
 
   const nextCursor: { createdAt: string; id: string } | null =
     hasMore && pageRows.length > 0
@@ -478,19 +482,21 @@ export async function listCommentsByPostId(postId: string): Promise<(Comment & {
     if (aRoot !== bRoot) return aRoot - bRoot;
     return new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime();
   });
-  return sorted.map((r) => {
-    const author = authorMap.get(r.author_id);
-    if (!author) throw new Error(`Author ${r.author_id} not found`);
-    return {
-      id: r.id,
-      postId: r.post_id,
-      authorId: r.author_id,
-      content: r.content,
-      createdAt: r.created_at ?? new Date().toISOString(),
-      parentId: r.parent_id ?? undefined,
-      author,
-    } as Comment & { author: User };
-  });
+  return sorted
+    .map((r) => {
+      const author = authorMap.get(r.author_id);
+      if (!author) return null;
+      return {
+        id: r.id,
+        postId: r.post_id,
+        authorId: r.author_id,
+        content: r.content,
+        createdAt: r.created_at ?? new Date().toISOString(),
+        parentId: r.parent_id ?? undefined,
+        author,
+      } as Comment & { author: User };
+    })
+    .filter((x): x is Comment & { author: User } => x != null);
 }
 
 export async function addComment(input: {
@@ -752,16 +758,18 @@ export async function listPostsByTag(
     const userReactions = uid ? (reactionRows ?? []).filter((r) => r.post_id === p.id && r.user_id === uid) : [];
     reactionsByPost.set(p.id, { prayed: userReactions.some((r) => r.type === "PRAYED"), withYou: userReactions.some((r) => r.type === "WITH_YOU") });
   });
-  return rows.map((r) => {
-    const author = authorMap.get(r.author_id);
-    if (!author) throw new Error(`Author ${r.author_id} not found`);
-    return {
-      ...rowToPost(r),
-      author,
-      reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-    } as PostWithAuthor;
-  });
+  return rows
+    .map((r) => {
+      const author = authorMap.get(r.author_id);
+      if (!author) return null;
+      return {
+        ...rowToPost(r),
+        author,
+        reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
+        reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+      } as PostWithAuthor;
+    })
+    .filter((x): x is PostWithAuthor => x != null);
 }
 
 export async function searchTags(q: string): Promise<string[]> {
