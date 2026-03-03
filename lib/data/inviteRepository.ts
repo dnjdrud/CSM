@@ -72,12 +72,23 @@ export interface CreateInviteInput {
   note?: string | null;
 }
 
+/** True if error looks like a missing column / schema cache issue (Supabase/PostgREST). */
+function isColumnOrSchemaError(message: string): boolean {
+  const m = String(message).toLowerCase();
+  return (
+    /column.*does not exist|does not exist.*column/i.test(m) ||
+    /could not find.*column|schema cache/i.test(m) ||
+    /column .* of .* (in|does not exist)/i.test(m)
+  );
+}
+
 /**
  * Create a new invite. Generates unique code; logs CREATE_INVITE.
- * Tries full schema first; on column-not-found errors, retries with minimal columns for older DBs.
+ * Uses admin client when available (bypasses RLS). Tries full schema first; on column-not-found errors, retries with minimal columns for older DBs.
  */
 export async function createInvite(input: CreateInviteInput): Promise<InviteCode> {
-  const supabase = await supabaseServer();
+  const admin = getSupabaseAdmin();
+  const supabase = admin ?? (await supabaseServer());
   let attempts = 0;
   const maxAttempts = 5;
   const fullPayload = {
@@ -108,7 +119,7 @@ export async function createInvite(input: CreateInviteInput): Promise<InviteCode
       .select()
       .single();
 
-    if (result.error && /column.*does not exist|does not exist.*column/i.test(String(result.error.message))) {
+    if (result.error && isColumnOrSchemaError(result.error.message)) {
       result = await supabase
         .from("invite_codes")
         .insert({ code: minimalPayload.code, created_by: minimalPayload.created_by })
@@ -164,6 +175,18 @@ export async function listInvites(): Promise<InviteCode[]> {
     .select("id, code, created_by, used_by, used_at, created_at, note, expires_at, max_uses, uses_count, revoked_at, revoked_by")
     .order("created_at", { ascending: false });
   return (rows ?? []).map(rowToInvite);
+}
+
+/** Get one invite by id. Admin only (RLS). Returns null if not found. */
+export async function getInviteById(inviteId: string): Promise<InviteCode | null> {
+  const supabase = await supabaseServer();
+  const { data: row } = await supabase
+    .from("invite_codes")
+    .select("id, code, created_by, used_by, used_at, created_at, note, expires_at, max_uses, uses_count, revoked_at, revoked_by")
+    .eq("id", inviteId)
+    .maybeSingle();
+  if (!row) return null;
+  return rowToInvite(normalizeInviteRow(row as Record<string, unknown>));
 }
 
 export interface UpdateInviteInput {

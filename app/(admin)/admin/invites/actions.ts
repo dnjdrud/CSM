@@ -2,12 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { getAdminOrNull } from "@/lib/admin/guard";
-import { createInvite, updateInvite, revokeInvite } from "@/lib/data/inviteRepository";
+import { createInvite, updateInvite, revokeInvite, getInviteById } from "@/lib/data/inviteRepository";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { formatExpires } from "@/lib/invites/render";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
+
+const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+  process.env.APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "http://localhost:3000";
 
 export type CreateInviteResult = { ok: true; code: string; inviteId: string } | { ok: false; error: string };
 export type UpdateInviteResult = { ok: true } | { ok: false; error: string };
 export type RevokeInviteResult = { ok: true } | { ok: false; error: string };
+export type SendInviteEmailResult = { ok: true } | { ok: false; error: string };
 
 /**
  * Create a new invite. ADMIN only. Form fields: maxUses, expiresPreset (7days|30days|custom), expiresAt (ISO when custom), note.
@@ -92,4 +102,52 @@ export async function revokeInviteAction(inviteId: string): Promise<RevokeInvite
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed to revoke invite" };
   }
+}
+
+/**
+ * Send invite link/code to an email address. ADMIN only. Uses Edge Function send-invite-email (Resend).
+ */
+export async function sendInviteEmailAction(
+  inviteId: string,
+  toEmail: string
+): Promise<SendInviteEmailResult> {
+  const admin = await getAdminOrNull();
+  if (!admin) return { ok: false, error: "Admin access required" };
+
+  const trimmed = toEmail.trim();
+  if (!trimmed) return { ok: false, error: "Email is required" };
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(trimmed)) return { ok: false, error: "Invalid email address" };
+
+  const invite = await getInviteById(inviteId);
+  if (!invite) return { ok: false, error: "Invite not found" };
+  if (invite.status !== "ACTIVE") return { ok: false, error: "Only active invites can be sent" };
+
+  const baseUrl = APP_URL.replace(/\/$/, "");
+  const signInUrl = `${baseUrl}/onboarding`;
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    return { ok: false, error: "Email not configured. Set SUPABASE_SERVICE_ROLE_KEY and deploy send-invite-email Edge Function with RESEND_API_KEY, EMAIL_FROM." };
+  }
+
+  const { data, error } = await supabase.functions.invoke("send-invite-email", {
+    body: {
+      toEmail: trimmed,
+      code: invite.code,
+      signInUrl,
+      note: invite.note ?? null,
+      expiresAt: invite.expiresAt ? formatExpires(invite.expiresAt) : null,
+      maxUses: invite.maxUses,
+    },
+  });
+
+  if (error) {
+    console.error("[sendInviteEmail] Edge function error", error);
+    return { ok: false, error: error.message ?? "Failed to send email" };
+  }
+  if (data?.error) {
+    return { ok: false, error: typeof data.error === "string" ? data.error : "Failed to send email" };
+  }
+  return { ok: true };
 }

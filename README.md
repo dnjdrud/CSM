@@ -72,6 +72,13 @@ When `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set, the
    - `NEXT_PUBLIC_APP_URL` (or `APP_URL`) — base URL for completion links (e.g. `https://yourapp.com`).
    - Resend: use a verified domain in [Resend](https://resend.com) and set `EMAIL_FROM` in Supabase secrets to that sender.
 
+   **Invite link by email:** To use “Send link” on Admin → Invites (email the invite code and sign-in URL to a recipient), deploy the `send-invite-email` Edge Function with the same Resend secrets:
+
+   ```bash
+   npx supabase functions deploy send-invite-email
+   ```
+   (Uses the same `RESEND_API_KEY` and `EMAIL_FROM` as above.)
+
 5. **Verify**
    - Follow / comment / react: notifications still appear (created via Edge Function).
    - Direct insert into `public.notifications` from the app is denied (RLS has no insert policy).
