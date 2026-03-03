@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/data/repository";
-import { getAuthUserId } from "@/lib/auth/session";
+import { getAuthUserId, getAuthUserEmail } from "@/lib/auth/session";
 import { INVITE_ONLY } from "@/lib/config/features";
+import { canSkipInviteForOnboarding } from "@/lib/admin/bootstrap";
+import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
+import { ensureProfileForBypassEmail } from "@/lib/data/userProvisioning";
 import { OnboardingFlow } from "./_components/OnboardingFlow";
 import { MagicLinkForm } from "./_components/MagicLinkForm";
 import { RequestAccessForm } from "./_components/RequestAccessForm";
@@ -12,9 +15,15 @@ export default async function OnboardingPage() {
   if (currentUser) redirect("/feed");
 
   const authUserId = await getAuthUserId();
+  const email = await getAuthUserEmail();
+  if (authUserId && email && isOnboardingBypassEmail(email)) {
+    await ensureProfileForBypassEmail({ userId: authUserId, email });
+    redirect("/feed");
+  }
+
   if (authUserId) {
-    if (INVITE_ONLY) return <OnboardingFlow inviteOnly={true} />;
-    redirect("/login?message=profile_missing");
+    const skipInviteCode = canSkipInviteForOnboarding(email ?? undefined);
+    return <OnboardingFlow inviteOnly={INVITE_ONLY} skipInviteCode={skipInviteCode} />;
   }
 
   return (

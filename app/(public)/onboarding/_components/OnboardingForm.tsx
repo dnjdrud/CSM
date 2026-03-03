@@ -12,9 +12,9 @@ const ROLES: { value: UserRole; label: string }[] = ONBOARDING_ROLES.map((value)
   label: ROLE_DISPLAY[value],
 }));
 
-type Props = { initialInviteCode?: string; inviteOnly?: boolean };
+type Props = { initialInviteCode?: string; inviteOnly?: boolean; skipInviteCode?: boolean };
 
-export function OnboardingForm({ initialInviteCode = "", inviteOnly = false }: Props) {
+export function OnboardingForm({ initialInviteCode = "", inviteOnly = false, skipInviteCode = false }: Props) {
   const [inviteCode, setInviteCode] = useState(initialInviteCode);
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole | "">("");
@@ -22,25 +22,27 @@ export function OnboardingForm({ initialInviteCode = "", inviteOnly = false }: P
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const inviteOk = inviteOnly || inviteCode.trim().length > 0;
-  const canSubmit = inviteOk && name.trim().length > 0 && role !== "";
+  const inviteOk = inviteOnly || skipInviteCode || inviteCode.trim().length > 0;
+  const canSubmit = inviteOk && name.trim().length > 0 && (skipInviteCode || role !== "");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || pending) return;
+
     setPending(true);
     setError(null);
     try {
       const result = await submitOnboarding({
-        inviteCode: inviteOnly ? undefined : inviteCode.trim(),
+        inviteCode: inviteOnly || skipInviteCode ? undefined : inviteCode.trim(),
         name: name.trim(),
-        role,
+        role: skipInviteCode ? "LAY" : role || "LAY",
         bio: bio.trim() || undefined,
       });
       if (result?.error) {
         setError(result.error);
       }
-    } catch {
+    } catch (e) {
+      if (e && typeof e === "object" && "digest" in e && String((e as { digest?: string }).digest).includes("NEXT_REDIRECT")) throw e;
       setError("Something went wrong.");
     } finally {
       setPending(false);
@@ -58,7 +60,7 @@ export function OnboardingForm({ initialInviteCode = "", inviteOnly = false }: P
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 space-y-6">
-          {!inviteOnly && (
+          {!inviteOnly && !skipInviteCode && (
             <div>
               <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-800">
                 Invite code
@@ -87,12 +89,14 @@ export function OnboardingForm({ initialInviteCode = "", inviteOnly = false }: P
             </label>
             <input
               id="name"
+              name="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
               className="mt-1.5 block w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 placeholder:text-gray-500 focus:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-700"
               autoComplete="name"
+              required
             />
           </div>
 
@@ -125,6 +129,7 @@ export function OnboardingForm({ initialInviteCode = "", inviteOnly = false }: P
             </label>
             <textarea
               id="bio"
+              name="bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="A short bio"

@@ -55,19 +55,25 @@ export function RequestAccessForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+    <form
+      name="request-access"
+      onSubmit={handleSubmit}
+      className="mt-8 space-y-5"
+      autoComplete="off"
+    >
       <div>
         <label htmlFor="request-email" className="block text-sm font-medium text-gray-800">
           Email
         </label>
         <input
           id="request-email"
+          name="request_email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
           className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
-          autoComplete="email"
+          autoComplete="off"
           required
         />
       </div>
@@ -143,6 +149,7 @@ export function RequestAccessForm() {
       )}
       <button
         type="submit"
+        name="request_access_submit"
         disabled={pending}
         className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
       >

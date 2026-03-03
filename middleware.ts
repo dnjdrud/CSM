@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
+import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 import { PUBLIC_PATHS } from "@/lib/auth/publicPaths";
 
 function isPublicPath(pathname: string): boolean {
@@ -61,7 +62,13 @@ export async function middleware(request: NextRequest) {
     } else if (pathname !== "/onboarding" && pathname !== "/onboarding/complete") {
       const { data: profile } = await supabase.from("users").select("id, deactivated_at").eq("id", user.id).maybeSingle();
       if (!profile) {
-        return NextResponse.redirect(new URL("/login?message=profile_missing", request.url));
+        // Bypass email: allow through; getSession() will run on the server and create profile (no redirect loop)
+        if (user.email && isOnboardingBypassEmail(user.email)) {
+          return response;
+        }
+        const to = new URL("/onboarding", request.url);
+        to.searchParams.set("from", pathname);
+        return NextResponse.redirect(to);
       }
       if (profile.deactivated_at) {
         const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);

@@ -252,6 +252,52 @@ async function getApprovalInviteCodeId(admin: ReturnType<typeof getSupabaseAdmin
   return data?.id ?? null;
 }
 
+/** Create public.users row with role ADMIN for bootstrap admin (no invite code). Uses service role. */
+export async function createAdminProfileForOnboarding(
+  authUserId: string,
+  data: { name: string; bio?: string; affiliation?: string }
+): Promise<{ ok: true } | { error: string }> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return { error: "Server not configured" };
+
+  const name = data.name?.trim() || "Admin";
+
+  // Admin: only id, name, role required for login; all other profile fields null
+  const row: Record<string, unknown> = {
+    id: authUserId,
+    name,
+    role: "ADMIN",
+    bio: null,
+    affiliation: null,
+    username: null,
+    church: null,
+  };
+
+  const inviteCodeId = await getApprovalInviteCodeId(admin);
+  if (inviteCodeId) row.invite_code_id = inviteCodeId;
+
+    let result = await admin.from("users").upsert(row, {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    });
+
+    if (result.error) {
+      const msg = result.error.message || "";
+      if (msg.includes("invite_code_id") || msg.includes("column")) {
+        delete row.invite_code_id;
+        delete row.username;
+        delete row.church;
+        result = await admin.from("users").upsert(row, {
+          onConflict: "id",
+          ignoreDuplicates: false,
+        });
+      }
+    }
+
+  if (result.error) return { error: result.error.message };
+  return { ok: true };
+}
+
 /** Consume token, create Auth user, insert public.users, mark token and request COMPLETED. */
 export async function consumeApprovalTokenAndCreateUser(params: {
   token: string;

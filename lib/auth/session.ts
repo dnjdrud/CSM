@@ -18,6 +18,8 @@ export async function getSession(): Promise<Session | null> {
     if (!user?.id) return null;
     const { ensureAdminRoleIfAllowed } = await import("@/lib/admin/bootstrap");
     await ensureAdminRoleIfAllowed();
+    const { ensureProfileForBypassEmail } = await import("@/lib/data/userProvisioning");
+    await ensureProfileForBypassEmail({ userId: user.id, email: user.email });
     const { data: row } = await supabase
       .from("users")
       .select("id, role")

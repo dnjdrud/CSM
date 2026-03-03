@@ -9,7 +9,8 @@ import { createSignupRequest } from "@/lib/data/signupRepository";
 import { isRateLimited, recordAttempt } from "@/lib/auth/inviteRateLimit";
 import { setInviteCookie, getInviteCookie, clearInviteCookie } from "@/lib/invites/inviteGate";
 import { INVITE_ONLY } from "@/lib/config/features";
-import { isAdminEmail } from "@/lib/admin/bootstrap";
+import { isAdminEmail, canSkipInviteForOnboarding } from "@/lib/admin/bootstrap";
+import { createAdminProfileForOnboarding } from "@/lib/data/signupRepository";
 import {
   INVITE_CODE_REQUIRED,
   INVITE_CODE_INVALID,
@@ -18,7 +19,7 @@ import type { UserRole, InviteValidationOutcome } from "@/lib/domain/types";
 
 const ALLOWED_ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 
-export type OnboardingResult = { error: string } | void;
+export type OnboardingResult = { error?: string; redirect?: string } | void;
 
 /** Log invite failure without exposing full code (last 4 chars only). */
 function logInviteFailure(reason: InviteValidationOutcome, codeSuffix: string): void {
@@ -53,6 +54,9 @@ export async function requestSignupAction(formData: {
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Something went wrong.";
+    if (msg.includes("not configured") || msg.includes("Server not configured")) {
+      return { errorMessage: "Signup is not configured on this server. Please contact support." };
+    }
     return { errorMessage: msg };
   }
 }
@@ -118,8 +122,19 @@ export async function submitOnboarding(formData: {
     return;
   }
 
-  let inviteCode: string;
   const authEmail = await getAuthUserEmail();
+  if (canSkipInviteForOnboarding(authEmail)) {
+    try {
+      const result = await createAdminProfileForOnboarding(authUserId, { name, bio, affiliation });
+      if ("ok" in result && result.ok) redirect("/feed");
+      return { error: "error" in result ? result.error : "Unknown error" };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      return { error: msg };
+    }
+  }
+
+  let inviteCode: string;
   if (INVITE_ONLY && !isAdminEmail(authEmail)) {
     inviteCode = (await getInviteCookie()) ?? formData.inviteCode?.trim() ?? "";
     if (!inviteCode) return { error: INVITE_CODE_REQUIRED };

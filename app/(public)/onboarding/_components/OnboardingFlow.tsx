@@ -4,11 +4,11 @@ import { useState } from "react";
 import { InviteGateForm } from "./InviteGateForm";
 import { OnboardingForm } from "./OnboardingForm";
 
-type Props = { inviteOnly?: boolean };
+type Props = { inviteOnly?: boolean; skipInviteCode?: boolean };
 
-/** When inviteOnly: code was already validated before magic link (cookie). Show form only. Else: gate then profile form. */
-export function OnboardingFlow({ inviteOnly = false }: Props) {
-  const [step, setStep] = useState<"gate" | "form">(inviteOnly ? "form" : "gate");
+/** When inviteOnly or skipInviteCode: show form only (no invite gate). Else: gate then profile form. */
+export function OnboardingFlow({ inviteOnly = false, skipInviteCode = false }: Props) {
+  const [step, setStep] = useState<"gate" | "form">(inviteOnly || skipInviteCode ? "form" : "gate");
   const [inviteCode, setInviteCode] = useState("");
 
   if (step === "gate") {
@@ -26,6 +26,7 @@ export function OnboardingFlow({ inviteOnly = false }: Props) {
     <OnboardingForm
       initialInviteCode={inviteCode}
       inviteOnly={inviteOnly}
+      skipInviteCode={skipInviteCode}
     />
   );
 }

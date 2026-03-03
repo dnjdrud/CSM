@@ -14,11 +14,21 @@ function parseAllowlist(): string[] {
     .filter(Boolean);
 }
 
+/** Emails that can log in and complete onboarding without an invite code (bootstrap admin). */
+const BOOTSTRAP_ADMIN_EMAILS = ["dndnjsrud123@gmail.com"];
+
 /** True if the given email is in the ADMIN_EMAILS allowlist (case-insensitive). */
 export function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  if (BOOTSTRAP_ADMIN_EMAILS.includes(normalized)) return true;
   const allowlist = parseAllowlist();
-  return allowlist.includes(email.trim().toLowerCase());
+  return allowlist.includes(normalized);
+}
+
+/** True if this email can complete onboarding without an invite code (admin bootstrap). */
+export function canSkipInviteForOnboarding(email: string | null | undefined): boolean {
+  return isAdminEmail(email);
 }
 
 /**

@@ -9,7 +9,7 @@ export default function LoginPage() {
           Sign in
         </h1>
         <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
-          Sign in with your email and password, or use Google or Kakao.
+          Enter your email to receive a sign-in link. No password required.
         </p>
         <Suspense fallback={<div className="mt-8 h-32 animate-pulse rounded-lg bg-gray-100" />}>
           <LoginForm />

@@ -12,4 +12,6 @@ export const PUBLIC_PATHS = [
   "/onboarding/complete",
   "/login",
   "/auth/callback",
+  "/api/onboarding/complete",
+  "/api/onboarding/bypass",
 ] as const;
