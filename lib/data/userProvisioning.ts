@@ -25,7 +25,10 @@ export async function ensureProfileForBypassEmail(params: {
   if (!email || !isOnboardingBypassEmail(email)) return;
 
   const admin = getSupabaseAdmin();
-  if (!admin) return;
+  if (!admin) {
+    console.warn("[userProvisioning] ensureProfileForBypassEmail: SUPABASE_SERVICE_ROLE_KEY not set; cannot create public.users row. Set it in .env.local so bypass login works.");
+    return;
+  }
 
   try {
     const { data: existing } = await admin.from("users").select("id").eq("id", userId).maybeSingle();
@@ -64,6 +67,16 @@ export async function ensureProfileForBypassEmail(params: {
           ignoreDuplicates: false,
         });
       }
+    }
+
+    // Final fallback: minimal row (id, name, role only) so session never fails for bypass users
+    if (result.error) {
+      const minimal: Record<string, unknown> = { id: userId, name, role };
+      const minimalResult = await admin.from("users").upsert(minimal, {
+        onConflict: "id",
+        ignoreDuplicates: false,
+      });
+      if (!minimalResult.error) result = minimalResult;
     }
 
     if (result.error) {
