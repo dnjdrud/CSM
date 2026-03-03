@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createUserWithInvite } from "@/lib/data/repository";
 import { getAuthUserId, getAuthUserEmail } from "@/lib/auth/session";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin, getMissingAdminEnv } from "@/lib/supabase/admin";
 import { validateInviteCode, validateInviteCodeForSignup } from "@/lib/data/inviteRepository";
 import { createSignupRequest } from "@/lib/data/signupRepository";
 import { isRateLimited, recordAttempt } from "@/lib/auth/inviteRateLimit";
@@ -43,6 +43,12 @@ export async function requestSignupAction(formData: {
   bio?: string | null;
   affiliation?: string | null;
 }): Promise<{ ok: true } | { errorMessage: string }> {
+  const missing = getMissingAdminEnv();
+  if (missing.length > 0) {
+    return {
+      errorMessage: `가입 기능을 사용하려면 환경 변수가 필요합니다: ${missing.join(", ")}. 프로젝트 루트의 .env.local에 추가한 뒤 개발 서버(npm run dev)를 재시작하세요. 배포 환경에서는 호스팅(예: Vercel) 환경 변수에 추가하세요.`,
+    };
+  }
   try {
     const result = await createSignupRequest(formData);
     if ("error" in result) {

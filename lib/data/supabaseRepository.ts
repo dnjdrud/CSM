@@ -119,8 +119,8 @@ export async function listFeedPosts(options: {
   if (options.scope === "FOLLOWING" && uid) {
     const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
     const followingIds = (followRows ?? []).map((r) => r.following_id);
-    if (followingIds.length === 0) return [];
-    query = query.in("author_id", followingIds);
+    const authorIds = [...new Set([uid, ...followingIds])];
+    query = query.in("author_id", authorIds);
   }
   let { data: rows, error } = await query;
   if (error && /pinned_at|column.*does not exist/i.test(String(error.message))) {
@@ -128,8 +128,8 @@ export async function listFeedPosts(options: {
     if (options.scope === "FOLLOWING" && uid) {
       const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
       const followingIds = (followRows ?? []).map((r) => r.following_id);
-      if (followingIds.length === 0) return [];
-      query = query.in("author_id", followingIds);
+      const authorIds = [...new Set([uid, ...followingIds])];
+      query = query.in("author_id", authorIds);
     }
     const next = await query;
     rows = next.data;
@@ -192,8 +192,8 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
     if (params.scope === "FOLLOWING" && uid) {
       const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
       const followingIds = (followRows ?? []).map((r) => r.following_id);
-      if (followingIds.length === 0) return { data: [], error: null };
-      q = q.in("author_id", followingIds);
+      const authorIds = [...new Set([uid, ...followingIds])];
+      q = q.in("author_id", authorIds);
     }
     if (params.cursor?.createdAt && params.cursor?.id) {
       const c = params.cursor;
@@ -280,7 +280,7 @@ export async function getPinnedPost(currentUserId: string | null): Promise<PostW
   const supabase = await supabaseServer();
   const { data: row, error } = await supabase
     .from("posts")
-    .select("id, author_id, category, content, visibility, tags, created_at, pinned_at, pinned_by, is_daily_prayer, daily_prayer_date")
+    .select("id, author_id, category, title, content, visibility, tags, created_at, pinned_at, pinned_by, is_daily_prayer, daily_prayer_date")
     .not("pinned_at", "is", null)
     .order("pinned_at", { ascending: false })
     .limit(1)

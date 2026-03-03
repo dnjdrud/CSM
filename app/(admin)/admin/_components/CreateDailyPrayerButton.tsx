@@ -17,7 +17,7 @@ export function CreateDailyPrayerButton() {
     <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
       <h3 className="text-sm font-semibold text-gray-800">Daily Prayer</h3>
       <p className="mt-1 text-sm text-gray-500">
-        Create and pin today&apos;s Daily Prayer thread to the top of the feed. Idempotent: if one already exists for today, no duplicate is created.
+        Create and pin today&apos;s Daily Prayer thread to the top of the feed. Unpins any existing pinned post first. Idempotent: if one already exists for today, no duplicate is created.
       </p>
       {result?.ok && result.reused && (
         <p className="mt-3 text-sm text-gray-600">Today&apos;s Daily Prayer is already pinned.</p>
@@ -32,11 +32,11 @@ export function CreateDailyPrayerButton() {
       )}
       <div className="mt-4">
         <DangerZoneConfirm
-          title="Create Daily Prayer (today)"
-          description="This will create a new PRAYER post with tag 'daily-prayer', pin it to the top of the feed, and unpin any existing pinned post. If a daily prayer for today already exists, nothing will change."
+          title="Create Today's Daily Prayer"
+          description="This will unpin any currently pinned post, create a new PRAYER post (MEMBERS visibility) with today's date as title, pin it to the top of the feed, and revalidate the feed. If a daily prayer for today already exists, nothing will change."
           confirmText="create daily prayer"
           onConfirm={handleConfirm}
-          buttonLabel="Create Daily Prayer (today)"
+          buttonLabel="Create Today's Daily Prayer"
         />
       </div>
     </div>

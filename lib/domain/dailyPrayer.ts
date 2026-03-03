@@ -19,20 +19,23 @@ export interface BuildDailyPrayerPostResult {
   tags: string[];
 }
 
+/** Formatted date for Daily Prayer title, e.g. "March 3, 2025". */
+export function formatDailyPrayerDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
 /**
  * Build post payload for today's Daily Prayer thread.
- * Content is calm, short, non-performative. Tags include exactly ["daily-prayer"].
+ * Content is calm, short, English community tone. Tags include exactly ["daily-prayer"].
  */
 export function buildDailyPrayerPost(input: BuildDailyPrayerPostInput = {}): BuildDailyPrayerPostResult {
   const date = input.date ?? new Date();
-  const title = `Daily Prayer — ${formatDateLabel(date)}`;
+  const formattedDate = formatDailyPrayerDate(date);
+  const title = `Daily Prayer – ${formattedDate}`;
 
-  const content = `Welcome to today's prayer thread.
-Share a prayer request, a gratitude, or a name you'd like us to lift up.
-
-• A gratitude from today
-• Someone to intercede for
-• A small step of faith you need`;
+  const content = `Take a quiet moment today.
+Share your prayer in the comments.
+Let us carry one another.`;
 
   return {
     title,

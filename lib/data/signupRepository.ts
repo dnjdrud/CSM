@@ -362,5 +362,8 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   await admin.from("approval_tokens").update({ used_at: now }).eq("token", params.token.trim());
   await admin.from("signup_requests").update({ status: "COMPLETED" }).eq("id", request.id);
 
+  const { logSignupComplete } = await import("@/lib/admin/audit");
+  await logSignupComplete(authUser.user.id, request.id, email);
+
   return { ok: true };
 }

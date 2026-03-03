@@ -77,6 +77,7 @@ export function PostCard({
   const canCommentInline = Boolean(getCommentsForPost && currentUserId != null);
   const isDailyPrayer =
     post.isDailyPrayer === true || post.tags?.some((t) => t.toLowerCase() === "daily-prayer");
+  const isTodayDailyPrayer = post.category === "PRAYER" && (post.pinnedAt != null || pinned);
   const isTestimony = post.category === "TESTIMONY";
   const shouldClamp = compact && post.content.split("\n").length > CONTENT_CLAMP_LINES;
 
@@ -158,16 +159,25 @@ export function PostCard({
       role="article"
       data-post-id={post.id}
       className={
-        pinned
-          ? "border-gray-200 bg-gray-50/30"
-          : isDailyPrayer && !isTestimony
-            ? "border-sky-200/60 bg-sky-50/20"
-            : undefined
+        isTodayDailyPrayer
+          ? "border-sky-200/70 bg-sky-50/40"
+          : pinned
+            ? "border-gray-200 bg-gray-50/30"
+            : isDailyPrayer && !isTestimony
+              ? "border-sky-200/60 bg-sky-50/20"
+              : undefined
       }
     >
       <CardContent className="py-3 px-3 sm:px-4">
-      {/* Single primary label: pinned = muted meta; testimony = badge; daily prayer = soft callout */}
-      {pinned && (
+      {/* Single primary label: today's daily prayer = badge + highlight; pinned = muted meta; testimony = badge; daily prayer = soft callout */}
+      {isTodayDailyPrayer && (
+        <div className="mb-2">
+          <span className="inline-flex items-center rounded-md bg-sky-100/80 px-2 py-0.5 text-[12px] font-medium text-sky-800">
+            Today&apos;s Daily Prayer
+          </span>
+        </div>
+      )}
+      {!isTodayDailyPrayer && pinned && (
         <p className="mb-2 text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
           Pinned by community
         </p>
@@ -177,7 +187,7 @@ export function PostCard({
           <Badge variant="testimony">Testimony</Badge>
         </div>
       )}
-      {!pinned && isDailyPrayer && !isTestimony && (
+      {!pinned && isDailyPrayer && !isTestimony && !isTodayDailyPrayer && (
         <p className="mb-2 text-[12px] text-sky-700/90">
           Daily Prayer
         </p>

@@ -30,6 +30,7 @@ export async function publishPostAction(
     visibility: "MEMBERS",
     tags,
   });
+  revalidatePath("/feed");
   redirect("/feed");
 }
 

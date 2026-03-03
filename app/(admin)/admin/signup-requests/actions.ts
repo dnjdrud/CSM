@@ -32,18 +32,35 @@ export async function approveSignupRequestAction(
   const admin = await getAdminOrNull();
   if (!admin) return { error: "Unauthorized" };
 
+  const supabase = getSupabaseAdmin();
+  if (supabase) {
+    const { data, error } = await supabase.functions.invoke("approve-signup", {
+      body: { requestId, adminUserId: admin.userId },
+    });
+    if (!error && data?.ok) {
+      await logAdminAction({
+        actorId: admin.userId,
+        action: ADMIN_ACTION.APPROVE_SIGNUP_REQUEST,
+        targetType: AUDIT_TARGET_TYPE.SIGNUP_REQUEST,
+        targetId: requestId,
+        metadata: { link: data.link },
+      });
+      return { ok: true };
+    }
+    if (error) console.error("[approveSignupRequest] approve-signup Edge function error", error);
+  }
+
   const result = await approveSignupRequest(admin.userId, requestId);
   if (!result) return { error: "Request not found or not pending." };
 
-  const link = `${APP_URL.replace(/\/$/, "")}/onboarding/complete?token=${encodeURIComponent(result.token)}`;
-  const supabase = getSupabaseAdmin();
+  const link = `${APP_URL.replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
   if (supabase) {
     const { error } = await supabase.functions.invoke("send-approval-email", {
       body: { email: result.email, link },
     });
     if (error) {
-      console.error("[approveSignupRequest] Edge function error", error);
-      return { error: "Approved but failed to send email. You can share the link manually." };
+      console.error("[approveSignupRequest] send-approval-email error", error);
+      return { error: "Approved but failed to send email. Share the link manually: " + link };
     }
   }
 

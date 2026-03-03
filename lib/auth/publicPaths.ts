@@ -10,6 +10,8 @@ export const PUBLIC_PATHS = [
   "/contact",
   "/onboarding",
   "/onboarding/complete",
+  "/request-access",
+  "/auth/complete",
   "/login",
   "/auth/callback",
   "/api/onboarding/complete",

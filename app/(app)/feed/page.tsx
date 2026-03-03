@@ -13,6 +13,7 @@ import { FeedComposer } from "./_components/FeedComposer";
 import { FeedPinnedPost } from "./_components/FeedPinnedPost";
 import { FeedList } from "./_components/FeedList";
 
+export const dynamic = "force-dynamic";
 const FEED_PAGE_SIZE = 20;
 
 export default async function FeedPage({

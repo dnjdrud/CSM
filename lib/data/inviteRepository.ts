@@ -74,42 +74,84 @@ export interface CreateInviteInput {
 
 /**
  * Create a new invite. Generates unique code; logs CREATE_INVITE.
+ * Tries full schema first; on column-not-found errors, retries with minimal columns for older DBs.
  */
 export async function createInvite(input: CreateInviteInput): Promise<InviteCode> {
   const supabase = await supabaseServer();
   let attempts = 0;
   const maxAttempts = 5;
+  const fullPayload = {
+    code: "",
+    created_by: input.adminId,
+    max_uses: input.maxUses,
+    expires_at: input.expiresAt ?? null,
+    note: input.note ?? null,
+    uses_count: 0,
+  };
+  const minimalPayload = { code: "", created_by: input.adminId };
+
   while (attempts < maxAttempts) {
     const code = generateCode();
-    const { data: inserted, error } = await supabase
+    fullPayload.code = code;
+    minimalPayload.code = code;
+
+    let result = await supabase
       .from("invite_codes")
       .insert({
-        code,
-        created_by: input.adminId,
-        max_uses: input.maxUses,
-        expires_at: input.expiresAt ?? null,
-        note: input.note ?? null,
-        uses_count: 0,
+        code: fullPayload.code,
+        created_by: fullPayload.created_by,
+        max_uses: fullPayload.max_uses,
+        expires_at: fullPayload.expires_at,
+        note: fullPayload.note,
+        uses_count: fullPayload.uses_count,
       })
       .select()
       .single();
-    if (!error && inserted) {
+
+    if (result.error && /column.*does not exist|does not exist.*column/i.test(String(result.error.message))) {
+      result = await supabase
+        .from("invite_codes")
+        .insert({ code: minimalPayload.code, created_by: minimalPayload.created_by })
+        .select()
+        .single();
+    }
+
+    if (!result.error && result.data) {
+      const inserted = result.data as Record<string, unknown>;
       await logAdminAction({
         actorId: input.adminId,
         action: ADMIN_ACTION.CREATE_INVITE,
         targetType: AUDIT_TARGET_TYPE.INVITE,
-        targetId: inserted.id,
+        targetId: inserted.id as string,
         metadata: { inviteId: inserted.id, code },
       });
-      return rowToInvite(inserted);
+      return rowToInvite(normalizeInviteRow(inserted));
     }
-    if (error?.code === "23505") {
+    if (result.error?.code === "23505") {
       attempts++;
       continue;
     }
-    throw new Error(error?.message ?? "Failed to create invite");
+    throw new Error(result.error?.message ?? "Failed to create invite");
   }
   throw new Error("Failed to generate unique invite code");
+}
+
+/** Ensure row has all fields rowToInvite expects (for minimal schema rows). */
+function normalizeInviteRow(r: Record<string, unknown>): Parameters<typeof rowToInvite>[0] {
+  return {
+    id: r.id as string,
+    code: r.code as string,
+    created_by: r.created_by as string,
+    used_by: (r.used_by as string | null) ?? null,
+    used_at: (r.used_at as string | null) ?? null,
+    created_at: (r.created_at as string | null) ?? null,
+    note: (r.note as string | null) ?? null,
+    expires_at: (r.expires_at as string | null) ?? null,
+    max_uses: typeof r.max_uses === "number" ? r.max_uses : 1,
+    uses_count: typeof r.uses_count === "number" ? r.uses_count : 0,
+    revoked_at: (r.revoked_at as string | null) ?? null,
+    revoked_by: (r.revoked_by as string | null) ?? null,
+  };
 }
 
 /**
