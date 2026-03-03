@@ -26,6 +26,11 @@ When `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set, the
 
 ### Manual steps after cloning / env setup
 
+0. **Enable email signups (Auth)**  
+   Supabase Dashboard → **Authentication** → **Providers** → **Email**  
+   - **Enable email signups** (또는 "Allow new users to sign up")를 켜야 로그인 링크·가입 요청이 동작합니다.  
+   - 꺼져 있으면 "Signup is not configured on this server" 같은 오류가 날 수 있습니다.
+
 1. **Apply SQL migrations**  
    In Supabase Dashboard → SQL Editor, run in order:
    - `supabase/migrations/20250228000000_social_tables.sql` (tables + RLS)

@@ -55,7 +55,10 @@ export async function requestSignupAction(formData: {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Something went wrong.";
     if (msg.includes("not configured") || msg.includes("Server not configured")) {
-      return { errorMessage: "Signup is not configured on this server. Please contact support." };
+      return {
+        errorMessage:
+          "가입 기능이 서버에 설정되지 않았습니다. 관리자에게 문의하세요. (서버: .env에 SUPABASE_SERVICE_ROLE_KEY 확인 / Supabase 대시보드: Authentication → Providers → Email에서 'Enable email signups' 활성화)",
+      };
     }
     return { errorMessage: msg };
   }
