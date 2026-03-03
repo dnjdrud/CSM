@@ -71,6 +71,10 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
     if (!user) return;
     try {
       const res = await fetch(UNREAD_COUNT_API);
+      const contentType = res.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        return;
+      }
       const data = await res.json();
       const count = typeof data?.count === "number" ? data.count : 0;
       if (count !== lastCountRef.current) {
@@ -78,7 +82,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
         setUnreadCount(count);
       }
     } catch {
-      // keep current count on error
+      // keep current count on error (e.g. HTML response parsed as JSON)
     }
   }, [user]);
 
