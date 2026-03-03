@@ -94,5 +94,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Exclude static assets and /api so API routes (e.g. /api/notifications/unread-count) never get redirected to HTML
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
 };
