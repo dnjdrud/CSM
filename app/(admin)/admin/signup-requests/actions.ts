@@ -50,32 +50,49 @@ export async function approveSignupRequestAction(
       revalidatePath("/admin/signups");
       return { ok: true };
     }
-    if (error) console.error("[approveSignupRequest] approve-signup Edge function error", error);
+    if (error) console.error("[approveSignupRequest] Edge function approve-signup error", error);
+  } else {
+    console.warn("[approveSignupRequest] No service role client; using repository fallback only.");
   }
 
-  const result = await approveSignupRequest(admin.userId, requestId);
-  if (!result) return { error: "Request not found or not pending." };
-
-  const link = `${APP_URL.replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
-  if (supabase) {
-    const { error } = await supabase.functions.invoke("send-approval-email", {
-      body: { email: result.email, link },
-    });
-    if (error) {
-      console.error("[approveSignupRequest] send-approval-email error", error);
-      return { error: "Approved but failed to send email. Share the link manually: " + link };
+  try {
+    const result = await approveSignupRequest(admin.userId, requestId);
+    if (!result) {
+      if (!supabase) {
+        return { error: "Server not configured. Set SUPABASE_SERVICE_ROLE_KEY in environment." };
+      }
+      return { error: "Request not found or not pending." };
     }
+
+    const link = `${APP_URL.replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
+    if (supabase) {
+      const { error } = await supabase.functions.invoke("send-approval-email", {
+        body: { email: result.email, link },
+      });
+      if (error) {
+        console.error("[approveSignupRequest] send-approval-email error", error);
+        revalidatePath("/admin/signup-requests");
+        revalidatePath("/admin/signups");
+        return { error: "Approved but failed to send email. Share the link manually: " + link };
+      }
+    }
+
+    await logAdminAction({
+      actorId: admin.userId,
+      action: ADMIN_ACTION.APPROVE_SIGNUP_REQUEST,
+      targetType: AUDIT_TARGET_TYPE.SIGNUP_REQUEST,
+      targetId: requestId,
+      metadata: { email: result.email },
+    });
+
+    revalidatePath("/admin/signup-requests");
+    revalidatePath("/admin/signups");
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[approveSignupRequest] approveSignupRequest threw", e);
+    return { error: msg };
   }
-
-  await logAdminAction({
-    actorId: admin.userId,
-    action: ADMIN_ACTION.APPROVE_SIGNUP_REQUEST,
-    targetType: AUDIT_TARGET_TYPE.SIGNUP_REQUEST,
-    targetId: requestId,
-    metadata: { email: result.email },
-  });
-
-  return { ok: true };
 }
 
 export async function rejectSignupRequestAction(

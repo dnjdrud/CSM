@@ -84,8 +84,8 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    // No code and no token_hash/type: fragment flow (e.g. access_token in hash). Send to client page.
-    const callbackPageUrl = new URL("/auth/callback", request.url);
+    // No code and no token_hash/type: fragment flow. Send to client page (hash not sent to server).
+    const callbackPageUrl = new URL("/auth/callback/session", request.url);
     requestUrl.searchParams.forEach((value, key) => {
       callbackPageUrl.searchParams.set(key, value);
     });

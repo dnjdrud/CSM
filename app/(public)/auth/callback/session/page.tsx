@@ -6,11 +6,11 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 
 /**
- * Client-only auth callback page. Handles redirects where tokens are in the URL hash
- * (fragment is not sent to the server, so route.ts cannot read them).
- * Reads hash -> setSession(access_token, refresh_token) -> redirect to /feed or /onboarding.
+ * Client-only auth callback page for hash fragment flow.
+ * Tokens in URL hash are not sent to the server; this page reads hash, setSession, then redirects.
+ * Use redirect URL https://yoursite.com/auth/callback/session for Supabase magic link / implicit flow.
  */
-export default function AuthCallbackPage() {
+export default function AuthCallbackSessionPage() {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
   const [message, setMessage] = useState<string>("Completing sign-in…");
@@ -66,7 +66,6 @@ export default function AuthCallbackPage() {
         }
       }
 
-      // No tokens and no error in hash: might be code flow that landed here, or stale link
       if (!cancelled) setMessage("No session found. Redirecting…");
       router.replace("/onboarding");
     }

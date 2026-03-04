@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { approveSignupRequestAction, rejectSignupRequestAction } from "../actions";
 import { ROLE_DISPLAY } from "@/lib/domain/types";
 import type { SignupRequest } from "@/lib/domain/types";
+import { useToast } from "@/components/ui/Toast";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -25,6 +26,7 @@ type Props = { requests: SignupRequest[] };
 
 export function SignupRequestsTable({ requests }: Props) {
   const router = useRouter();
+  const toast = useToast();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +36,13 @@ export function SignupRequestsTable({ requests }: Props) {
     setPendingId(requestId);
     const result = await approveSignupRequestAction(requestId);
     setPendingId(null);
-    if ("error" in result) setError(result.error);
-    else router.refresh();
+    if ("error" in result) {
+      setError(result.error);
+      toast.error(result.error);
+    } else {
+      toast.show("Approved. Email sent with signup link.");
+      router.refresh();
+    }
   }
 
   async function handleReject(requestId: string) {
@@ -44,8 +51,13 @@ export function SignupRequestsTable({ requests }: Props) {
     const note = rejectNote[requestId]?.trim() || undefined;
     const result = await rejectSignupRequestAction(requestId, note);
     setPendingId(null);
-    if ("error" in result) setError(result.error);
-    else router.refresh();
+    if ("error" in result) {
+      setError(result.error);
+      toast.error(result.error);
+    } else {
+      toast.show("Request rejected.");
+      router.refresh();
+    }
   }
 
   return (
