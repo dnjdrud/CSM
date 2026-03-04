@@ -88,7 +88,7 @@ export default async function FeedPage({
         {visibleItems.length === 0 && !showPinned ? (
           <EmptyState
             title="Nothing here yet"
-            description="This space is quiet for now. Share a prayer or reflection when you're ready."
+            description="No posts yet. Be the first to share."
             action={{ label: "Write a post", href: "/write" }}
           />
         ) : (

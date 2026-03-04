@@ -28,15 +28,13 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <div className="flex flex-col flex-1 min-h-0">
+        <ToastProvider>
+          <HeaderWrapper />
           <div className="flex flex-1 min-h-0 md:flex-row">
-            <ToastProvider>
-            <HeaderWrapper />
-            <main className="flex-1 min-w-0 flex justify-center" id="main-content">
+            <main className="flex flex-1 min-w-0 flex justify-center" id="main-content">
               {children}
             </main>
             <RightContextPanel />
-            </ToastProvider>
           </div>
           <footer className="shrink-0 border-t border-theme-border py-4 px-4 text-center text-sm text-theme-muted">
             <Link href="/privacy" className="hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">Privacy</Link>
@@ -45,7 +43,7 @@ export default function RootLayout({
             {" · "}
             <Link href="/contact" className="hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">Contact</Link>
           </footer>
-        </div>
+        </ToastProvider>
       </body>
     </html>
   );
