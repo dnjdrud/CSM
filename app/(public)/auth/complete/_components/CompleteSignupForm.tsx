@@ -41,7 +41,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
         </p>
 
         <form
-          action="/auth/complete"
+          action="/api/auth/complete"
           method="POST"
           className="mt-8 space-y-5"
           onSubmit={() => setPending(true)}

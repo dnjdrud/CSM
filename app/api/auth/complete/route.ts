@@ -1,5 +1,5 @@
 /**
- * POST /auth/complete — Complete signup with token, then sign user in and redirect to /feed.
+ * POST /api/auth/complete — Complete signup with token, then sign user in and redirect to /feed.
  * Form body: token, password, name, role, church?, bio?, affiliation?, username?
  * Uses service role for completion; anon client for signInWithPassword and cookie set.
  */
@@ -16,12 +16,17 @@ function parseRole(value: string | null): UserRole {
   return "LAY";
 }
 
+function baseUrl(request: Request): string {
+  const u = new URL(request.url);
+  return u.origin;
+}
+
 export async function POST(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
     return NextResponse.redirect(
-      new URL("/auth/complete?error=" + encodeURIComponent("Server not configured"), request.url)
+      baseUrl(request) + "/auth/complete?error=" + encodeURIComponent("Server not configured")
     );
   }
 
@@ -30,7 +35,7 @@ export async function POST(request: Request) {
     formData = await request.formData();
   } catch {
     return NextResponse.redirect(
-      new URL("/auth/complete?error=" + encodeURIComponent("Invalid request"), request.url)
+      baseUrl(request) + "/auth/complete?error=" + encodeURIComponent("Invalid request")
     );
   }
 
@@ -39,16 +44,16 @@ export async function POST(request: Request) {
   const name = (formData.get("name") as string)?.trim();
 
   if (!token || !password || !name) {
-    const back = new URL("/auth/complete", request.url);
+    const back = new URL("/auth/complete", baseUrl(request));
     if (token) back.searchParams.set("token", token);
     back.searchParams.set("error", encodeURIComponent("Token, password, and name are required."));
-    return NextResponse.redirect(back);
+    return NextResponse.redirect(back.toString());
   }
   if (password.length < 8) {
-    const back = new URL("/auth/complete", request.url);
+    const back = new URL("/auth/complete", baseUrl(request));
     back.searchParams.set("token", token);
     back.searchParams.set("error", encodeURIComponent("Password must be at least 8 characters."));
-    return NextResponse.redirect(back);
+    return NextResponse.redirect(back.toString());
   }
 
   const result = await consumeApprovalTokenAndCreateUser({
@@ -63,15 +68,15 @@ export async function POST(request: Request) {
   });
 
   if ("error" in result) {
-    const back = new URL("/auth/complete", request.url);
+    const back = new URL("/auth/complete", baseUrl(request));
     back.searchParams.set("token", token);
     back.searchParams.set("error", encodeURIComponent(result.error));
-    return NextResponse.redirect(back);
+    return NextResponse.redirect(back.toString());
   }
 
   const cookieStore = await cookies();
-  const redirectTo = new URL("/feed", request.url);
-  const response = NextResponse.redirect(redirectTo);
+  const redirectTo = new URL("/feed", baseUrl(request));
+  const response = NextResponse.redirect(redirectTo.toString());
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -93,9 +98,9 @@ export async function POST(request: Request) {
 
   if (signInError) {
     console.error("[auth/complete] signInWithPassword after createUser failed", signInError.message);
-    const back = new URL("/login", request.url);
+    const back = new URL("/login", baseUrl(request));
     back.searchParams.set("message", "account_created");
-    return NextResponse.redirect(back);
+    return NextResponse.redirect(back.toString());
   }
 
   return response;
