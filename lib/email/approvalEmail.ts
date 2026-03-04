@@ -1,6 +1,6 @@
 /**
  * Approval email copy and body builder. Calm, community tone.
- * Actual sending is done by Supabase Edge Function send-approval-email.
+ * Sending is done via Resend from the Next.js server (sendApprovalEmail in lib/email/send).
  */
 
 export const APPROVAL_EMAIL_SUBJECT = "Your access is approved — complete your signup";

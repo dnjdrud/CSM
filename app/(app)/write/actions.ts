@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { createPost } from "@/lib/data/repository";
+import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
 import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
 
@@ -17,6 +18,17 @@ export async function publishPostAction(
   if (!session) return { ok: false, error: "Not logged in" };
   const trimmed = content.trim();
   if (!trimmed) return { ok: false, error: "Content is required" };
+  try {
+    await assertRateLimit({
+      userId: session.userId,
+      action: "CREATE_POST",
+      maxPerMinute: 15,
+      maxPer10Min: 50,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: msg === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : msg || "Rate limit or server error" };
+  }
   const tags = tagsInput
     ? tagsInput
         .split(",")
@@ -70,6 +82,18 @@ export async function composePostAction(params: {
   }
   const trimmed = params.content.trim();
   if (!trimmed) return { ok: false, error: "Content is required" };
+  try {
+    await assertRateLimit({
+      userId: session.userId,
+      action: "CREATE_POST",
+      maxPerMinute: 15,
+      maxPer10Min: 50,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logWarn("SERVER_ACTION", "composePostAction(write) rate limit or error", { userId: session.userId, rawMessage: msg });
+    return { ok: false, error: msg === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : msg || "Rate limit or server error" };
+  }
   const tags = params.tags
     ? [...new Set(params.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5)
     : [];

@@ -94,7 +94,12 @@ export async function composePostAction(params: {
   const trimmed = params.content.trim();
   if (!trimmed) return { ok: false, error: "Content is required" };
   try {
-    await assertRateLimit({ userId: session.userId, action: "CREATE_POST" });
+    await assertRateLimit({
+      userId: session.userId,
+      action: "CREATE_POST",
+      maxPerMinute: 15,
+      maxPer10Min: 50,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     logWarn("SERVER_ACTION", "composePostAction(feed) rate limit or error", {

@@ -12,6 +12,7 @@ import {
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { sendApprovalEmail } from "@/lib/email/send";
+import { logError } from "@/lib/logging/systemLogger";
 import type { SignupRequestStatus } from "@/lib/domain/types";
 
 const APP_URL =
@@ -31,10 +32,10 @@ export async function listSignupRequestsAction(
   return { requests };
 }
 
-/** Approve: DB update + token 생성은 관리자 세션(RLS)으로 항상 수행. 이메일은 선택(실패해도 승인 성공). */
+/** Approve: DB update + token 생성은 관리자 세션(RLS)으로 항상 수행. 이메일 실패 시 emailError 반환. */
 export async function approveSignupRequestAction(
   requestId: string
-): Promise<{ ok: true; link?: string } | { error: string }> {
+): Promise<{ ok: true; link?: string; emailError?: string } | { error: string }> {
   const admin = await getAdminOrNull();
   if (!admin) return { error: "Unauthorized" };
 
@@ -47,11 +48,18 @@ export async function approveSignupRequestAction(
     }
 
     const completionUrl = `${String(APP_URL).replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
+    let emailError: string | undefined;
 
     try {
       await sendApprovalEmail(result.email, completionUrl);
     } catch (e) {
-      console.error("[approveSignupRequest] sendApprovalEmail error", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      emailError = msg;
+      logError("SERVER_ACTION", "[approveSignupRequest] sendApprovalEmail failed", {
+        requestId,
+        email: result.email,
+        error: msg,
+      });
     }
 
     await logAdminAction({
@@ -64,7 +72,7 @@ export async function approveSignupRequestAction(
 
     revalidatePath("/admin/signup-requests");
     revalidatePath("/admin/signups");
-    return { ok: true, link: completionUrl };
+    return { ok: true, link: completionUrl, emailError };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[approveSignupRequest] threw", e);

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { supabaseBrowser } from "@/lib/supabase/client";
 
+/** Login magic link is sent via Resend (POST /api/auth/magic-link), not Supabase Auth. */
 export function LoginForm() {
   const searchParams = useSearchParams();
   const message = searchParams.get("message");
@@ -20,16 +20,15 @@ export function LoginForm() {
     if (!trimmed || pending) return;
     setPending(true);
     setError(null);
-    const redirectTo = typeof window !== "undefined"
-      ? `${window.location.origin}/auth/callback`
-      : undefined;
-    const { error: err } = await supabaseBrowser().auth.signInWithOtp({
-      email: trimmed,
-      options: { emailRedirectTo: redirectTo },
+    const res = await fetch("/api/auth/magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: trimmed }),
     });
+    const data = await res.json().catch(() => ({}));
     setPending(false);
-    if (err) {
-      setError(err.message);
+    if (!res.ok) {
+      setError(typeof data?.error === "string" ? data.error : "Failed to send sign-in link.");
       return;
     }
     setSent(true);

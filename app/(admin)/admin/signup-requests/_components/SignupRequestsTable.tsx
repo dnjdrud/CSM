@@ -40,7 +40,11 @@ export function SignupRequestsTable({ requests }: Props) {
       setError(result.error);
       toast.error(result.error);
     } else {
-      toast.show("Approved. Email sent with signup link.");
+      if (result.emailError) {
+        toast.error(`Approved, but email failed: ${result.emailError}`);
+      } else {
+        toast.show("Approved. Email sent with signup link.");
+      }
       router.refresh();
     }
   }

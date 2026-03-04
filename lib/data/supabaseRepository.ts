@@ -28,6 +28,7 @@ import type {
   NoteType,
 } from "@/lib/domain/types";
 import { supabaseServer } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { tokenize, sortByScore } from "@/lib/search";
 
 const SEARCH_MAX = 30;
@@ -93,10 +94,15 @@ function placeholderUser(id: string): User {
   };
 }
 
+/**
+ * Resolve user rows by id for author display. Uses admin client when available so that
+ * RLS (users_select_own_or_admin) does not hide other users — otherwise viewers would see "Unknown" for post authors.
+ */
 async function getAuthorMap(supabase: Awaited<ReturnType<typeof supabaseServer>>, ids: string[]): Promise<Map<string, User>> {
   if (ids.length === 0) return new Map();
+  const client = getSupabaseAdmin() ?? supabase;
   try {
-    const { data, error } = await supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at").in("id", ids);
+    const { data, error } = await client.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at").in("id", ids);
     if (error) {
       console.warn("[getAuthorMap] users select failed:", error.message);
       return new Map(ids.map((id) => [id, placeholderUser(id)]));
