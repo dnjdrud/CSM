@@ -30,8 +30,8 @@ export async function GET(request: Request) {
 
   const { getBaseUrlForLinks } = await import("@/lib/url/site");
   const baseUrl = getBaseUrlForLinks(request);
-  // Supabase appends tokens in URL hash; only /auth/callback/session reads hash and sets session.
-  const redirectTo = `${baseUrl}/auth/callback/session?next=/feed`;
+  // Plain HTML callback at /auth/callback/hash parses hash and sets session without React (more reliable).
+  const redirectTo = `${baseUrl}/auth/callback/hash?next=/feed`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",

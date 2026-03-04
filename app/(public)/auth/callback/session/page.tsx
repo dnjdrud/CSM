@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
@@ -9,23 +9,27 @@ import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 /**
  * Client-only auth callback page for hash fragment flow.
  * Tokens in URL hash are not sent to the server; this page reads hash, setSession, then redirects.
- * Use redirect URL https://yoursite.com/auth/callback/session for Supabase magic link / implicit flow.
- * Supports ?next=/path for post-login redirect (default /feed).
+ * Does not use useSearchParams to avoid suspend and mount delay; reads next from window.location.search in effect.
  */
 export default function AuthCallbackSessionPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/feed";
-  const safeNext = nextPath.startsWith("/") ? nextPath : "/feed";
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
   const [message, setMessage] = useState<string>("");
+  const [nextPath, setNextPath] = useState("/feed");
   const redirectDone = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
-      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      if (typeof window === "undefined") return;
+      const hash = window.location.hash || "";
+      const search = window.location.search || "";
+      const params = new URLSearchParams(search);
+      const next = params.get("next") ?? "/feed";
+      const safeNext = next.startsWith("/") ? next : "/feed";
+      setNextPath(safeNext);
+
       const { access_token, refresh_token, error: hashError, error_description } = getTokensFromHash(hash);
       const allHash = parseHashParams(hash);
       const errorCode = allHash.error_code ?? null;
@@ -60,9 +64,8 @@ export default function AuthCallbackSessionPage() {
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
-          // Brief delay so cookies are persisted before full-page navigation.
-          await new Promise((r) => setTimeout(r, 150));
-          if (typeof window !== "undefined") window.location.replace(safeNext);
+          await new Promise((r) => setTimeout(r, 200));
+          if (!cancelled && typeof window !== "undefined") window.location.href = safeNext;
           return;
         } catch (e) {
           if (!cancelled) {
@@ -84,7 +87,7 @@ export default function AuthCallbackSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, safeNext]);
+  }, [router]);
 
   if (status === "error") {
     return (
@@ -100,7 +103,7 @@ export default function AuthCallbackSessionPage() {
       <p className="text-[15px] text-theme-text">{message || "Signing you in…"}</p>
       <p className="mt-4 text-sm text-theme-muted">
         If you are not redirected,{" "}
-        <Link href={safeNext} className="text-theme-primary underline hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+        <Link href={nextPath} className="text-theme-primary underline hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
           click here to continue
         </Link>
         .
