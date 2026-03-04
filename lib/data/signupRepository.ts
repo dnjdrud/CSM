@@ -289,7 +289,63 @@ export async function createAdminProfileForOnboarding(
   return { ok: true };
 }
 
-/** Consume token, create Auth user, insert public.users, mark token and request COMPLETED. */
+/**
+ * Atomically reserve token: set used_at only if used_at is null and expires_at > now.
+ * Returns request data for that token or null if already used/expired/invalid.
+ * Uses service role only.
+ */
+async function reserveApprovalToken(
+  admin: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  token: string
+): Promise<{ request: SignupRequest } | null> {
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+
+  const now = new Date().toISOString();
+
+  const { data: tokenRow } = await admin
+    .from("approval_tokens")
+    .select("id, request_id, expires_at")
+    .eq("token", trimmed)
+    .is("used_at", null)
+    .gt("expires_at", now)
+    .maybeSingle();
+
+  if (!tokenRow) return null;
+
+  const { data: updated } = await admin
+    .from("approval_tokens")
+    .update({ used_at: now })
+    .eq("id", tokenRow.id)
+    .is("used_at", null)
+    .select("request_id")
+    .maybeSingle();
+
+  if (!updated) return null;
+
+  const { data: reqRow } = await admin
+    .from("signup_requests")
+    .select("id, email, name, role, church, bio, affiliation, status, created_at, reviewed_at, reviewed_by, review_note")
+    .eq("id", updated.request_id)
+    .eq("status", "APPROVED")
+    .single();
+
+  if (!reqRow) return null;
+  return { request: rowToRequest(reqRow) };
+}
+
+/** Clear used_at on a token (best-effort rollback if auth creation fails). */
+async function clearTokenUsedAt(
+  admin: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  token: string
+): Promise<void> {
+  await admin.from("approval_tokens").update({ used_at: null }).eq("token", token.trim());
+}
+
+/**
+ * Consume token, create Auth user, upsert public.users, mark request COMPLETED.
+ * Uses service role only. Returns email on success so caller can sign user in.
+ */
 export async function consumeApprovalTokenAndCreateUser(params: {
   token: string;
   password: string;
@@ -299,14 +355,14 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   church?: string | null;
   bio?: string | null;
   affiliation?: string | null;
-}): Promise<{ ok: true } | { error: string }> {
+}): Promise<{ ok: true; email: string } | { error: string }> {
   const admin = getSupabaseAdmin();
   if (!admin) return { error: "Server not configured" };
 
-  const verified = await verifyApprovalToken(params.token);
-  if (!verified) return { error: "This link is invalid or expired." };
+  const reserved = await reserveApprovalToken(admin, params.token);
+  if (!reserved) return { error: "This link is invalid or expired." };
 
-  const { request } = verified;
+  const { request } = reserved;
   const email = request.email.trim().toLowerCase();
   const password = params.password.trim();
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
@@ -325,12 +381,17 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   });
 
   if (createError) {
-    if (createError.message.includes("already been registered")) return { error: "This email is already registered. Please sign in." };
+    await clearTokenUsedAt(admin, params.token);
+    if (createError.message.includes("already been registered"))
+      return { error: "This email is already registered. Please sign in." };
     return { error: createError.message };
   }
-  if (!authUser?.user?.id) return { error: "Failed to create account." };
+  if (!authUser?.user?.id) {
+    await clearTokenUsedAt(admin, params.token);
+    return { error: "Failed to create account." };
+  }
 
-  const { error: userInsertErr } = await admin.from("users").insert({
+  const userRow = {
     id: authUser.user.id,
     name,
     role,
@@ -338,19 +399,27 @@ export async function consumeApprovalTokenAndCreateUser(params: {
     bio,
     affiliation,
     username: username || null,
+  };
+
+  const { error: userUpsertErr } = await admin.from("users").upsert(userRow, {
+    onConflict: "id",
+    ignoreDuplicates: false,
   });
 
-  if (userInsertErr) {
+  if (userUpsertErr) {
     await admin.auth.admin.deleteUser(authUser.user.id);
-    return { error: userInsertErr.message };
+    await clearTokenUsedAt(admin, params.token);
+    return { error: userUpsertErr.message };
   }
 
   const now = new Date().toISOString();
-  await admin.from("approval_tokens").update({ used_at: now }).eq("token", params.token.trim());
-  await admin.from("signup_requests").update({ status: "COMPLETED" }).eq("id", request.id);
+  await admin.from("signup_requests").update({
+    status: "COMPLETED",
+    reviewed_at: now,
+  }).eq("id", request.id);
 
   const { logSignupComplete } = await import("@/lib/admin/audit");
   await logSignupComplete(authUser.user.id, request.id, email);
 
-  return { ok: true };
+  return { ok: true, email };
 }

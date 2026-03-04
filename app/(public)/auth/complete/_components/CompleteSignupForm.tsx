@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { completeSignupAction } from "../actions";
+import { useState, useEffect } from "react";
 import { ROLE_DISPLAY, type UserRole, type SignupRequest } from "@/lib/domain/types";
 
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const ROLE_OPTIONS = ROLES.map((value) => ({ value, label: ROLE_DISPLAY[value] }));
 
-type Props = { token: string; request: SignupRequest };
+type Props = { token: string; request: SignupRequest; initialError?: string | null };
 
-export function CompleteSignupForm({ token, request }: Props) {
+export function CompleteSignupForm({ token, request, initialError }: Props) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -19,32 +18,17 @@ export function CompleteSignupForm({ token, request }: Props) {
   const [bio, setBio] = useState(request.bio ?? "");
   const [affiliation, setAffiliation] = useState(request.affiliation ?? "");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
+
+  useEffect(() => {
+    if (initialError) setError(initialError);
+  }, [initialError]);
 
   const canSubmit =
     password.length >= 8 &&
     password === confirmPassword &&
     name.trim().length > 0 &&
     !pending;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setPending(true);
-    setError(null);
-    const result = await completeSignupAction({
-      token,
-      password,
-      username: username.trim() || undefined,
-      name: name.trim(),
-      role,
-      church: church.trim() || undefined,
-      bio: bio.trim() || undefined,
-      affiliation: affiliation.trim() || undefined,
-    });
-    setPending(false);
-    if ("error" in result) setError(result.error);
-  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">
@@ -53,10 +37,16 @@ export function CompleteSignupForm({ token, request }: Props) {
           Complete signup
         </h1>
         <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
-          Set your password and confirm your profile. You’ll be able to sign in with email and password after this.
+          Set your password and confirm your profile. You’ll be signed in and taken to the feed when done.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        <form
+          action="/auth/complete"
+          method="POST"
+          className="mt-8 space-y-5"
+          onSubmit={() => setPending(true)}
+        >
+          <input type="hidden" name="token" value={token} />
           <div>
             <label className="block text-sm font-medium text-gray-800">Email</label>
             <p className="mt-1 text-[15px] text-gray-700">{request.email}</p>
@@ -68,6 +58,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             </label>
             <input
               id="username"
+              name="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -83,6 +74,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             </label>
             <input
               id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -119,6 +111,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             </label>
             <input
               id="name"
+              name="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -130,6 +123,7 @@ export function CompleteSignupForm({ token, request }: Props) {
           <div>
             <label className="block text-sm font-medium text-gray-800">Role</label>
             <select
+              name="role"
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
               className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
@@ -148,6 +142,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             </label>
             <input
               id="church"
+              name="church"
               type="text"
               value={church}
               onChange={(e) => setChurch(e.target.value)}
@@ -161,6 +156,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             </label>
             <textarea
               id="bio"
+              name="bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={3}
@@ -174,6 +170,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             </label>
             <input
               id="affiliation"
+              name="affiliation"
               type="text"
               value={affiliation}
               onChange={(e) => setAffiliation(e.target.value)}
@@ -197,6 +194,9 @@ export function CompleteSignupForm({ token, request }: Props) {
             </button>
           </div>
         </form>
+        <p className="mt-4 text-sm text-gray-500">
+          After completing signup you’ll be signed in and taken to the feed.
+        </p>
       </div>
     </div>
   );

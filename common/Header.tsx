@@ -164,7 +164,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                 <span className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
                   {user.name || "Welcome"}
                 </span>
-                <Link href="/me" className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+                <Link href={user ? `/profile/${user.id}` : "/me"} className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                   Profile
                 </Link>
                 {isAdmin && (
@@ -247,7 +247,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               <p className="text-[15px] font-medium text-theme-primary">
                 {user.name ? `${user.name}, welcome` : "Welcome"}
               </p>
-              <Link href="/me" className="block text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+              <Link href={user ? `/profile/${user.id}` : "/me"} className="block text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                 My profile
               </Link>
               {isAdmin && (

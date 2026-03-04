@@ -2,7 +2,7 @@ import Link from "next/link";
 import { verifyApprovalToken } from "@/lib/data/signupRepository";
 import { CompleteSignupForm } from "./_components/CompleteSignupForm";
 
-type Props = { searchParams: Promise<{ token?: string }> };
+type Props = { searchParams: Promise<{ token?: string; error?: string }> };
 
 export const metadata = {
   title: "Complete signup — CSM",
@@ -10,8 +10,9 @@ export const metadata = {
 };
 
 export default async function AuthCompletePage({ searchParams }: Props) {
-  const { token } = await searchParams;
+  const { token, error: errorParam } = await searchParams;
   const verified = token ? await verifyApprovalToken(token) : null;
+  const initialError = typeof errorParam === "string" ? decodeURIComponent(errorParam) : null;
 
   if (!verified) {
     return (
@@ -47,6 +48,7 @@ export default async function AuthCompletePage({ searchParams }: Props) {
     <CompleteSignupForm
       token={token!}
       request={verified.request}
+      initialError={initialError}
     />
   );
 }
