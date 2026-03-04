@@ -103,12 +103,34 @@ function rowToPost(r: {
   };
 }
 
+/** Placeholder user when users table select fails (e.g. RLS) so feed still returns posts. */
+function placeholderUser(id: string): User {
+  return {
+    id,
+    name: "Unknown",
+    role: "LAY",
+    createdAt: new Date().toISOString(),
+  };
+}
+
 async function getAuthorMap(supabase: Awaited<ReturnType<typeof supabaseServer>>, ids: string[]): Promise<Map<string, User>> {
   if (ids.length === 0) return new Map();
-  const { data } = await supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at").in("id", ids);
-  const map = new Map<string, User>();
-  (data ?? []).forEach((r) => map.set(r.id, rowToUser(r)));
-  return map;
+  try {
+    const { data, error } = await supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at").in("id", ids);
+    if (error) {
+      console.warn("[getAuthorMap] users select failed:", error.message);
+      return new Map(ids.map((id) => [id, placeholderUser(id)]));
+    }
+    const map = new Map<string, User>();
+    (data ?? []).forEach((r) => map.set(r.id, rowToUser(r)));
+    ids.forEach((id) => {
+      if (!map.has(id)) map.set(id, placeholderUser(id));
+    });
+    return map;
+  } catch (e) {
+    console.warn("[getAuthorMap] error:", e);
+    return new Map(ids.map((id) => [id, placeholderUser(id)]));
+  }
 }
 
 /** Fetch reaction counts per post in one query. Returns map postId -> { prayed, withYou }. */
@@ -138,9 +160,9 @@ export async function listFeedPosts(options: {
 }): Promise<PostWithAuthor[]> {
   const supabase = await supabaseServer();
   const uid = options.currentUserId ?? null;
-  const usePinned = hasPinnedColumns !== false;
+  const usePinned = hasPinnedColumns === true;
   const useHidden = hasHiddenAtColumn !== false;
-  let queryPath = "pinned";
+  let queryPath = "no_pinned";
 
   let authorIdsForFollowing: string[] | null = null;
   if (options.scope === "FOLLOWING" && uid) {
@@ -223,22 +245,16 @@ export async function listFeedPosts(options: {
       withYou: userReactions.some((r) => r.type === "WITH_YOU"),
     });
   });
-  return rows
-    .map((r) => {
-      const post = rowToPost(r);
-      const author = authorMap.get(r.author_id);
-      if (!author) {
-        console.warn("[listFeedPosts] missing author for post", { postId: r.id, author_id: r.author_id, queryPath });
-        return null;
-      }
-      return {
-        ...post,
-        author,
-        reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-        reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-      } as PostWithAuthor;
-    })
-    .filter((x): x is PostWithAuthor => x != null);
+  return rows.map((r) => {
+    const post = rowToPost(r);
+    const author = authorMap.get(r.author_id) ?? placeholderUser(r.author_id);
+    return {
+      ...post,
+      author,
+      reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
+      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+    } as PostWithAuthor;
+  });
 }
 
 export type ListFeedPostsPageParams = {
@@ -281,8 +297,8 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
     return await q;
   };
 
-  let queryPath = "pinned";
-  const usePinned = hasPinnedColumns !== false;
+  let queryPath = "no_pinned";
+  const usePinned = hasPinnedColumns === true;
   let { data: rows, error } = await runQuery(usePinned);
   if (error && isHiddenAtError(error.message)) {
     hasHiddenAtColumn = false;
@@ -351,22 +367,16 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
       withYou: userReactions.some((r) => r.type === "WITH_YOU"),
     });
   });
-  const items = pageRows
-    .map((r) => {
-      const post = rowToPost(r);
-      const author = authorMap.get(r.author_id);
-      if (!author) {
-        console.warn("[listFeedPostsPage] missing author for post", { postId: r.id, author_id: r.author_id, queryPath });
-        return null;
-      }
-      return {
-        ...post,
-        author,
-        reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-        reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-      } as PostWithAuthor;
-    })
-    .filter((x): x is PostWithAuthor => x != null);
+  const items = pageRows.map((r) => {
+    const post = rowToPost(r);
+    const author = authorMap.get(r.author_id) ?? placeholderUser(r.author_id);
+    return {
+      ...post,
+      author,
+      reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
+      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+    } as PostWithAuthor;
+  });
 
   const nextCursor: { createdAt: string; id: string } | null =
     hasMore && pageRows.length > 0
