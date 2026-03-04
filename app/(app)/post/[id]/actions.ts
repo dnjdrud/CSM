@@ -27,17 +27,26 @@ export async function addCommentAction(
     return { ok: false, error: e instanceof Error && e.message === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : "Failed to add comment" };
   }
   try {
-    await addComment({
+    const payload = {
       postId,
       authorId: session.userId,
       content: trimmed,
       parentId: parentId || undefined,
-    });
+    };
+    console.log("[addCommentAction] insert payload", payload);
+    await addComment(payload);
     revalidatePath(`/post/${postId}`);
     revalidatePath("/feed");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Failed to add comment" };
+    console.error(
+      "[addCommentAction] supabase error",
+      e instanceof Error ? e.message : e
+    );
+    return {
+      ok: false,
+      error: e instanceof Error && e.message ? e.message : "Failed to add comment",
+    };
   }
 }
 

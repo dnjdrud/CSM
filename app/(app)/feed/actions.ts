@@ -117,17 +117,26 @@ export async function addCommentAction(
   }
   const { addComment } = await import("@/lib/data/repository");
   try {
-    await addComment({
+    const payload = {
       postId,
       authorId: session.userId,
       content: trimmed,
       parentId: parentId || undefined,
-    });
+    };
+    console.log("[addCommentAction] insert payload", payload);
+    await addComment(payload);
     revalidatePath(`/post/${postId}`);
     revalidatePath("/feed");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Failed to add comment" };
+    console.error(
+      "[addCommentAction] supabase error",
+      e instanceof Error ? e.message : e
+    );
+    return {
+      ok: false,
+      error: e instanceof Error && e.message ? e.message : "Failed to add comment",
+    };
   }
 }
 

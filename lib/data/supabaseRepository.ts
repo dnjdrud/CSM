@@ -442,20 +442,30 @@ export async function addComment(input: {
   const supabase = await supabaseServer();
   let parentId: string | undefined;
   if (input.parentId) {
-    const { data: parent } = await supabase.from("comments").select("id, parent_id").eq("id", input.parentId).eq("post_id", input.postId).single();
+    const { data: parent } = await supabase
+      .from("comments")
+      .select("id, parent_id")
+      .eq("id", input.parentId)
+      .eq("post_id", input.postId)
+      .single();
     if (parent && !parent.parent_id) parentId = parent.id;
   }
+  const payload = {
+    post_id: input.postId,
+    author_id: input.authorId,
+    content: input.content.trim(),
+    parent_id: parentId ?? null,
+  };
   const { data: row, error } = await supabase
     .from("comments")
-    .insert({
-      post_id: input.postId,
-      author_id: input.authorId,
-      content: input.content.trim(),
-      parent_id: parentId ?? null,
-    })
+    .insert(payload)
     .select("id, post_id, author_id, content, parent_id, created_at")
     .single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    // Surface exact Supabase error and payload for debugging (RLS, schema, etc.)
+    console.error("[addComment] supabase error", error.message, "payload", payload);
+    throw new Error(error.message);
+  }
   const postRow = await supabase.from("posts").select("author_id").eq("id", input.postId).single();
   if (postRow.data && postRow.data.author_id !== input.authorId) {
     const { notifyCommented } = await import("@/lib/notifications/events");
