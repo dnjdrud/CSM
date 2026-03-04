@@ -11,6 +11,22 @@
 | `NEXT_PUBLIC_SITE_URL` | 사이트 기준 URL (링크 생성용, 예: `https://cellah.co.kr`) |
 | `TOKEN_HMAC_SECRET` | (선택) 토큰 HMAC salt. 미설정 시 기본값 사용. 프로덕션에서는 설정 권장. |
 
+### 매직 링크 클릭 시 Vercel 로그인으로 빠질 때
+
+이메일 안의 링크가 `https://xxx.vercel.app/...` 이면, Vercel 배포 보호 때문에 Vercel 로그인 페이지로 리다이렉트될 수 있습니다.  
+**해결**: Vercel에서 `NEXT_PUBLIC_SITE_URL` 을 **커스텀 도메인**으로 설정하세요.
+
+- Vercel → 프로젝트 → **Settings** → **Environment Variables**
+- `NEXT_PUBLIC_SITE_URL` = `https://cellah.co.kr` (실제 서비스 도메인, 끝에 `/` 없이)
+- 해당 도메인을 프로젝트 **Domains**에 추가한 뒤 **Redeploy**
+
+이후 발송되는 매직 링크는 `https://cellah.co.kr/auth/verify-magic?...` 형태가 되어, 클릭 시 앱으로 바로 들어갑니다.
+
+### "RESEND_API_KEY is not set" 나올 때
+
+- **로컬**: 프로젝트 루트의 `.env.local`에 `RESEND_API_KEY`, `EMAIL_FROM` 추가 후 **dev 서버 재시작** (`npm run dev` 다시 실행).
+- **Vercel**: [Vercel 대시보드](https://vercel.com) → 해당 프로젝트 → **Settings** → **Environment Variables** → **Add** 로 `RESEND_API_KEY`, `EMAIL_FROM` 추가 (Production/Preview/Development 원하는 환경 선택) → **Redeploy** 한 번 실행.
+
 ## 발송 동작
 
 - **개발**: 콘솔에 수신자·제목 로그 출력 후 실제 발송 (개발에서도 발송 가능).

@@ -48,7 +48,10 @@ export async function sendEmail(params: SendEmailParams): Promise<void> {
   });
 
   if (!client) {
-    const msg = `RESEND_API_KEY is not set. Set it in .env.local (local) or in Vercel Environment Variables (production).`;
+    const msg =
+      "RESEND_API_KEY is not set. " +
+      "Local: add RESEND_API_KEY and EMAIL_FROM to .env.local and restart the dev server. " +
+      "Vercel: Project → Settings → Environment Variables → add RESEND_API_KEY and EMAIL_FROM, then redeploy.";
     logError("SERVER_ACTION", "[Resend] " + msg, { to: toArray, subject });
     throw new Error(msg);
   }
