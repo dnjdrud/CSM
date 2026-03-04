@@ -17,7 +17,7 @@ export default function AuthCallbackSessionPage() {
   const nextPath = searchParams.get("next") ?? "/feed";
   const safeNext = nextPath.startsWith("/") ? nextPath : "/feed";
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
-  const [message, setMessage] = useState<string>("Completing sign-in…");
+  const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -54,9 +54,8 @@ export default function AuthCallbackSessionPage() {
             router.replace(redirectTo.pathname + redirectTo.search);
             return;
           }
-          setMessage("Redirecting…");
           setStatus("done");
-          // Full page navigation so the next request includes the new session cookies (avoids RSC request without cookies).
+          // Full page navigation so the next request includes the new session cookies.
           window.location.replace(safeNext);
           return;
         } catch (e) {
@@ -71,7 +70,7 @@ export default function AuthCallbackSessionPage() {
         }
       }
 
-      if (!cancelled) setMessage("No session found. Redirecting…");
+      if (!cancelled) setStatus("done");
       router.replace("/onboarding");
     }
 
@@ -81,16 +80,13 @@ export default function AuthCallbackSessionPage() {
     };
   }, [router]);
 
-  return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
-      <p className="text-[15px] text-gray-600" aria-live="polite">
-        {message}
-      </p>
-      {status === "error" && (
-        <p className="mt-2 text-sm text-red-600">
-          You can try again from the sign-in page.
-        </p>
-      )}
-    </div>
-  );
+  if (status === "error") {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4">
+        <p className="text-[15px] text-gray-600" aria-live="polite">{message}</p>
+        <p className="mt-2 text-sm text-red-600">You can try again from the sign-in page.</p>
+      </div>
+    );
+  }
+  return null;
 }

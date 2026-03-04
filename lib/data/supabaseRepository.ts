@@ -655,13 +655,15 @@ export async function searchPosts(params: {
   return sorted.slice(0, SEARCH_MAX);
 }
 
+/** All authenticated users can search all (active) users. Uses admin client so RLS does not restrict to own row. */
 export async function searchPeople(params: { q: string; viewerId: string }): Promise<User[]> {
   const tokens = tokenize(params.q);
-  if (tokens.length === 0) return [];
-  const supabase = await supabaseServer();
-  const { data: rows } = await supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at");
+  const client = getSupabaseAdmin() ?? (await supabaseServer());
+  const { data: rows } = await client.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at");
   if (!rows?.length) return [];
-  const users = rows.map((r) => rowToUser(r));
+  const active = rows.filter((r: { deactivated_at?: string | null }) => !r.deactivated_at);
+  const users = active.map((r) => rowToUser(r));
+  if (tokens.length === 0) return users.slice(0, SEARCH_MAX);
   const getSearchText = (u: User) => [u.name, u.affiliation ?? "", u.bio ?? ""].join(" ");
   return sortByScore(users, getSearchText, tokens).slice(0, SEARCH_MAX);
 }
@@ -775,18 +777,18 @@ function isColumnError(msg: string): boolean {
   return /column.*does not exist|does not exist.*column|42703/i.test(String(msg));
 }
 
-/** Returns user and optional error message for profile/error UI. Tries full select, then minimal if deactivated_at missing. */
+/** Returns user and optional error message for profile/error UI. Uses admin client so any user can view any profile (RLS allows only own or admin; profile page should show admins too). */
 export async function getUserByIdWithError(id: string): Promise<{ user: User | null; errorMessage: string | null }> {
-  const supabase = await supabaseServer();
+  const client = getSupabaseAdmin() ?? (await supabaseServer());
   let data: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null } | null;
   let error: Error | null = null;
-  const full = await supabase.from("users").select(USERS_SELECT_FULL).eq("id", id).single();
+  const full = await client.from("users").select(USERS_SELECT_FULL).eq("id", id).maybeSingle();
   data = full.data as typeof data;
-  error = full.error;
+  error = full.error as Error | null;
   if (error && isColumnError(error.message)) {
-    const fallback = await supabase.from("users").select(USERS_SELECT_MINIMAL).eq("id", id).single();
+    const fallback = await client.from("users").select(USERS_SELECT_MINIMAL).eq("id", id).maybeSingle();
     data = fallback.data ? { ...fallback.data, deactivated_at: null } : null;
-    error = fallback.error;
+    error = fallback.error as Error | null;
   }
   if (error) return { user: null, errorMessage: error.message };
   if (!data) return { user: null, errorMessage: "No row returned" };
