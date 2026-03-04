@@ -7,11 +7,6 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
 import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 
-async function getApprovalInviteCodeId(admin: NonNullable<ReturnType<typeof getSupabaseAdmin>>): Promise<string | null> {
-  const { data } = await admin.from("invite_codes").select("id").eq("code", "APPROVAL").maybeSingle();
-  return data?.id ?? null;
-}
-
 /**
  * If the authenticated user's email is in the bypass allowlist and they have no public.users row,
  * insert one (idempotent). Role = ADMIN if in ADMIN_EMAILS, else LAY.
@@ -37,7 +32,6 @@ export async function ensureProfileForBypassEmail(params: {
     const name = email.includes("@") ? email.split("@")[0] || "Admin" : "Admin";
     const role = isAdminEmail(email) ? "ADMIN" : "LAY";
 
-    // Admin/bypass: only id, name, role required for login; all other profile fields null
     const row: Record<string, unknown> = {
       id: userId,
       name,
@@ -48,9 +42,6 @@ export async function ensureProfileForBypassEmail(params: {
       church: null,
     };
 
-    const inviteCodeId = await getApprovalInviteCodeId(admin);
-    if (inviteCodeId) row.invite_code_id = inviteCodeId;
-
     let result = await admin.from("users").upsert(row, {
       onConflict: "id",
       ignoreDuplicates: false,
@@ -59,7 +50,6 @@ export async function ensureProfileForBypassEmail(params: {
     if (result.error) {
       const msg = result.error.message || "";
       if (msg.includes("invite_code_id") || msg.includes("column")) {
-        delete row.invite_code_id;
         delete row.username;
         delete row.church;
         result = await admin.from("users").upsert(row, {
@@ -69,7 +59,6 @@ export async function ensureProfileForBypassEmail(params: {
       }
     }
 
-    // Final fallback: minimal row (id, name, role only) so session never fails for bypass users
     if (result.error) {
       const minimal: Record<string, unknown> = { id: userId, name, role };
       const minimalResult = await admin.from("users").upsert(minimal, {

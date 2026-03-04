@@ -1,2 +1,0 @@
-/** Invites route helpers. */
-export {};

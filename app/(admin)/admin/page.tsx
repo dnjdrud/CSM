@@ -48,18 +48,6 @@ export default async function AdminDashboardPage() {
             <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.activeUsersLast7d}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm font-medium text-neutral-500">Active invites</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.activeInvitesCount}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm font-medium text-neutral-500">Invites used (today)</p>
-            <p className="mt-1 text-2xl font-semibold text-gray-900">{stats.invitesUsedToday}</p>
-          </CardContent>
-        </Card>
       </div>
 
       <p className="mt-4 text-xs text-gray-500">

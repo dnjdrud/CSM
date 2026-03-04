@@ -1,32 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { InviteGateForm } from "./InviteGateForm";
-import { OnboardingForm } from "./OnboardingForm";
+import { RequestAccessForm } from "./RequestAccessForm";
 
-type Props = { inviteOnly?: boolean; skipInviteCode?: boolean };
-
-/** When inviteOnly or skipInviteCode: show form only (no invite gate). Else: gate then profile form. */
-export function OnboardingFlow({ inviteOnly = false, skipInviteCode = false }: Props) {
-  const [step, setStep] = useState<"gate" | "form">(inviteOnly || skipInviteCode ? "form" : "gate");
-  const [inviteCode, setInviteCode] = useState("");
-
-  if (step === "gate") {
-    return (
-      <InviteGateForm
-        onContinue={(code) => {
-          setInviteCode(code);
-          setStep("form");
-        }}
-      />
-    );
-  }
-
+/** Logged in but no profile (and not bypass): show request access form and note about approval link. */
+export function OnboardingFlow() {
   return (
-    <OnboardingForm
-      initialInviteCode={inviteCode}
-      inviteOnly={inviteOnly}
-      skipInviteCode={skipInviteCode}
-    />
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">
+      <div className="w-full max-w-md">
+        <p className="text-[15px] text-gray-600 leading-relaxed mb-4">
+          If you were approved, use the link from your approval email to complete signup. Otherwise request access below.
+        </p>
+        <RequestAccessForm />
+      </div>
+    </div>
   );
 }

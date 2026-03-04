@@ -6,9 +6,6 @@ export const ADMIN_ACTION = {
   HIDE_POST: "HIDE_POST",
   DELETE_COMMENT: "DELETE_COMMENT",
   RESOLVE_REPORT: "RESOLVE_REPORT",
-  CREATE_INVITE: "CREATE_INVITE",
-  UPDATE_INVITE: "UPDATE_INVITE",
-  REVOKE_INVITE: "REVOKE_INVITE",
   BLOCK_USER: "BLOCK_USER",
   MUTE_USER: "MUTE_USER",
   CHANGE_ROLE: "CHANGE_ROLE",
@@ -28,7 +25,6 @@ export const AUDIT_TARGET_TYPE = {
   POST: "post",
   COMMENT: "comment",
   USER: "user",
-  INVITE: "invite",
   REPORT: "report",
   SIGNUP_REQUEST: "signup_request",
 } as const;

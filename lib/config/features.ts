@@ -1,10 +1,6 @@
 /**
- * Feature flags for signup and invite gate.
- * Switch to gradual open signup later via env (OPEN_SIGNUP_PERCENT).
+ * Feature flags. Admin-approval signup only (no invite codes).
  */
-
-export const INVITE_ONLY = process.env.INVITE_ONLY === "true";
-export const OPEN_SIGNUP_PERCENT = Number(process.env.OPEN_SIGNUP_PERCENT ?? "0");
 
 /** Feature flags for app features (e.g. realtime). */
 export const FEATURES = {

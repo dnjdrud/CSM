@@ -1,35 +1,49 @@
 /**
- * Auth callback (Route Handler).
- * Supports both PKCE code flow and token_hash OTP flow.
- * Writes Supabase auth cookies so Server Components can read sessions.
+ * Auth callback (Route Handler). Handles server-side flows only.
+ * - ?code= (PKCE): exchangeCodeForSession, ensureProfile, redirect.
+ * - ?token_hash=&type= (OTP): verifyOtp, ensureProfile, redirect.
+ * - No code/token_hash: redirect to /auth/callback (client page) so hash fragment can be handled there.
+ * Redirects use request.url as base so query params are preserved when needed.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
+const LOG_PREFIX = "[auth/callback]";
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const origin = requestUrl.origin;
+  const pathname = requestUrl.pathname;
 
-  // Support multiple callback formats
   const code = requestUrl.searchParams.get("code");
   const token_hash = requestUrl.searchParams.get("token_hash");
-  const type = requestUrl.searchParams.get("type"); // e.g. "magiclink"
+  const type = requestUrl.searchParams.get("type");
   const next = requestUrl.searchParams.get("next") ?? "/feed";
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log(LOG_PREFIX, {
+      pathname,
+      hasCode: Boolean(code),
+      hasTokenHash: Boolean(token_hash),
+      type: type ?? null,
+      next,
+    });
+  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    return NextResponse.redirect(`${origin}/onboarding?error=missing_env`);
+    const redirectTo = new URL("/onboarding", request.url);
+    redirectTo.searchParams.set("error", "missing_env");
+    return NextResponse.redirect(redirectTo);
   }
 
-  // Use Next.js cookie store (writeable)
   const cookieStore = await cookies();
-
-  // We'll set cookies on the response
-  const response = NextResponse.redirect(`${origin}${next.startsWith("/") ? next : "/feed"}`);
+  const redirectTarget = new URL(next.startsWith("/") ? next : "/feed", request.url);
+  const response = NextResponse.redirect(redirectTarget);
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -45,35 +59,41 @@ export async function GET(request: NextRequest) {
   });
 
   try {
-    // Case A) PKCE code flow
     if (code) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error || !data.user) throw error ?? new Error("No user after exchangeCodeForSession");
-
+      if (error || !data.user) {
+        console.error(LOG_PREFIX, "exchangeCodeForSession failed", { message: error?.message });
+        throw error ?? new Error("No user after exchangeCodeForSession");
+      }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
+      return response;
     }
 
-    // Case B) token_hash OTP flow (magiclink)
-    if (!code && token_hash && type) {
+    if (token_hash && type) {
       const { data, error } = await supabase.auth.verifyOtp({
         token_hash,
-        type: type as any,
+        type: type as "magiclink" | "email",
       });
-      if (error || !data.user) throw error ?? new Error("No user after verifyOtp");
-
+      if (error || !data.user) {
+        console.error(LOG_PREFIX, "verifyOtp failed", { message: error?.message });
+        throw error ?? new Error("No user after verifyOtp");
+      }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
+      return response;
     }
 
-    // If neither present, we can't create a session
-    if (!code && !(token_hash && type)) {
-      return NextResponse.redirect(`${origin}/onboarding?error=missing_code`);
-    }
+    // No code and no token_hash/type: fragment flow (e.g. access_token in hash). Send to client page.
+    const callbackPageUrl = new URL("/auth/callback", request.url);
+    requestUrl.searchParams.forEach((value, key) => {
+      callbackPageUrl.searchParams.set(key, value);
+    });
+    return NextResponse.redirect(callbackPageUrl);
   } catch (e) {
-    console.error("AUTH CALLBACK FAILED:", e);
-    return NextResponse.redirect(`${origin}/onboarding?error=auth_callback_failed`);
+    console.error(LOG_PREFIX, "callback failed", e);
+    const redirectTo = new URL("/onboarding", request.url);
+    redirectTo.searchParams.set("error", "auth_callback_failed");
+    return NextResponse.redirect(redirectTo);
   }
-
-  return response;
 }

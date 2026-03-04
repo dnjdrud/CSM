@@ -38,17 +38,38 @@ export default async function FeedPage({
     }),
   ]);
 
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[FeedPage]", { rawCount: firstPage.items.length, firstId: firstPage.items[0]?.id ?? null, scope: scopeParam, currentUserId: currentUser?.id ?? null });
+  }
+
   const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
   const isFollowing = (followerId: string, followingId: string) =>
     followerId === currentUser?.id && followingIds.includes(followingId);
 
+  let filteredByBlock = 0;
+  let filteredByMute = 0;
+  let filteredByCanView = 0;
   const visibleItems = currentUser
     ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId) || isMuted(currentUser.id, post.authorId))
+        if (isBlocked(currentUser.id, post.authorId)) {
+          filteredByBlock++;
           return false;
-        return canViewPost(post, currentUser, isFollowing);
+        }
+        if (isMuted(currentUser.id, post.authorId)) {
+          filteredByMute++;
+          return false;
+        }
+        if (!canViewPost(post, currentUser, isFollowing)) {
+          filteredByCanView++;
+          return false;
+        }
+        return true;
       })
     : [];
+
+  if (process.env.NODE_ENV !== "production" && (filteredByBlock > 0 || filteredByMute > 0 || filteredByCanView > 0)) {
+    console.log("[FeedPage] filtered", { filteredByBlock, filteredByMute, filteredByCanView, visibleCount: visibleItems.length });
+  }
 
   const showPinned =
     pinnedPost &&

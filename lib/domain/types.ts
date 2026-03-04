@@ -174,33 +174,6 @@ export interface ModerationReport {
 }
 
 /** Invite status computed from row. */
-export type InviteStatus = "ACTIVE" | "EXPIRED" | "REVOKED" | "USED_UP";
-
-/** Canonical invite validation outcome for UX (gate + form submit). */
-export type InviteValidationOutcome = "VALID" | "INVALID" | "EXPIRED" | "USED" | "RATE_LIMITED";
-
-/** Invite code for invite-only beta. Multi-use supported via max_uses; status computed server-side. */
-export interface InviteCode {
-  id: string;
-  code: string;
-  createdBy: string;
-  usedBy?: string;
-  usedAt?: string; // ISO
-  createdAt: string; // ISO
-  /** Optional note (e.g. who is this for). */
-  note?: string | null;
-  /** When the invite expires (null = never). */
-  expiresAt?: string | null; // ISO
-  maxUses: number;
-  usesCount: number;
-  /** When revoked (null = active). */
-  revokedAt?: string | null; // ISO
-  /** Who revoked it. */
-  revokedBy?: string | null;
-  /** Computed: ACTIVE | EXPIRED | REVOKED | USED_UP */
-  status: InviteStatus;
-}
-
 /** Signup request status (approval flow). */
 export type SignupRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED";
 

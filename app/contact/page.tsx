@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact — CSM",
   description:
-    "Get in touch with the CSM community operators. Email, report a concern, or request an invite.",
+    "Get in touch with the CSM community operators. Email, report a concern, or request access.",
 };
 
 const FALLBACK_EMAIL = "contact@example.com"; // TODO: replace with real default or remove when CONTACT_EMAIL is always set

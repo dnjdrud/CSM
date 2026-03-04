@@ -2,7 +2,6 @@
 
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type DiagnosticsResult = {
   auth: { userId: string | null; email: string | null; error?: string };
@@ -11,12 +10,10 @@ export type DiagnosticsResult = {
   postsCountError?: string;
   latestPosts: { id: string; created_at: string }[];
   latestPostsError?: string;
-  inviteTest: { ok: boolean; error?: string };
 };
 
 /**
- * Run server-side diagnostics: auth, profile, posts count, latest posts, invite insert test.
- * Admin-only. Used on /admin/debug to reveal RLS/auth issues.
+ * Run server-side diagnostics: auth, profile, posts count, latest posts. Admin-only.
  */
 export async function runDiagnostics(): Promise<DiagnosticsResult> {
   await requireAdmin();
@@ -26,7 +23,6 @@ export async function runDiagnostics(): Promise<DiagnosticsResult> {
     profile: { profileId: null, role: null },
     postsCount: null,
     latestPosts: [],
-    inviteTest: { ok: false },
   };
 
   const supabase = await supabaseServer();
@@ -70,24 +66,6 @@ export async function runDiagnostics(): Promise<DiagnosticsResult> {
     result.latestPostsError = postsError.message;
   } else if (postsRows?.length) {
     result.latestPosts = postsRows.map((r) => ({ id: r.id, created_at: r.created_at ?? "" }));
-  }
-
-  const admin = getSupabaseAdmin();
-  if (admin) {
-    const testCode = "TEST-" + Math.random().toString(36).slice(2, 12);
-    const insertResult = await admin
-      .from("invite_codes")
-      .insert({ code: testCode, created_by: result.auth.userId ?? undefined })
-      .select("id")
-      .single();
-    if (insertResult.error) {
-      result.inviteTest = { ok: false, error: insertResult.error.message };
-    } else if (insertResult.data?.id) {
-      await admin.from("invite_codes").delete().eq("id", insertResult.data.id);
-      result.inviteTest = { ok: true };
-    }
-  } else {
-    result.inviteTest = { ok: false, error: "Admin client not available (missing SUPABASE_SERVICE_ROLE_KEY)" };
   }
 
   return result;

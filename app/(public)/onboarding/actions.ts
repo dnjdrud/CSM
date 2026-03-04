@@ -1,38 +1,16 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createUserWithInvite } from "@/lib/data/repository";
 import { getAuthUserId, getAuthUserEmail } from "@/lib/auth/session";
-import { getSupabaseAdmin, getMissingAdminEnv } from "@/lib/supabase/admin";
-import { validateInviteCode, validateInviteCodeForSignup } from "@/lib/data/inviteRepository";
+import { getMissingAdminEnv } from "@/lib/supabase/admin";
 import { createSignupRequest } from "@/lib/data/signupRepository";
-import { isRateLimited, recordAttempt } from "@/lib/auth/inviteRateLimit";
-import { setInviteCookie, getInviteCookie, clearInviteCookie } from "@/lib/invites/inviteGate";
-import { INVITE_ONLY } from "@/lib/config/features";
-import { isAdminEmail, canSkipInviteForOnboarding } from "@/lib/admin/bootstrap";
 import { createAdminProfileForOnboarding } from "@/lib/data/signupRepository";
-import {
-  INVITE_CODE_REQUIRED,
-  INVITE_CODE_INVALID,
-} from "./_lib/inviteUi";
-import type { UserRole, InviteValidationOutcome } from "@/lib/domain/types";
+import { canSkipInviteForOnboarding } from "@/lib/admin/bootstrap";
+import type { UserRole } from "@/lib/domain/types";
 
 const ALLOWED_ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 
 export type OnboardingResult = { error?: string; redirect?: string } | void;
-
-/** Log invite failure without exposing full code (last 4 chars only). */
-function logInviteFailure(reason: InviteValidationOutcome, codeSuffix: string): void {
-  console.warn(`[onboarding] invite validation failed reason=${reason} code_suffix=…${codeSuffix}`);
-}
-
-const OUTCOME_MESSAGES: Record<InviteValidationOutcome, string> = {
-  VALID: "",
-  INVALID: "That invite code doesn't look right.",
-  EXPIRED: "This invite has expired. Please request a new one.",
-  USED: "This invite has already been used.",
-  RATE_LIMITED: "Too many attempts. Please try again in a minute.",
-};
 
 /** Submit a signup request (approval flow). No Auth user created until admin approves and user completes signup. */
 export async function requestSignupAction(formData: {
@@ -46,11 +24,18 @@ export async function requestSignupAction(formData: {
   const missing = getMissingAdminEnv();
   if (missing.length > 0) {
     return {
-      errorMessage: `가입 기능을 사용하려면 환경 변수가 필요합니다: ${missing.join(", ")}. 프로젝트 루트의 .env.local에 추가한 뒤 개발 서버(npm run dev)를 재시작하세요. 배포 환경에서는 호스팅(예: Vercel) 환경 변수에 추가하세요.`,
+      errorMessage: `Signup is not configured. Missing env: ${missing.join(", ")}. Contact support.`,
     };
   }
   try {
-    const result = await createSignupRequest(formData);
+    const result = await createSignupRequest({
+      email: formData.email.trim(),
+      name: formData.name?.trim() || null,
+      role: ALLOWED_ROLES.includes(formData.role) ? formData.role : "LAY",
+      church: formData.church?.trim() || null,
+      bio: formData.bio?.trim() || null,
+      affiliation: formData.affiliation?.trim() || null,
+    });
     if ("error" in result) {
       if (result.error === "ALREADY_MEMBER") {
         return { errorMessage: "This email is already a member. Please sign in." };
@@ -63,123 +48,50 @@ export async function requestSignupAction(formData: {
     if (msg.includes("not configured") || msg.includes("Server not configured")) {
       return {
         errorMessage:
-          "가입 기능이 서버에 설정되지 않았습니다. .env.local에 SUPABASE_SERVICE_ROLE_KEY를 넣고 개발 서버를 재시작해 주세요. (배포 환경에서는 호스팅 쪽 환경 변수에 추가)",
+          "Signup is not configured. Add SUPABASE_SERVICE_ROLE_KEY to .env.local and restart.",
       };
     }
     return { errorMessage: msg };
   }
 }
 
-/** Pre–magic link: validate invite (when INVITE_ONLY), set cookie, return ok or error. Does not send email. */
-export async function requestMagicLinkAction(params: {
-  email: string;
-  inviteCode?: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const email = params.email?.trim();
-  if (!email) return { ok: false, error: "Email is required." };
-
-  if (INVITE_ONLY && !isAdminEmail(email)) {
-    const code = params.inviteCode?.trim();
-    if (!code) return { ok: false, error: INVITE_CODE_REQUIRED };
-    const outcome = await validateInviteCodeForSignup(code);
-    if (outcome !== "VALID") {
-      return { ok: false, error: INVITE_CODE_INVALID };
-    }
-    await setInviteCookie(code);
-  }
-
-  return { ok: true };
-}
-
-/** Gate step: validate invite code only. Does not consume. Returns outcome for UX. */
-export async function validateInviteCodeForGate(
-  code: string
-): Promise<{ outcome: InviteValidationOutcome }> {
-  const trimmed = code.trim();
-  const authUserId = await getAuthUserId();
-  if (!authUserId) {
-    return { outcome: "INVALID" };
-  }
-  if (isRateLimited(authUserId)) {
-    return { outcome: "RATE_LIMITED" };
-  }
-  const outcome = await validateInviteCode(trimmed);
-  recordAttempt(authUserId);
-  if (outcome !== "VALID") {
-    const suffix = trimmed.length >= 4 ? trimmed.slice(-4) : "****";
-    logInviteFailure(outcome, suffix);
-  }
-  return { outcome };
-}
-
-/** Onboarding: when INVITE_ONLY use code from cookie; else from form. Re-validate, then create profile (RPC consumes code atomically). */
+/** Complete profile for bypass admin (e.g. ADMIN_EMAILS). Only when already logged in and bypass email. */
 export async function submitOnboarding(formData: {
-  inviteCode?: string;
   name: string;
-  role: UserRole;
+  role?: UserRole;
   bio?: string;
   affiliation?: string;
 }): Promise<OnboardingResult> {
-  const name = formData.name.trim();
-  const role = ALLOWED_ROLES.includes(formData.role) ? formData.role : "LAY";
-  const bio = formData.bio?.trim() || undefined;
-  const affiliation = formData.affiliation?.trim() || undefined;
-
   const authUserId = await getAuthUserId();
   if (!authUserId) {
     redirect("/onboarding");
     return;
   }
-
   const authEmail = await getAuthUserEmail();
-  if (canSkipInviteForOnboarding(authEmail)) {
-    try {
-      const result = await createAdminProfileForOnboarding(authUserId, { name, bio, affiliation });
-      if ("ok" in result && result.ok) redirect("/feed");
-      return { error: "error" in result ? result.error : "Unknown error" };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Something went wrong.";
-      return { error: msg };
-    }
+  if (!canSkipInviteForOnboarding(authEmail)) {
+    return { error: "Use the approval link from your email to complete signup." };
   }
-
-  let inviteCode: string;
-  if (INVITE_ONLY && !isAdminEmail(authEmail)) {
-    inviteCode = (await getInviteCookie()) ?? formData.inviteCode?.trim() ?? "";
-    if (!inviteCode) return { error: INVITE_CODE_REQUIRED };
-  } else {
-    inviteCode = formData.inviteCode?.trim() ?? "";
-    if (!inviteCode) return { error: "Invite code is required." };
-  }
-
-  const outcome = await validateInviteCode(inviteCode);
-  if (outcome !== "VALID") {
-    const suffix = inviteCode.length >= 4 ? inviteCode.slice(-4) : "****";
-    logInviteFailure(outcome, suffix);
-    return { error: OUTCOME_MESSAGES[outcome] };
-  }
-
   try {
-    await createUserWithInvite(authUserId, inviteCode, { name, role, bio, affiliation });
-    if (INVITE_ONLY) await clearInviteCookie();
-    redirect("/feed");
+    const result = await createAdminProfileForOnboarding(authUserId, {
+      name: formData.name?.trim() || "Admin",
+      bio: formData.bio?.trim(),
+      affiliation: formData.affiliation?.trim(),
+    });
+    if ("ok" in result && result.ok) redirect("/feed");
+    return { error: "error" in result ? result.error : "Unknown error" };
   } catch (e) {
-    const suffix = inviteCode.length >= 4 ? inviteCode.slice(-4) : "****";
-    logInviteFailure("USED", suffix);
     const msg = e instanceof Error ? e.message : "Something went wrong.";
-    if (msg === "That invite code is not valid.") {
-      return { error: "This invite has already been used." };
-    }
     return { error: msg };
   }
 }
 
-/** Dev only: Admin API로 매직 링크 URL 생성. 이메일 발송 한도 없이 테스트용. */
+/** Dev only: generate magic link URL for testing (no email sent). */
 export async function getMagicLinkForDev(
   email: string,
   redirectTo: string
 ): Promise<{ link: string } | { error: string } | null> {
   if (process.env.NODE_ENV !== "development") return null;
+  const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
   const admin = getSupabaseAdmin();
   if (!admin) return null;
   try {

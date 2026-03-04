@@ -20,7 +20,10 @@ export default async function ProfilePage({
     listFollowingIds(id),
   ]);
 
-  if (!profile) notFound();
+  if (!profile) {
+    console.warn("[profile] getProfileById returned null for id:", id);
+    notFound();
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">

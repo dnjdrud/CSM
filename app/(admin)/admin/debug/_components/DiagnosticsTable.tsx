@@ -67,18 +67,6 @@ export function DiagnosticsTable({ result }: { result: DiagnosticsResult }) {
               )}
             </td>
           </tr>
-          <tr>
-            <td className="px-4 py-2 font-medium text-theme-muted">invite insert test</td>
-            <td className="px-4 py-2 font-mono">
-              {result.inviteTest.ok ? (
-                <span className="text-green-600">OK (insert + delete)</span>
-              ) : result.inviteTest.error ? (
-                <span className="text-red-600">{result.inviteTest.error}</span>
-              ) : (
-                "—"
-              )}
-            </td>
-          </tr>
         </tbody>
       </table>
     </div>

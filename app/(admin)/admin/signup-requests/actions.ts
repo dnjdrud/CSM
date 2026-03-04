@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getAdminOrNull } from "@/lib/admin/guard";
 import { logAdminAction } from "@/lib/admin/audit";
 import { ADMIN_ACTION, AUDIT_TARGET_TYPE } from "@/lib/admin/constants";
@@ -45,6 +46,8 @@ export async function approveSignupRequestAction(
         targetId: requestId,
         metadata: { link: data.link },
       });
+      revalidatePath("/admin/signup-requests");
+      revalidatePath("/admin/signups");
       return { ok: true };
     }
     if (error) console.error("[approveSignupRequest] approve-signup Edge function error", error);
@@ -93,5 +96,7 @@ export async function rejectSignupRequestAction(
     metadata: { note: note ?? undefined },
   });
 
+  revalidatePath("/admin/signup-requests");
+  revalidatePath("/admin/signups");
   return { ok: true };
 }

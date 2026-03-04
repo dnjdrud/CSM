@@ -245,14 +245,7 @@ export async function verifyApprovalToken(
   return { request: rowToRequest(reqRow) };
 }
 
-/** Get APPROVAL invite code id for new user row. */
-async function getApprovalInviteCodeId(admin: ReturnType<typeof getSupabaseAdmin>): Promise<string | null> {
-  if (!admin) return null;
-  const { data } = await admin.from("invite_codes").select("id").eq("code", "APPROVAL").maybeSingle();
-  return data?.id ?? null;
-}
-
-/** Create public.users row with role ADMIN for bootstrap admin (no invite code). Uses service role. */
+/** Create public.users row with role ADMIN for bootstrap admin. Uses service role. */
 export async function createAdminProfileForOnboarding(
   authUserId: string,
   data: { name: string; bio?: string; affiliation?: string }
@@ -261,8 +254,6 @@ export async function createAdminProfileForOnboarding(
   if (!admin) return { error: "Server not configured" };
 
   const name = data.name?.trim() || "Admin";
-
-  // Admin: only id, name, role required for login; all other profile fields null
   const row: Record<string, unknown> = {
     id: authUserId,
     name,
@@ -273,27 +264,21 @@ export async function createAdminProfileForOnboarding(
     church: null,
   };
 
-  const inviteCodeId = await getApprovalInviteCodeId(admin);
-  if (inviteCodeId) row.invite_code_id = inviteCodeId;
-
-    let result = await admin.from("users").upsert(row, {
-      onConflict: "id",
-      ignoreDuplicates: false,
-    });
-
-    if (result.error) {
-      const msg = result.error.message || "";
-      if (msg.includes("invite_code_id") || msg.includes("column")) {
-        delete row.invite_code_id;
-        delete row.username;
-        delete row.church;
-        result = await admin.from("users").upsert(row, {
-          onConflict: "id",
-          ignoreDuplicates: false,
-        });
-      }
+  let result = await admin.from("users").upsert(row, {
+    onConflict: "id",
+    ignoreDuplicates: false,
+  });
+  if (result.error) {
+    const msg = result.error.message || "";
+    if (msg.includes("invite_code_id") || msg.includes("column")) {
+      delete row.username;
+      delete row.church;
+      result = await admin.from("users").upsert(row, {
+        onConflict: "id",
+        ignoreDuplicates: false,
+      });
     }
-
+  }
   if (result.error) return { error: result.error.message };
   return { ok: true };
 }
@@ -339,9 +324,6 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   }
   if (!authUser?.user?.id) return { error: "Failed to create account." };
 
-  const inviteCodeId = await getApprovalInviteCodeId(admin);
-  if (!inviteCodeId) return { error: "Server configuration error. Please contact support." };
-
   const { error: userInsertErr } = await admin.from("users").insert({
     id: authUser.user.id,
     name,
@@ -350,7 +332,6 @@ export async function consumeApprovalTokenAndCreateUser(params: {
     bio,
     affiliation,
     username: username || null,
-    invite_code_id: inviteCodeId,
   });
 
   if (userInsertErr) {

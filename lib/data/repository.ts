@@ -23,7 +23,6 @@ import { tokenize, sortByScore } from "@/lib/search";
 import { createLocalAdapter } from "@/lib/storage/localAdapter";
 import { DATA_MODE } from "@/lib/data/repositoryMode";
 import * as supabaseRepo from "@/lib/data/supabaseRepository";
-import { consumeInviteCode } from "@/lib/data/inviteRepository";
 
 type FollowEntry = { followerId: string; followingId: string; createdAt: string };
 type BlockEntry = { blockerId: string; blockedId: string };
@@ -161,27 +160,7 @@ export async function restoreUser(userId: string): Promise<{ ok: boolean; error?
   return { ok: false, error: "Restore is not available in memory mode" };
 }
 
-/** Create user profile with valid invite code. Supabase: RPC only (no direct insert). Memory: consume + insert. */
-export async function createUserWithInvite(
-  authUserId: string,
-  inviteCode: string,
-  data: { name: string; role: UserRole; bio?: string; affiliation?: string }
-): Promise<User> {
-  if (DATA_MODE === "supabase" && useSupabaseAuth()) {
-    return supabaseRepo.createUserWithInviteRpc({
-      inviteCode,
-      name: data.name,
-      role: data.role,
-      bio: data.bio,
-      affiliation: data.affiliation,
-    });
-  }
-  const consumed = await consumeInviteCode(inviteCode, authUserId);
-  if (!consumed) throw new Error("That invite code is not valid.");
-  return createUserProfileInSupabase(authUserId, data);
-}
-
-/** Create user profile in Supabase public.users. Call after magic-link auth when completing onboarding. */
+/** Create user profile in Supabase public.users. Call after magic-link auth when completing onboarding (e.g. bypass flow). */
 export async function createUserProfileInSupabase(
   authUserId: string,
   data: { name: string; role: UserRole; bio?: string; affiliation?: string }

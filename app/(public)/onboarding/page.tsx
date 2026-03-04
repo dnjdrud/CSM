@@ -1,15 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/data/repository";
 import { getAuthUserId, getAuthUserEmail } from "@/lib/auth/session";
-import { INVITE_ONLY } from "@/lib/config/features";
-import { canSkipInviteForOnboarding } from "@/lib/admin/bootstrap";
-import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 import { ensureProfileForBypassEmail } from "@/lib/data/userProvisioning";
-import { OnboardingFlow } from "./_components/OnboardingFlow";
-import { MagicLinkForm } from "./_components/MagicLinkForm";
+import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 import { RequestAccessForm } from "./_components/RequestAccessForm";
+import { OnboardingFlow } from "./_components/OnboardingFlow";
 
-/** If profile exists → /feed. If authenticated but no profile → invite flow or redirect to login. Else → request access form. */
+/** Admin-approval only: request access (no login) or complete profile (bypass email). */
 export default async function OnboardingPage() {
   const currentUser = await getCurrentUser();
   if (currentUser) redirect("/feed");
@@ -22,8 +19,7 @@ export default async function OnboardingPage() {
   }
 
   if (authUserId) {
-    const skipInviteCode = canSkipInviteForOnboarding(email ?? undefined);
-    return <OnboardingFlow inviteOnly={INVITE_ONLY} skipInviteCode={skipInviteCode} />;
+    return <OnboardingFlow />;
   }
 
   return (
@@ -33,7 +29,7 @@ export default async function OnboardingPage() {
           Request access
         </h1>
         <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
-          We’re a small community. Submit your request and we’ll get back to you after a quick review.
+          Submit your details. An admin will review your request. You’ll receive an email with a link to complete signup (valid 7 days) once approved.
         </p>
         <RequestAccessForm />
         <p className="mt-6 text-center text-sm text-gray-500">

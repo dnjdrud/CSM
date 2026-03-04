@@ -2,11 +2,10 @@
  * Admin-only data access. All mutating functions perform the action and log to audit_logs.
  * Uses supabaseServer(); requires audit_logs (and blocks/mutes) migration.
  */
-import type { User, UserRole, InviteCode, AuditLogEntry } from "@/lib/domain/types";
+import type { User, UserRole, AuditLogEntry } from "@/lib/domain/types";
 import { ADMIN_ACTION, AUDIT_TARGET_TYPE } from "@/lib/admin/constants";
 import { logAdminAction } from "@/lib/admin/audit";
 import { supabaseServer } from "@/lib/supabase/server";
-import { listInviteCodes as listInviteCodesFromInviteRepo } from "@/lib/data/inviteRepository";
 
 function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null }): User {
   return {
@@ -35,8 +34,6 @@ export interface DashboardStats {
   openReportsToday: number;
   newUsersToday: number;
   activeUsersLast7d: number;
-  activeInvitesCount: number;
-  invitesUsedToday: number;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -65,30 +62,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   (commentAuthors ?? []).forEach((r) => activeIds.add(r.author_id));
   (reactionUsers ?? []).forEach((r) => activeIds.add(r.user_id));
 
-  const { count: activeInvitesCount } = await supabase
-    .from("invite_codes")
-    .select("id", { count: "exact", head: true })
-    .is("revoked_at", null)
-    .or("expires_at.is.null,expires_at.gt." + new Date().toISOString());
-
-  const { count: invitesUsedToday } = await supabase
-    .from("invite_codes")
-    .select("id", { count: "exact", head: true })
-    .not("used_at", "is", null)
-    .gte("used_at", today)
-    .lt("used_at", `${today}T23:59:59.999Z`);
-
   return {
     openReportsToday: openReportsToday ?? 0,
     newUsersToday: newUsersToday ?? 0,
     activeUsersLast7d: activeIds.size,
-    activeInvitesCount: activeInvitesCount ?? 0,
-    invitesUsedToday: invitesUsedToday ?? 0,
   };
-}
-
-export async function listInviteCodes(): Promise<InviteCode[]> {
-  return listInviteCodesFromInviteRepo();
 }
 
 export interface AdminUserRow extends User {

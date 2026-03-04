@@ -227,7 +227,10 @@ export async function listFeedPosts(options: {
     .map((r) => {
       const post = rowToPost(r);
       const author = authorMap.get(r.author_id);
-      if (!author) return null;
+      if (!author) {
+        console.warn("[listFeedPosts] missing author for post", { postId: r.id, author_id: r.author_id, queryPath });
+        return null;
+      }
       return {
         ...post,
         author,
@@ -352,7 +355,10 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
     .map((r) => {
       const post = rowToPost(r);
       const author = authorMap.get(r.author_id);
-      if (!author) return null;
+      if (!author) {
+        console.warn("[listFeedPostsPage] missing author for post", { postId: r.id, author_id: r.author_id, queryPath });
+        return null;
+      }
       return {
         ...post,
         author,
@@ -926,27 +932,6 @@ export async function restoreUser(userId: string): Promise<{ ok: boolean; error?
   if (userError) return { ok: false, error: userError.message };
   await supabase.from("posts").update({ hidden_at: null, hidden_by: null }).eq("author_id", userId);
   return { ok: true };
-}
-
-/** Create user profile via invite-only RPC. Uses auth.uid(); invite code consumed atomically. */
-export async function createUserWithInviteRpc(params: {
-  inviteCode: string;
-  name: string;
-  role: string;
-  bio?: string;
-  affiliation?: string;
-}): Promise<User> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.rpc("create_user_with_invite", {
-    p_name: params.name.trim(),
-    p_role: params.role,
-    p_bio: params.bio ?? "",
-    p_affiliation: params.affiliation ?? "",
-    p_invite_code: params.inviteCode.trim(),
-  });
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("No user returned");
-  return rowToUser(data);
 }
 
 export async function createReport(params: {
