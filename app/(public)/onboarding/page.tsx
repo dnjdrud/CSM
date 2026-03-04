@@ -6,16 +6,16 @@ import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 import { RequestAccessForm } from "./_components/RequestAccessForm";
 import { OnboardingFlow } from "./_components/OnboardingFlow";
 
-/** Admin-approval only: request access (no login) or complete profile (bypass email). */
+/** Admin-approval only: request access (no login) or complete profile (bypass email). ADMIN can access for testing. */
 export default async function OnboardingPage() {
   const currentUser = await getCurrentUser();
-  if (currentUser) redirect("/feed");
+  if (currentUser && currentUser.role !== "ADMIN") redirect("/feed");
 
   const authUserId = await getAuthUserId();
   const email = await getAuthUserEmail();
   if (authUserId && email && isOnboardingBypassEmail(email)) {
     await ensureProfileForBypassEmail({ userId: authUserId, email });
-    redirect("/feed");
+    if (currentUser?.role !== "ADMIN") redirect("/feed");
   }
 
   if (authUserId) {
