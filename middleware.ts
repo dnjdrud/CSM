@@ -48,6 +48,7 @@ function isAdminPath(pathname: string): boolean {
 function isAppPath(pathname: string): boolean {
   return (
     pathname.startsWith("/feed") ||
+    pathname.startsWith("/community") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/me") ||
     pathname.startsWith("/post/") ||
