@@ -1,6 +1,6 @@
 /**
  * Design system: Badge
- * - Variants: default, muted, testimony, daily-prayer. Used for role, category, pinned labels.
+ * - Variants: default, muted, testimony, daily-prayer. Used for role, category labels.
  * - Typography: meta text size (text-xs). Spacing: px-1.5 py-0.5, rounded-md.
  */
 import * as React from "react";

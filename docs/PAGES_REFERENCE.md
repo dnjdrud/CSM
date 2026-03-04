@@ -29,7 +29,7 @@
 | **`/support/[id]`** | 공개 | /support에서 사역별 링크 | 특정 사역 지원 플로우 |
 | **`/support/thank-you`** | 공개 | 지원 플로우 완료 후 | 감사 페이지 |
 | **`/admin`** | 어드민 | 헤더 또는 직접 URL(ADMIN만) | 대시보드·통계·Create Daily Prayer |
-| **`/admin/moderation`** | 어드민 | /admin 또는 레이아웃 링크 | 신고 큐·Pin/Unpin/Hide/Delete/Resolve |
+| **`/admin/moderation`** | 어드민 | /admin 또는 레이아웃 링크 | 신고 큐·Hide/Delete/Resolve |
 | **`/admin/users`** | 어드민 | /admin 레이아웃 | 사용자 목록·역할·block/mute |
 | **`/admin/audit`** | 어드민 | /admin 레이아웃 | 감사 로그 |
 | **`/admin/invites`** | 어드민 | /admin 레이아웃 | 초대 코드 목록 |
@@ -129,9 +129,9 @@
 | **역할** | 메인 타임라인. 전체/팔로잉 스코프, 상단 Compose, 고정글 1개, Daily Prayer 안내. |
 | **보호** | 로그인 필수. 비로그인 시 /onboarding?from=... 리다이렉트. |
 | **쿼리** | `scope`: "following" | 미지정(ALL). |
-| **데이터** | getCurrentUser(), getPinnedPost(currentUserId), listFeedPostsPage(scope, cursor), listFollowingIds. 고정글은 pinned_at IS NULL 제외한 목록과 별도 1건으로 상단 표시. |
+| **데이터** | getCurrentUser(), listFeedPostsPage(scope, cursor), listFollowingIds. |
 | **필터** | block/mute 제외, canViewPost(visibility). |
-| **UI 구성** | FeedScopeToggle(ALL/FOLLOWING, 토큰·탭 전환 transition), ComposeBox(로그인 시; 콘텐츠 있으면 Post 버튼 항상 노출, 성공 시 "Posted" 잠시 후 접기, 에러 시 인라인 문구, 확장 시 하단 sticky·safe area), 고정글 PostCard(pinned, "Pinned by community" 문구), Daily Prayer 고정 시 안내 문구, FeedInfiniteList(무한 스크롤, space-y-6 모바일). PostCard: 단일 primary 라벨(고정/Daily Prayer/Testimony), 본인 글 PostActionsMenu, 인라인 댓글(들여쓰기·작은 글씨), 반응 버튼 44px·토글 시 미세 스케일 피드백. |
+| **UI 구성** | FeedScopeToggle(ALL/FOLLOWING, 토큰·탭 전환 transition), ComposeBox(로그인 시; 콘텐츠 있으면 Post 버튼 항상 노출, 성공 시 "Posted" 잠시 후 접기, 에러 시 인라인 문구, 확장 시 하단 sticky·safe area), FeedInfiniteList(무한 스크롤, space-y-6 모바일). PostCard: 단일 primary 라벨(Daily Prayer/Testimony), 본인 글 PostActionsMenu, 인라인 댓글(들여쓰기·작은 글씨), 반응 버튼 44px·토글 시 미세 스케일 피드백. |
 | **액션** | composePostAction(성공 시 revalidatePath, router.refresh). |
 
 ### `GET /write`
@@ -272,17 +272,17 @@
 | **보호** | ADMIN만. 아니면 /feed?message=admin_required. |
 | **데이터** | getDashboardStats(): openReportsToday, newUsersToday, activeUsersLast7d. |
 | **UI 구성** | "Dashboard", 3열 카드, "Create Daily Prayer (today)"(DangerZoneConfirm "create daily prayer"). |
-| **액션** | createDailyPrayerAction → createDailyPrayerAndPin, revalidatePath("/feed", "/admin"). |
+| **액션** | createDailyPrayerAction → createDailyPrayer, revalidatePath("/feed", "/admin"). |
 
 ### `GET /admin/moderation`
 
 | 항목 | 내용 |
 |------|------|
-| **역할** | 열린 신고 큐. Pin/Unpin, Hide, Delete comment, Resolve. |
+| **역할** | 열린 신고 큐. Hide, Delete comment, Resolve. |
 | **보호** | ADMIN 전용. |
-| **데이터** | listOpenReports(), getPinnedPostId(), getUserById 등. |
-| **UI 구성** | "Moderation", 테이블(Type, Reason, Reporter, Target, Date, Actions). ModerationReportActions: View post, Pin/Unpin post, Hide post, Delete comment, Resolve. DangerZoneConfirm. |
-| **액션** | pinPostAction, unpinPostAction, hidePostAction, deleteCommentAction, resolveReportAction. |
+| **데이터** | listOpenReports(), getUserById 등. |
+| **UI 구성** | "Moderation", 테이블(Type, Reason, Reporter, Target, Date, Actions). ModerationReportActions: View post, Hide post, Delete comment, Resolve. DangerZoneConfirm. |
+| **액션** | hidePostAction, deleteCommentAction, resolveReportAction. |
 
 ### `GET /admin/users`, `GET /admin/audit`, `GET /admin/invites`
 

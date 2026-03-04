@@ -1,11 +1,25 @@
 import { Suspense } from "react";
 import { LoginForm } from "./_components/LoginForm";
+import { FlashBanner } from "@/components/FlashBanner";
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ message?: string }>;
+}) {
+  const { message } = await searchParams;
+  const showAccountCreated = message === "account_created";
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-md">
-        <h1 className="text-xl font-serif font-normal text-gray-800 tracking-tight">
+        {showAccountCreated && (
+          <FlashBanner
+            title="Account created"
+            body="You can sign in with your email now."
+            optional="Use the link we sent you, or request a new one below."
+          />
+        )}
+        <h1 className={`text-xl font-serif font-normal text-gray-800 tracking-tight ${showAccountCreated ? "mt-6" : ""}`}>
           Sign in
         </h1>
         <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">

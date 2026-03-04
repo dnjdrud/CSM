@@ -41,7 +41,6 @@ const CONTENT_CLAMP_LINES = 6;
 
 export function PostCard({
   post,
-  pinned = false,
   currentUserId = null,
   compact = false,
   onToggleReaction,
@@ -53,7 +52,6 @@ export function PostCard({
   updatePostAction: updatePostActionProp,
 }: {
   post: PostWithAuthor;
-  pinned?: boolean;
   currentUserId?: string | null;
   compact?: boolean;
   onToggleReaction?: (postId: string, type: ReactionType) => Promise<{ ok?: boolean; reacted?: boolean } | void>;
@@ -77,7 +75,6 @@ export function PostCard({
   const canCommentInline = Boolean(getCommentsForPost && currentUserId != null);
   const isDailyPrayer =
     post.isDailyPrayer === true || post.tags?.some((t) => t.toLowerCase() === "daily-prayer");
-  const isTodayDailyPrayer = post.category === "PRAYER" && (post.pinnedAt != null || pinned);
   const isTestimony = post.category === "TESTIMONY";
   const shouldClamp = compact && post.content.split("\n").length > CONTENT_CLAMP_LINES;
 
@@ -159,35 +156,18 @@ export function PostCard({
       role="article"
       data-post-id={post.id}
       className={
-        isTodayDailyPrayer
-          ? "border-theme-accent/50 bg-theme-surface-2/60"
-          : pinned
-            ? "border-l-4 border-l-theme-accent bg-theme-surface-2/40"
-            : isDailyPrayer && !isTestimony
-              ? "border-theme-accent/30 bg-theme-surface-2/30"
-              : undefined
+        isDailyPrayer && !isTestimony
+          ? "border-theme-accent/30 bg-theme-surface-2/30"
+          : undefined
       }
     >
       <CardContent className="py-4 px-4 sm:px-5">
-      {/* Single primary label: today's daily prayer = badge + highlight; pinned = muted meta; testimony = badge; daily prayer = soft callout */}
-      {isTodayDailyPrayer && (
-        <div className="mb-2">
-          <span className="inline-flex items-center rounded-full border border-theme-accent/50 bg-theme-accent/20 px-2.5 py-0.5 text-[12px] font-medium text-theme-primary">
-            Today&apos;s Daily Prayer
-          </span>
-        </div>
-      )}
-      {!isTodayDailyPrayer && pinned && (
-        <p className="mb-2 text-[11px] font-medium text-theme-muted uppercase tracking-wider">
-          Pinned by community
-        </p>
-      )}
-      {!pinned && isTestimony && (
+      {isTestimony && (
         <div className="mb-2">
           <Badge variant="testimony">Testimony</Badge>
         </div>
       )}
-      {!pinned && isDailyPrayer && !isTestimony && !isTodayDailyPrayer && (
+      {isDailyPrayer && !isTestimony && (
         <p className="mb-2 text-[12px] text-theme-muted">
           Daily Prayer
         </p>

@@ -35,9 +35,6 @@ export interface Post {
   createdAt: string;
   /** Optional reflection prompt for devotional */
   reflectionPrompt?: string;
-  /** Set when post is pinned to top of feed (admin-only). */
-  pinnedAt?: string; // ISO
-  pinnedBy?: string;
   /** True for the single Daily Prayer thread for that day (admin-created). */
   isDailyPrayer?: boolean;
   /** Date (YYYY-MM-DD) for which this is the Daily Prayer thread; set when isDailyPrayer is true. */

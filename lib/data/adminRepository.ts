@@ -202,77 +202,6 @@ export async function resolveModerationReport(adminId: string, reportId: string)
   });
 }
 
-/** Pin a post to top of feed. Unpins any existing pinned post first. */
-export async function pinPost(adminId: string, postId: string): Promise<void> {
-  const supabase = await supabaseServer();
-  const now = new Date().toISOString();
-  await supabase.from("posts").update({ pinned_at: null, pinned_by: null }).not("pinned_at", "is", null);
-  await supabase.from("posts").update({ pinned_at: now, pinned_by: adminId }).eq("id", postId);
-  await logAdminAction({
-    actorId: adminId,
-    action: ADMIN_ACTION.PIN_POST,
-    targetType: AUDIT_TARGET_TYPE.POST,
-    targetId: postId,
-    metadata: {},
-  });
-}
-
-/** Unpin the current pinned post. */
-export async function unpinPost(adminId: string): Promise<void> {
-  const supabase = await supabaseServer();
-  const { data: pinned } = await supabase.from("posts").select("id").not("pinned_at", "is", null).limit(1).maybeSingle();
-  if (!pinned) return;
-  await supabase.from("posts").update({ pinned_at: null, pinned_by: null }).eq("id", pinned.id);
-  await logAdminAction({
-    actorId: adminId,
-    action: ADMIN_ACTION.UNPIN_POST,
-    targetType: AUDIT_TARGET_TYPE.POST,
-    targetId: pinned.id,
-    metadata: {},
-  });
-}
-
-/** Id of the currently pinned post, or null. */
-export async function getPinnedPostId(): Promise<string | null> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase.from("posts").select("id").not("pinned_at", "is", null).limit(1).maybeSingle();
-  return data?.id ?? null;
-}
-
-/** Pinned post row with tags and created_at for idempotency check. */
-export async function getPinnedPostRow(): Promise<{ id: string; tags: string[]; created_at: string } | null> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase
-    .from("posts")
-    .select("id, tags, created_at")
-    .not("pinned_at", "is", null)
-    .limit(1)
-    .maybeSingle();
-  if (!data) return null;
-  return {
-    id: data.id,
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    created_at: data.created_at ?? "",
-  };
-}
-
-/** Pinned post row with tags and pinned_at for Daily Prayer idempotency (today in Asia/Seoul). */
-export async function getPinnedPostRowWithPinnedAt(): Promise<{ id: string; tags: string[]; pinned_at: string } | null> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase
-    .from("posts")
-    .select("id, tags, pinned_at")
-    .not("pinned_at", "is", null)
-    .limit(1)
-    .maybeSingle();
-  if (!data || !data.pinned_at) return null;
-  return {
-    id: data.id,
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    pinned_at: data.pinned_at,
-  };
-}
-
 /** Today's date YYYY-MM-DD in Asia/Seoul (for idempotency). */
 function getTodayAsiaSeoul(): string {
   const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" });
@@ -283,37 +212,33 @@ function getTodayAsiaSeoul(): string {
   return `${y}-${m}-${d}`;
 }
 
-/** True if ISO timestamp's calendar day in Asia/Seoul equals today (Asia/Seoul). */
-function isPinnedAtTodayAsiaSeoul(pinnedAt: string): boolean {
-  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" });
-  const parts = formatter.formatToParts(new Date(pinnedAt));
-  const y = parts.find((p) => p.type === "year")?.value ?? "";
-  const m = parts.find((p) => p.type === "month")?.value ?? "";
-  const d = parts.find((p) => p.type === "day")?.value ?? "";
-  const today = getTodayAsiaSeoul();
-  return `${y}-${m}-${d}` === today;
-}
-
-/** Create today's Daily Prayer post, pin it, and log audit. Idempotent: if pinned post has tag daily-prayer and pinned_at is today (Asia/Seoul), return reused. */
-export async function createDailyPrayerAndPin(adminId: string): Promise<{ postId: string; reused: boolean }> {
+/** Create today's Daily Prayer post and log audit. Idempotent: if a post with same title by this admin exists today, return reused. */
+export async function createDailyPrayer(adminId: string): Promise<{ postId: string; reused: boolean }> {
   const { buildDailyPrayerPost } = await import("@/lib/domain/dailyPrayer");
   const supabase = await supabaseServer();
   const today = getTodayAsiaSeoul();
+  const payload = buildDailyPrayerPost({ date: new Date() });
 
-  const pinned = await getPinnedPostRowWithPinnedAt();
-  const hasDailyPrayerTag = pinned?.tags?.some((t) => String(t).toLowerCase() === "daily-prayer") ?? false;
-  if (pinned && hasDailyPrayerTag && isPinnedAtTodayAsiaSeoul(pinned.pinned_at)) {
+  const { data: existing } = await supabase
+    .from("posts")
+    .select("id")
+    .eq("author_id", adminId)
+    .eq("category", "PRAYER")
+    .eq("title", payload.title)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
     await logAdminAction({
       actorId: adminId,
       action: ADMIN_ACTION.CREATE_DAILY_PRAYER,
       targetType: AUDIT_TARGET_TYPE.POST,
-      targetId: pinned.id,
+      targetId: existing.id,
       metadata: { date: today, title: "Daily Prayer (reused)", reused: true },
     });
-    return { postId: pinned.id, reused: true };
+    return { postId: existing.id, reused: true };
   }
 
-  const payload = buildDailyPrayerPost({ date: new Date() });
   const { data: row, error: insertError } = await supabase
     .from("posts")
     .insert({
@@ -323,15 +248,11 @@ export async function createDailyPrayerAndPin(adminId: string): Promise<{ postId
       content: payload.content,
       visibility: payload.visibility,
       tags: payload.tags,
-      is_daily_prayer: true,
-      daily_prayer_date: today,
     })
     .select("id")
     .single();
 
   if (insertError || !row) throw new Error(insertError?.message ?? "Failed to create post");
-
-  await pinPost(adminId, row.id);
 
   await logAdminAction({
     actorId: adminId,

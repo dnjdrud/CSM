@@ -19,7 +19,7 @@
 - **`/principles`**: 원칙 페이지. 좁은 읽기 폭(max-w-[65ch]), leading-7, 섹션 간격·선언형 톤.
 - **`/support`**, **`/support/[id]`**, **`/support/thank-you`**: 정적·지원 플로우.
 - **`/onboarding`**: ① 프로필 있으면 /feed. ② Auth만 있으면 **InviteGateForm**(You're invited, 초대 코드) → **OnboardingForm**(Introduce yourself, 이름·역할·bio·초대코드). ③ 비로그인 시 **MagicLinkForm**(이메일 → 매직 링크, "used only for sign-in, not shared" 안내).
-- **`/feed`**: 피드(ALL / FOLLOWING), 상단 ComposeBox, 고정글 1개, 커서 기반 무한 스크롤, Daily Prayer 안내, 포스트 카드(반응·인라인 댓글·본인 글 수정/삭제, TESTIMONY 시 "Testimony" 뱃지, 고정글은 "Pinned by community" 문구, Daily Prayer는 소프트 캘아웃). PostCard 모바일: 카드 padding·액션 44px 터치, 반응 토글 시 미세 스케일 피드백. ComposeBox: 콘텐츠 있으면 Post 버튼 항상 노출, 성공 시 "Posted" 잠시 후 접기, 에러 시 인라인 안내.
+- **`/feed`**: 피드(ALL / FOLLOWING), 상단 ComposeBox, 커서 기반 무한 스크롤, Daily Prayer 안내, 포스트 카드(반응·인라인 댓글·본인 글 수정/삭제, TESTIMONY 시 "Testimony" 뱃지, Daily Prayer는 소프트 캘아웃). PostCard 모바일: 카드 padding·액션 44px 터치, 반응 토글 시 미세 스케일 피드백. ComposeBox: 콘텐츠 있으면 Post 버튼 항상 노출, 성공 시 "Posted" 잠시 후 접기, 에러 시 인라인 안내.
 - **`/post/[id]`**: 단일 포스트 상세, 댓글·반응·신고·본인 글/댓글 수정·삭제.
 - **`/write`**: ComposeBox 전용 글쓰기, 게시 후 /feed 리다이렉트.
 - **`/topics`**, **`/topics/[tag]`**: 태그 목록·태그별 포스트.
@@ -28,11 +28,11 @@
 - **`/me` (My Space)**: **개인 전용**. Today(일일 프롬프트 Prayer/Gratitude), Overview 카드(활성 기도·응답된 기도·감사·명상), 탭(Prayer / Gratitude / Meditation), NoteComposer·MeditationComposer, NotesList(NoteCard·MeditationNoteCard). **Answered prayer**에 Answer note 추가/편집, **Share as testimony**로 TESTIMONY 포스트 생성·링크.
 - **`/profile/[id]`**: **프로필 홈 v2(섹션 기반)**. ProfileHero(이름 강조, 역할은 plain text, 소속·bio 절제, Follow/UserActionsMenu/Go to My Space/Support this work·44px 터치), ProfileStatsStrip(StatCard variant="plain", 테두리 없음·숫자 강조), 역할별 섹션 순서(Notes·Testimonies·Recent posts·About), FeaturedNotes·FeaturedTestimonies·RecentPosts·ProfileAboutSection.
 - **`/admin`**: 어드민 대시보드(통계 + Create Daily Prayer).
-- **`/admin/moderation`**: 신고 큐(Pin/Unpin/Hide/Delete comment/Resolve).
+- **`/admin/moderation`**: 신고 큐(Hide/Delete comment/Resolve).
 - **`/admin/users`**, **`/admin/audit`**, **`/admin/invites`**: 사용자·감사·초대 관리.
 
 ### 컴포넌트
-- **ComposeBox**, **FeedScopeToggle**(토큰 사용, 탭 전환 부드럽게), **FeedInfiniteList**, **PostCard**(단일 primary 라벨·고정/Daily Prayer 스타일, 본인 글 PostActionsMenu, 인라인 댓글·들여쓰기·작은 글씨), **PostActionsMenu**, **CommentList**/**CommentForm**/**CommentItem**.
+- **ComposeBox**, **FeedScopeToggle**(토큰 사용, 탭 전환 부드럽게), **FeedInfiniteList**, **PostCard**(단일 primary 라벨·Daily Prayer 스타일, 본인 글 PostActionsMenu, 인라인 댓글·들여쓰기·작은 글씨), **PostActionsMenu**, **CommentList**/**CommentForm**/**CommentItem**.
 - **My Space**: **DailyPromptCards**(소프트 CTA·테두리 버튼), **NoteComposer**, **NoteCard**(border-gray-100·bg-gray-50/30 개인 노트 톤), **MeditationComposer**/**MeditationNoteCard**/**MeditationEditorModal**, **MySpaceOverviewCards**. **NotesTabs** 토큰·44px 터치.
 - **Profile**: **ProfileHero**, **ProfileStatsStrip**, **ProfileSection**, **FeaturedNotes**, **FeaturedTestimonies**, **RecentPosts**, **ProfileAboutSection**, **ProfileFollowButton**, **UserActionsMenu**.
 - **UI 공통**: 버튼/탭에 transition·active 상태, disabled는 opacity-40·cursor-not-allowed. UI 텍스트는 영어 유지.
@@ -43,7 +43,7 @@
 
 ### 도메인 타입 (`lib/domain/types.ts`)
 - **User**: id, name, role (LAY | MINISTRY_WORKER | PASTOR | MISSIONARY | SEMINARIAN | ADMIN), bio, affiliation, createdAt.
-- **Post**: id, authorId, **category (PRAYER | DEVOTIONAL | MINISTRY | TESTIMONY)**, title?, content, visibility, tags[], reflectionPrompt?, createdAt, pinnedAt?, pinnedBy?.
+- **Post**: id, authorId, **category (PRAYER | DEVOTIONAL | MINISTRY | TESTIMONY)**, title?, content, visibility, tags[], reflectionPrompt?, createdAt.
 - **Note**: id, userId, type (PRAYER | GRATITUDE | MEDITATION), title?, content, tags[], isArchived, shareToProfile, publishedPostId?, **status?** (PRAYER용 ONGOING | ANSWERED), **answerNote?**, createdAt, updatedAt.
 - **Comment**, **Reaction**, **Follow**, **Notification**, **ModerationReport** 등.
 
@@ -67,7 +67,7 @@
 - Sign in → onboarding → magic link → /auth/callback → 프로필 생성 후 피드 등 이용.
 
 ### 콘텐츠
-- **피드**: ALL/FOLLOWING, 고정글 1개, listFeedPostsPage + 무한 스크롤, Daily Prayer 안내, PostCard(반응·댓글·수정/삭제·TESTIMONY 뱃지).
+- **피드**: ALL/FOLLOWING, listFeedPostsPage + 무한 스크롤, Daily Prayer 안내, PostCard(반응·댓글·수정/삭제·TESTIMONY 뱃지).
 - **글쓰기**: ComposeBox(피드/Write) → composePostAction / publishPostAction.
 - **댓글**: 피드 인라인·포스트 상세 CommentForm/CommentList, 본인 댓글 Edit/Delete.
 - **포스트 수정/삭제**: 본인만 PostActionsMenu → Edit/Delete.
@@ -81,7 +81,7 @@
 - **Profile v2**: Hero → Stats(Notes/Posts/Testimonies) → 역할별 섹션 순서(Notes, Testimonies, Recent posts, About). Missionary는 Notes→Testimonies→Posts→About; Lay/Seminarian은 Notes→Posts→About(Testimonies 있으면 삽입); Pastor/Ministry Worker/Admin은 Posts→Notes→About.
 
 ### 신고·관리·Daily Prayer
-- Report → moderation_reports. ADMIN이 /admin/moderation에서 Pin/Unpin/Hide/Delete comment/Resolve. **Create Daily Prayer** → createDailyPrayerAndPin, audit CREATE_DAILY_PRAYER+PIN_POST.
+- Report → moderation_reports. ADMIN이 /admin/moderation에서 Hide/Delete comment/Resolve. **Create Daily Prayer** → createDailyPrayer, audit CREATE_DAILY_PRAYER.
 
 ---
 
@@ -94,7 +94,7 @@
 - 공개: `/`, `/principles`, `/onboarding`, `/auth/callback`. 그 외 로그인 필수. `/admin/*`는 role === 'ADMIN' 또는 ADMIN_EMAILS.
 
 ### 페이지·액션
-- 포스트/댓글 수정·삭제: 작성자만. 고정글·Daily Prayer 생성: ADMIN만. **Answer note·Share as testimony**: 노트 소유자만, PRAYER + ANSWERED + answer_note 조건.
+- 포스트/댓글 수정·삭제: 작성자만. Daily Prayer 생성: ADMIN만. **Answer note·Share as testimony**: 노트 소유자만, PRAYER + ANSWERED + answer_note 조건.
 
 ---
 
@@ -106,7 +106,7 @@
 ### 서버 액션
 - **feed**: loadMoreFeedAction. **post/[id]**: addCommentAction, getCommentsForPostAction, deleteCommentAction, updateCommentAction, deletePostAction, updatePostAction.
 - **me**: createNoteAction, updateNoteAction, deleteNoteAction, toggleShareToProfileAction, publishNoteAction, **updatePrayerAnswerAction**, **publishTestimonyAction** (revalidatePath /me, /feed).
-- **admin**: createDailyPrayerAction; **admin/moderation**: hidePostAction, pinPostAction, unpinPostAction 등.
+- **admin**: createDailyPrayerAction; **admin/moderation**: hidePostAction 등.
 
 ---
 
@@ -120,7 +120,7 @@
 - **supabaseRepository.ts**: notes status/answer_note, posts title/category TESTIMONY, publishPrayerAsTestimony(조건 검사 후 Post 생성·notes 업데이트).
 
 ### 마이그레이션
-- users, posts( title, pinned_at, pinned_by, hidden_at, hidden_by ), notes( status, answer_note ), comments, follows, reactions, notifications, moderation_reports, audit_logs 등.
+- users, posts( title, hidden_at, hidden_by ), notes( status, answer_note ), comments, follows, reactions, notifications, moderation_reports, audit_logs 등.
 
 ---
 
@@ -131,7 +131,7 @@
 | **랜딩·정적** | /, /principles, /support, /support/[id], thank-you | 공개 |
 | **매직 링크·온보딩** | /onboarding, /auth/callback, 프로필 생성 | |
 | **글로벌 헤더** | Community, My Space, Topics, Search, Notifications, Write, Support | |
-| **피드** | ALL/FOLLOWING, ComposeBox, 고정글, 무한 스크롤, Daily Prayer 안내, PostCard(TESTIMONY 뱃지) | |
+| **피드** | ALL/FOLLOWING, ComposeBox, 무한 스크롤, Daily Prayer 안내, PostCard(TESTIMONY 뱃지) | |
 | **포스트 상세** | 본문·댓글·반응·신고·본인 글/댓글 수정·삭제 | |
 | **글쓰기** | ComposeBox(피드/Write), publishPostAction | |
 | **포스트 수정/삭제** | 본인만 PostActionsMenu | |
@@ -146,7 +146,7 @@
 | **프로필 v2** | /profile/[id] — Hero, Stats, 역할별 섹션(Notes, Testimonies, Posts, About) | |
 | **팔로우·반응·신고** | ProfileFollowButton, UserActionsMenu, 반응 토글, Report | |
 | **어드민** | /admin(대시보드, Create Daily Prayer), /admin/moderation(신고 큐) | ADMIN |
-| **고정글·Daily Prayer** | getPinnedPost, Create Daily Prayer, audit | |
+| **Daily Prayer** | Create Daily Prayer, audit | |
 
 ---
 

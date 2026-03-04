@@ -6,21 +6,18 @@ import { useState } from "react";
 import type { ModerationReport } from "@/lib/domain/types";
 import { DangerZoneConfirm } from "../../_components/DangerZoneConfirm";
 import { useToast } from "@/components/ui/Toast";
-import { hidePostAction, deleteCommentAction, resolveReportAction, pinPostAction, unpinPostAction } from "../actions";
+import { hidePostAction, deleteCommentAction, resolveReportAction } from "../actions";
 
 export function ModerationReportActions({
   report,
   postLink,
-  pinnedPostId,
 }: {
   report: ModerationReport;
   postLink?: string;
-  pinnedPostId?: string;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const toast = useToast();
-  const isPinned = Boolean(report.postId && pinnedPostId === report.postId);
 
   async function handleHidePost() {
     if (!report.postId || pending) return;
@@ -30,32 +27,6 @@ export function ModerationReportActions({
     if (result.ok) {
       router.refresh();
       toast.show("Hidden.");
-    } else {
-      toast.error();
-    }
-  }
-
-  async function handlePinPost() {
-    if (!report.postId || pending) return;
-    setPending(true);
-    const result = await pinPostAction(report.postId);
-    setPending(false);
-    if (result.ok) {
-      router.refresh();
-      toast.show("Pinned.");
-    } else {
-      toast.error();
-    }
-  }
-
-  async function handleUnpinPost() {
-    if (pending) return;
-    setPending(true);
-    const result = await unpinPostAction();
-    setPending(false);
-    if (result.ok) {
-      router.refresh();
-      toast.show("Unpinned.");
     } else {
       toast.error();
     }
@@ -96,26 +67,6 @@ export function ModerationReportActions({
         >
           View post
         </Link>
-      )}
-      {report.type === "REPORT_POST" && report.postId && !isPinned && (
-        <DangerZoneConfirm
-          title="Pin post"
-          description="This post will be shown at the top of the feed for everyone. Only one post can be pinned at a time."
-          confirmText="pin post"
-          onConfirm={handlePinPost}
-          buttonLabel="Pin post"
-          disabled={pending}
-        />
-      )}
-      {report.type === "REPORT_POST" && report.postId && isPinned && (
-        <DangerZoneConfirm
-          title="Unpin post"
-          description="This post will no longer be pinned at the top of the feed."
-          confirmText="unpin post"
-          onConfirm={handleUnpinPost}
-          buttonLabel="Unpin post"
-          disabled={pending}
-        />
       )}
       {report.type === "REPORT_POST" && report.postId && (
         <DangerZoneConfirm

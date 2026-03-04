@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted, getPinnedPost } from "@/lib/data/repository";
+import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted } from "@/lib/data/repository";
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { getAdminOrNull } from "@/lib/admin/guard";
@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { scopeFromSearchParams } from "./_lib/scope";
 import { FeedHeader } from "./_components/FeedHeader";
 import { FeedComposer } from "./_components/FeedComposer";
-import { FeedPinnedPost } from "./_components/FeedPinnedPost";
 import { FeedList } from "./_components/FeedList";
 
 export const dynamic = "force-dynamic";
@@ -28,15 +27,12 @@ export default async function FeedPage({
   const adminContext = await getAdminOrNull();
   const isAdmin = Boolean(adminContext);
 
-  const [pinnedPost, firstPage] = await Promise.all([
-    getPinnedPost(currentUser?.id ?? null),
-    listFeedPostsPage({
-      currentUserId: currentUser?.id ?? null,
-      scope: scopeParam,
-      limit: FEED_PAGE_SIZE,
-      cursor: null,
-    }),
-  ]);
+  const firstPage = await listFeedPostsPage({
+    currentUserId: currentUser?.id ?? null,
+    scope: scopeParam,
+    limit: FEED_PAGE_SIZE,
+    cursor: null,
+  });
 
   if (process.env.NODE_ENV !== "production") {
     console.log("[FeedPage]", { rawCount: firstPage.items.length, firstId: firstPage.items[0]?.id ?? null, scope: scopeParam, currentUserId: currentUser?.id ?? null });
@@ -71,15 +67,6 @@ export default async function FeedPage({
     console.log("[FeedPage] filtered", { filteredByBlock, filteredByMute, filteredByCanView, visibleCount: visibleItems.length });
   }
 
-  const showPinned =
-    pinnedPost &&
-    currentUser &&
-    (() => {
-      if (isBlocked(currentUser.id, pinnedPost.authorId) || isMuted(currentUser.id, pinnedPost.authorId))
-        return false;
-      return canViewPost(pinnedPost, currentUser, isFollowing);
-    })();
-
   return (
     <TimelineContainer>
       <h1 className="sr-only">Feed</h1>
@@ -98,15 +85,7 @@ export default async function FeedPage({
       />
       {currentUser && <FeedComposer />}
       <div className="space-y-6 sm:space-y-5 py-4">
-        {showPinned && pinnedPost && (
-          <ul className="list-none p-0" role="list">
-            <FeedPinnedPost
-              pinnedPost={pinnedPost}
-              currentUserId={currentUser?.id ?? null}
-            />
-          </ul>
-        )}
-        {visibleItems.length === 0 && !showPinned ? (
+        {visibleItems.length === 0 ? (
           <EmptyState
             title="Nothing here yet"
             description="No posts yet. Be the first to share."

@@ -415,7 +415,7 @@ export type ListFeedPostsPageResult = {
   nextCursor: { createdAt: string; id: string } | null;
 };
 
-/** Paginated feed. Excludes pinned; same visibility/scope as listFeedPosts. */
+/** Paginated feed; same visibility/scope as listFeedPosts. */
 export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promise<ListFeedPostsPageResult> {
   if (DATA_MODE === "supabase") return supabaseRepo.listFeedPostsPage(params);
   const session = await getSession();
@@ -453,12 +453,6 @@ export async function getPostById(id: string): Promise<PostWithAuthor | null> {
   if (!post) return null;
   const session = await getSession();
   return toPostWithAuthor(post, session?.userId ?? null);
-}
-
-/** Pinned post for feed top (at most one). Supabase only; memory returns null. */
-export async function getPinnedPost(currentUserId: string | null): Promise<PostWithAuthor | null> {
-  if (DATA_MODE === "supabase") return supabaseRepo.getPinnedPost(currentUserId);
-  return null;
 }
 
 /** Posts by author for profile page, chronological. */

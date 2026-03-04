@@ -6,8 +6,6 @@ import {
   hidePost,
   deleteComment,
   resolveModerationReport,
-  pinPost,
-  unpinPost,
 } from "@/lib/data/adminRepository";
 
 export async function hidePostAction(postId: string, reportId: string): Promise<{ ok: boolean; error?: string }> {
@@ -19,32 +17,6 @@ export async function hidePostAction(postId: string, reportId: string): Promise<
     revalidatePath("/admin/moderation");
     revalidatePath("/feed");
     revalidatePath(`/post/${postId}`);
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
-  }
-}
-
-export async function pinPostAction(postId: string): Promise<{ ok: boolean; error?: string }> {
-  const admin = await getAdminOrNull();
-  if (!admin) return { ok: false, error: "Forbidden" };
-  try {
-    await pinPost(admin.userId, postId);
-    revalidatePath("/admin/moderation");
-    revalidatePath("/feed");
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
-  }
-}
-
-export async function unpinPostAction(): Promise<{ ok: boolean; error?: string }> {
-  const admin = await getAdminOrNull();
-  if (!admin) return { ok: false, error: "Forbidden" };
-  try {
-    await unpinPost(admin.userId);
-    revalidatePath("/admin/moderation");
-    revalidatePath("/feed");
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed" };

@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { User } from "@/lib/domain/types";
 import { listOpenReports } from "@/lib/data/moderationRepository";
 import { getUserById } from "@/lib/data/repository";
-import { getPinnedPostId } from "@/lib/data/adminRepository";
 import { Card, CardContent } from "@/components/ui/Card";
 import { ModerationReportActions } from "./_components/ModerationReportActions";
 
@@ -17,10 +16,7 @@ function formatDate(iso: string) {
 }
 
 export default async function AdminModerationPage() {
-  const [reports, pinnedPostId] = await Promise.all([
-    listOpenReports(),
-    getPinnedPostId(),
-  ]);
+  const reports = await listOpenReports();
   const userIds = new Set<string>();
   reports.forEach((r) => {
     userIds.add(r.reporterId);
@@ -88,7 +84,6 @@ export default async function AdminModerationPage() {
                     <ModerationReportActions
                       report={r}
                       postLink={r.postId ? `/post/${r.postId}` : undefined}
-                      pinnedPostId={pinnedPostId ?? undefined}
                     />
                   </td>
                 </tr>

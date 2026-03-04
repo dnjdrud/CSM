@@ -23,7 +23,6 @@ type JsonResponse = {
   postsSummary: {
     total_posts: number;
     visible_posts: number;
-    pinned_posts: number;
     newest_created_at: string | null;
   } | null;
 };
@@ -99,7 +98,6 @@ export async function GET(request: NextRequest) {
     payload.postsSummary = {
       total_posts: totalCount ?? 0,
       visible_posts: totalCount ?? 0,
-      pinned_posts: 0,
       newest_created_at: newestRow?.created_at ?? null,
     };
 

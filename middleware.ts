@@ -1,7 +1,8 @@
 /**
- * Route guards. Never redirect /api or static assets.
- * Public paths: /, /login, /onboarding, /request-access, /principles, /support, /auth/callback, /auth/complete.
- * App paths (/feed, /profile, /me, /post, /notifications, /search, /topics, /write) require session.
+ * Route guards. Never redirect /api/* or static assets.
+ * Public: /, /login, /onboarding, /request-access, /auth/callback, /auth/complete
+ * (and /api/auth/complete, /api/debug/*, /api/notifications/unread-count are skipped via /api early return).
+ * App paths (/feed, /profile, /me, /post, ...) require session + profile.
  * Admin (/admin) requires session + role ADMIN.
  */
 import { NextResponse } from "next/server";

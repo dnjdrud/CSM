@@ -1,5 +1,5 @@
 /**
- * Daily Prayer thread template. Used by admin to create and pin today's prayer post.
+ * Daily Prayer thread template. Used by admin to create today's prayer post.
  */
 
 /** Format date as short English label, e.g. "Mar 3". */
