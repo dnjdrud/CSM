@@ -14,6 +14,7 @@ type Props = {
   initialNextCursorStr: string | null;
   scope: Scope;
   currentUserId?: string | null;
+  followingIds: string[];
 };
 
 export function FeedInfiniteList({
@@ -21,6 +22,7 @@ export function FeedInfiniteList({
   initialNextCursorStr,
   scope,
   currentUserId,
+  followingIds,
 }: Props) {
   const [items, setItems] = useState<PostWithAuthor[]>(initialItems);
   const [nextCursorStr, setNextCursorStr] = useState<string | null>(initialNextCursorStr);
@@ -71,7 +73,12 @@ export function FeedInfiniteList({
       <ul className="list-none p-0 space-y-6 sm:space-y-5" role="list">
         {items.map((post) => (
           <li key={post.id}>
-            <FeedPostCard post={post} currentUserId={currentUserId ?? null} compact />
+            <FeedPostCard
+              post={post}
+              currentUserId={currentUserId ?? null}
+              initialFollowing={followingIds.includes(post.authorId)}
+              compact
+            />
           </li>
         ))}
       </ul>

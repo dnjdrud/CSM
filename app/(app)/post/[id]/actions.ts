@@ -51,13 +51,12 @@ export async function addCommentAction(
   }
 }
 
-/** Server Action used by form action=... on post detail page. */
-export async function addCommentFormAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+/** Server Action used by form action=... on post detail page. Must return void for form action type. */
+export async function addCommentFormAction(formData: FormData): Promise<void> {
   const postId = formData.get("postId");
   const content = formData.get("content");
   const parentId = formData.get("parentId");
-  // Delegate to main addCommentAction so all logging and validation is shared.
-  return addCommentAction(
+  await addCommentAction(
     typeof postId === "string" ? postId : "",
     typeof content === "string" ? content : "",
     typeof parentId === "string" && parentId.length > 0 ? parentId : undefined

@@ -6,6 +6,7 @@ type Props = {
   initialNextCursorStr: string | null;
   scope: "ALL" | "FOLLOWING";
   currentUserId: string | null;
+  followingIds: string[];
 };
 
 export function FeedList({
@@ -13,6 +14,7 @@ export function FeedList({
   initialNextCursorStr,
   scope,
   currentUserId,
+  followingIds,
 }: Props) {
   return (
     <FeedInfiniteList
@@ -20,6 +22,7 @@ export function FeedList({
       initialNextCursorStr={initialNextCursorStr}
       scope={scope}
       currentUserId={currentUserId}
+      followingIds={followingIds}
     />
   );
 }

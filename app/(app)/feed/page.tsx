@@ -93,6 +93,7 @@ export default async function FeedPage({
             initialNextCursorStr={firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null}
             scope={scopeParam}
             currentUserId={currentUser?.id ?? null}
+            followingIds={followingIds}
           />
         )}
       </div>

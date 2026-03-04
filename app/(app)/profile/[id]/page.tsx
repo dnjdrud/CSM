@@ -1,30 +1,17 @@
-import Link from "next/link";
-import { getSession } from "@/lib/auth/session";
-import { getProfileWithError } from "@/lib/data/repository";
+import { ProfileShell } from "./_components/ProfileShell";
+import { RecentPosts } from "./_components/RecentPosts";
+import { FeaturedTestimonies } from "./_components/FeaturedTestimonies";
+import {
+  getProfileWithError,
+  getCurrentUser,
+  listPostsByAuthorId,
+  listFollowerIds,
+  listFollowingIds,
+} from "@/lib/data/repository";
+import { isBlocked, isMuted } from "@/lib/data/repository";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-async function DebugPanel({
-  userId,
-  role,
-}: {
-  userId: string | null;
-  role: string | null;
-}) {
-  if (process.env.NODE_ENV === "production") return null;
-  return (
-    <div
-      className="mb-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] text-amber-900"
-      role="status"
-      aria-label="DEV ONLY session debug"
-    >
-      <p>
-        <strong>DEV ONLY</strong> Session: userId={userId ?? "—"} role={role ?? "—"}
-      </p>
-    </div>
-  );
-}
 
 export default async function ProfilePage({
   params,
@@ -33,70 +20,75 @@ export default async function ProfilePage({
 }) {
   const { id } = await params;
 
-  const session = await getSession();
-  const { user, errorMessage } = await getProfileWithError(id);
+  const [{ user, errorMessage }, currentUser, posts, followerIds, followingIds] =
+    await Promise.all([
+      getProfileWithError(id),
+      getCurrentUser(),
+      listPostsByAuthorId(id),
+      listFollowerIds(id),
+      listFollowingIds(id),
+    ]);
 
   if (!user) {
     return (
-      <main className="mx-auto w-full max-w-4xl px-4 py-8">
-        <DebugPanel userId={session?.userId ?? null} role={session?.role ?? null} />
+      <main className="mx-auto w-full max-w-2xl px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">
-          <h1 className="text-xl font-semibold">Profile fetch failed</h1>
-          {errorMessage ? (
-            <p className="mt-2 text-sm">{errorMessage}</p>
-          ) : (
-            <p className="mt-2 text-sm">User not found or repository error.</p>
-          )}
+          <h1 className="text-xl font-semibold">Profile unavailable</h1>
+          <p className="mt-2 text-sm">
+            {errorMessage ?? "User not found or repository error."}
+          </p>
         </div>
       </main>
     );
   }
 
+  const currentUserId = currentUser?.id ?? null;
+  const blocked = currentUserId ? isBlocked(currentUserId, id) : false;
+  const muted = currentUserId ? isMuted(currentUserId, id) : false;
+
+  const viewerFollowingIds = currentUserId
+    ? await listFollowingIds(currentUserId)
+    : [];
+  const following = currentUserId
+    ? viewerFollowingIds.includes(user.id)
+    : false;
+
+  const testimonyPosts = posts.filter((p) => p.category === "TESTIMONY");
+  const normalPosts = posts.filter((p) => p.category !== "TESTIMONY");
+
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <DebugPanel userId={session?.userId ?? null} role={session?.role ?? null} />
-      <div className="rounded-2xl border border-theme-border/60 bg-theme-surface p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-theme-primary">
-          {user.name || "Unknown"}
-        </h1>
-
-        <div className="mt-2 space-y-1 text-sm text-theme-muted">
-          <div>Role: {user.role}</div>
-          {"church" in user && (user as { church?: string }).church ? (
-            <div>Church: {(user as { church: string }).church}</div>
-          ) : null}
-          {"username" in user && (user as { username?: string }).username ? (
-            <div>Username: {(user as { username: string }).username}</div>
-          ) : null}
-          {user.affiliation ? <div>Affiliation: {user.affiliation}</div> : null}
-          {user.bio ? (
-            <div className="mt-2 whitespace-pre-wrap text-theme-primary/90">
-              {user.bio}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Link
-            href={`/profile/${user.id}/posts`}
-            className="rounded-lg border border-theme-border/60 bg-theme-surface-2 px-3 py-2 text-sm text-theme-primary hover:opacity-80"
-          >
-            Posts
-          </Link>
-          <Link
-            href={`/profile/${user.id}/notes`}
-            className="rounded-lg border border-theme-border/60 bg-theme-surface-2 px-3 py-2 text-sm text-theme-primary hover:opacity-80"
-          >
-            Notes
-          </Link>
-          <Link
-            href={`/profile/${user.id}/testimonies`}
-            className="rounded-lg border border-theme-border/60 bg-theme-surface-2 px-3 py-2 text-sm text-theme-primary hover:opacity-80"
-          >
-            Testimonies
-          </Link>
-        </div>
-      </div>
-    </main>
+    <ProfileShell
+      user={user}
+      currentUserId={currentUserId}
+      following={following}
+      isMuted={muted}
+      isBlocked={blocked}
+      postsCount={normalPosts.length}
+      followerCount={followerIds.length}
+      followingCount={followingIds.length}
+    >
+      <main className="mx-auto w-full max-w-2xl px-4 py-4 space-y-8">
+        <section aria-label="Recent posts">
+          <h2 className="mb-3 text-sm font-semibold text-gray-900">Recent posts</h2>
+          <RecentPosts
+            posts={normalPosts}
+            profileId={user.id}
+            currentUserId={currentUserId}
+            blocked={blocked}
+          />
+        </section>
+        <section aria-label="Featured testimonies">
+          <h2 className="mb-3 text-sm font-semibold text-gray-900">
+            Featured testimonies
+          </h2>
+          <FeaturedTestimonies
+            posts={testimonyPosts}
+            profileId={user.id}
+            currentUserId={currentUserId}
+            blocked={blocked}
+          />
+        </section>
+      </main>
+    </ProfileShell>
   );
 }

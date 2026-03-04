@@ -21,13 +21,11 @@ export default async function PostPage({
 
   if (!post) notFound();
 
-  const isFollowingSnap = currentUser
-    ? await listFollowingIds(currentUser.id).then(
-        (ids) => (followerId: string, followingId: string) =>
-          followerId === currentUser.id && ids.includes(followingId)
-      )
-    : () => false;
+  const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
+  const isFollowingSnap = (followerId: string, followingId: string) =>
+    currentUser != null && followerId === currentUser.id && followingIds.includes(followingId);
   const canView = currentUser && canViewPost(post, currentUser, isFollowingSnap);
+  const authorFollowing = currentUser != null && followingIds.includes(post.authorId);
 
   if (!canView) {
     return (
@@ -63,7 +61,7 @@ export default async function PostPage({
           ← Back to feed
         </Link>
 
-        <PostDetailHeader post={post} currentUser={currentUser} />
+        <PostDetailHeader post={post} currentUser={currentUser} authorFollowing={authorFollowing} />
 
         <PostDetailBody post={post} />
 

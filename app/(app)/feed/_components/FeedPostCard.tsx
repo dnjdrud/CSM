@@ -15,15 +15,18 @@ import type { PostWithAuthor } from "@/lib/domain/types";
 type Props = {
   post: PostWithAuthor;
   currentUserId: string | null;
+  /** Whether current user follows the post author (for Follow button). */
+  initialFollowing: boolean;
   compact?: boolean;
 };
 
-/** PostCard wired to feed route actions (reaction, comments, post edit/delete). */
-export function FeedPostCard({ post, currentUserId, compact = false }: Props) {
+/** PostCard wired to feed route actions (reaction, comments, post edit/delete, follow). */
+export function FeedPostCard({ post, currentUserId, initialFollowing, compact = false }: Props) {
   return (
     <PostCard
       post={post}
       currentUserId={currentUserId}
+      initialFollowing={initialFollowing}
       compact={compact}
       onToggleReaction={toggleReactionAction}
       getCommentsForPost={getCommentsForPostAction}

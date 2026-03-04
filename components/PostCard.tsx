@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { CommentForm } from "@/app/(app)/post/[id]/_components/CommentForm";
 import { CommentList } from "@/app/(app)/post/[id]/_components/CommentList";
 import { PostActionsMenu } from "@/app/(app)/post/[id]/_components/PostActionsMenu";
+import { FollowButton } from "@/components/FollowButton";
 import { useClientSession } from "@/lib/auth/useClientSession";
 
 function relativeTime(iso: string): string {
@@ -51,10 +52,13 @@ export function PostCard({
   updateCommentAction: updateCommentActionProp,
   deletePostAction: deletePostActionProp,
   updatePostAction: updatePostActionProp,
+  initialFollowing,
 }: {
   post: PostWithAuthor;
   currentUserId?: string | null;
   compact?: boolean;
+  /** When set, show Follow button for post author (feed only). */
+  initialFollowing?: boolean;
   onToggleReaction?: (postId: string, type: ReactionType) => Promise<{ ok?: boolean; reacted?: boolean } | void>;
   getCommentsForPost?: (postId: string) => Promise<CommentWithAuthor[]>;
   addCommentAction?: AddCommentAction;
@@ -199,16 +203,25 @@ export function PostCard({
             {relativeTime(post.createdAt)}
           </time>
         </div>
-        {isAuthor && (
-          <PostActionsMenu
-            post={post}
-            compact
-            onUpdated={() => router.refresh()}
-            onDeleted={() => router.refresh()}
-            deletePostAction={deletePostActionProp}
-            updatePostAction={updatePostActionProp}
-          />
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {isAuthor && (
+            <PostActionsMenu
+              post={post}
+              compact
+              onUpdated={() => router.refresh()}
+              onDeleted={() => router.refresh()}
+              deletePostAction={deletePostActionProp}
+              updatePostAction={updatePostActionProp}
+            />
+          )}
+          {!isAuthor && effectiveUserId != null && initialFollowing !== undefined && (
+            <FollowButton
+              followingId={post.authorId}
+              initialFollowing={initialFollowing}
+              compact
+            />
+          )}
+        </div>
       </header>
 
       <div className="mt-2">

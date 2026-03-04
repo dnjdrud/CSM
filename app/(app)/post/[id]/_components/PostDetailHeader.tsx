@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ROLE_DISPLAY } from "@/lib/domain/types";
 import { ReportMenu } from "@/components/ReportMenu";
+import { FollowButton } from "@/components/FollowButton";
 import { PostActionsMenu } from "./PostActionsMenu";
 import { formatDate } from "../_lib/format";
 import type { PostWithAuthor } from "@/lib/domain/types";
@@ -9,9 +10,13 @@ import type { User } from "@/lib/domain/types";
 type Props = {
   post: PostWithAuthor;
   currentUser: User | null;
+  /** Whether current user follows the post author (for Follow button). */
+  authorFollowing?: boolean;
 };
 
-export function PostDetailHeader({ post, currentUser }: Props) {
+export function PostDetailHeader({ post, currentUser, authorFollowing = false }: Props) {
+  const isAuthor = currentUser && post.authorId === currentUser.id;
+
   return (
     <header className="py-4 border-b border-gray-200 flex items-start justify-between gap-4">
       <div>
@@ -34,10 +39,16 @@ export function PostDetailHeader({ post, currentUser }: Props) {
         )}
       </div>
       {currentUser && (
-        <>
-          {post.authorId === currentUser.id && <PostActionsMenu post={post} />}
+        <div className="flex shrink-0 items-center gap-2">
+          {isAuthor && <PostActionsMenu post={post} />}
+          {!isAuthor && (
+            <FollowButton
+              followingId={post.authorId}
+              initialFollowing={authorFollowing}
+            />
+          )}
           <ReportMenu targetType="post" postId={post.id} onReported={() => {}} />
-        </>
+        </div>
       )}
     </header>
   );

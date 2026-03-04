@@ -26,6 +26,18 @@ export async function toggleReactionAction(postId: string, type: ReactionType): 
   }
 }
 
+/** Toggle follow (used on feed post card and post detail). Revalidates feed and profile. */
+export async function toggleFollowAction(profileId: string): Promise<boolean> {
+  const session = await getSession();
+  if (!session) return false;
+  if (session.userId === profileId) return false;
+  const { toggleFollow } = await import("@/lib/data/repository");
+  await toggleFollow(session.userId, profileId);
+  revalidatePath("/feed");
+  revalidatePath(`/profile/${profileId}`);
+  return true;
+}
+
 const DEFAULT_PAGE_LIMIT = 20;
 
 /** Load next page of feed. Returns items + nextCursorStr. Applies same canViewPost filtering as feed page. */
