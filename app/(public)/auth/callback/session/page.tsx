@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 
@@ -9,9 +9,13 @@ import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
  * Client-only auth callback page for hash fragment flow.
  * Tokens in URL hash are not sent to the server; this page reads hash, setSession, then redirects.
  * Use redirect URL https://yoursite.com/auth/callback/session for Supabase magic link / implicit flow.
+ * Supports ?next=/path for post-login redirect (default /feed).
  */
 export default function AuthCallbackSessionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") ?? "/feed";
+  const safeNext = nextPath.startsWith("/") ? nextPath : "/feed";
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
   const [message, setMessage] = useState<string>("Completing sign-in…");
 
@@ -52,7 +56,7 @@ export default function AuthCallbackSessionPage() {
           }
           setMessage("Redirecting…");
           setStatus("done");
-          router.replace("/feed");
+          router.replace(safeNext);
           return;
         } catch (e) {
           if (!cancelled) {

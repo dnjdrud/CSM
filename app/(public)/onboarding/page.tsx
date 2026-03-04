@@ -5,6 +5,7 @@ import { ensureProfileForBypassEmail } from "@/lib/data/userProvisioning";
 import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 import { RequestAccessForm } from "./_components/RequestAccessForm";
 import { OnboardingFlow } from "./_components/OnboardingFlow";
+import { HashSessionRedirect } from "./_components/HashSessionRedirect";
 import { FlashBanner } from "@/components/FlashBanner";
 
 type Props = { searchParams: Promise<{ message?: string }> };
@@ -28,6 +29,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">
+      <HashSessionRedirect />
       <div className="w-full max-w-md">
         {message === "account_created" && (
           <div className="mb-6">
