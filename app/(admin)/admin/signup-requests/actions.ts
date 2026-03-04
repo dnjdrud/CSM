@@ -11,12 +11,14 @@ import {
 } from "@/lib/data/signupRepository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
+import { sendApprovalEmail } from "@/lib/email/send";
 import type { SignupRequestStatus } from "@/lib/domain/types";
 
 const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-  process.env.APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  process.env.NEXT_PUBLIC_APP_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
+  process.env.APP_URL ??
   "http://localhost:3000";
 
 export async function listSignupRequestsAction(
@@ -44,16 +46,12 @@ export async function approveSignupRequestAction(
       return { error: "Request not found or not pending." };
     }
 
-    const link = `${APP_URL.replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
+    const completionUrl = `${String(APP_URL).replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
 
-    const adminClient = getSupabaseAdmin();
-    if (adminClient) {
-      const { error } = await adminClient.functions.invoke("send-approval-email", {
-        body: { email: result.email, link },
-      });
-      if (error) {
-        console.error("[approveSignupRequest] send-approval-email error", error);
-      }
+    try {
+      await sendApprovalEmail(result.email, completionUrl);
+    } catch (e) {
+      console.error("[approveSignupRequest] sendApprovalEmail error", e);
     }
 
     await logAdminAction({
@@ -61,12 +59,12 @@ export async function approveSignupRequestAction(
       action: ADMIN_ACTION.APPROVE_SIGNUP_REQUEST,
       targetType: AUDIT_TARGET_TYPE.SIGNUP_REQUEST,
       targetId: requestId,
-      metadata: { email: result.email, link },
+      metadata: { email: result.email, link: completionUrl },
     });
 
     revalidatePath("/admin/signup-requests");
     revalidatePath("/admin/signups");
-    return { ok: true, link };
+    return { ok: true, link: completionUrl };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[approveSignupRequest] threw", e);
