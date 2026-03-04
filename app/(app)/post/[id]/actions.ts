@@ -11,6 +11,7 @@ export async function addCommentAction(
   content: string,
   parentId?: string
 ): Promise<{ ok: boolean; error?: string }> {
+  console.log("[addCommentAction] hit");
   const session = await getSession();
   console.log("[addCommentAction] session", session);
   if (!session) {
@@ -48,6 +49,19 @@ export async function addCommentAction(
       error: e instanceof Error && e.message ? e.message : "Failed to add comment",
     };
   }
+}
+
+/** Server Action used by form action=... on post detail page. */
+export async function addCommentFormAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const postId = formData.get("postId");
+  const content = formData.get("content");
+  const parentId = formData.get("parentId");
+  // Delegate to main addCommentAction so all logging and validation is shared.
+  return addCommentAction(
+    typeof postId === "string" ? postId : "",
+    typeof content === "string" ? content : "",
+    typeof parentId === "string" && parentId.length > 0 ? parentId : undefined
+  );
 }
 
 export async function deleteCommentAction(commentId: string, postId?: string): Promise<{ ok: boolean; error?: string }> {
