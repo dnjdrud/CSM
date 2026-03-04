@@ -4,3 +4,4 @@
  */
 export { Header } from "@/common/Header";
 export { HeaderWrapper } from "@/common/HeaderWrapper";
+export { BottomNav } from "./BottomNav";
