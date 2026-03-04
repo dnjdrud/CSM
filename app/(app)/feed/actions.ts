@@ -101,9 +101,7 @@ export async function addCommentAction(
   parentId?: string
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await getSession();
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[addCommentAction] getSession:", session ? { userId: session.userId, role: session.role } : "null");
-  }
+  console.log("[addCommentAction] session", session);
   if (!session) {
     const { getAuthUserId } = await import("@/lib/auth/session");
     const authUserId = await getAuthUserId();

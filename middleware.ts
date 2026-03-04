@@ -58,13 +58,14 @@ function isAppPath(pathname: string): boolean {
   );
 }
 
-/** Apply Supabase cookiesToSet to a response; use options as given, only ensure path. */
+/** Apply Supabase cookiesToResponse; host-only (no domain) so SA and RSC see session. */
 function applyCookiesToResponse(
   response: NextResponse,
   cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>
 ): void {
   cookiesToSet.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, { path: "/", ...options });
+    const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+    response.cookies.set(name, value, { path: "/", ...rest });
   });
 }
 
@@ -80,6 +81,7 @@ export async function middleware(request: NextRequest) {
 
   if (!isOnboardingOrRequestAccessPath(pathname) && isPublicPath(pathname)) return NextResponse.next();
 
+  // Do NOT early-return for Server Action (Next-Action): SA requests must run auth refresh so getSession() sees session.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
@@ -93,9 +95,10 @@ export async function middleware(request: NextRequest) {
       },
       setAll(toSet) {
         toSet.forEach((c) => cookiesToSet.push(c));
-        toSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, { path: "/", ...options })
-        );
+        toSet.forEach(({ name, value, options }) => {
+          const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+          response.cookies.set(name, value, { path: "/", ...rest });
+        });
       },
     },
   });
