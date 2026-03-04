@@ -34,7 +34,7 @@ export async function completeSignupAction(params: {
   });
 
   if ("ok" in result && result.ok) {
-    redirect("/login?message=account_created");
+    redirect("/onboarding?message=account_created");
   }
   return { error: "error" in result ? result.error : "Something went wrong." };
 }

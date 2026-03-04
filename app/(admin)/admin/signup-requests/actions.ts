@@ -13,14 +13,8 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
 import { sendApprovalEmail } from "@/lib/email/send";
 import { logError } from "@/lib/logging/systemLogger";
+import { getBaseUrlForLinks } from "@/lib/url/site";
 import type { SignupRequestStatus } from "@/lib/domain/types";
-
-const APP_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  process.env.NEXT_PUBLIC_APP_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
-  process.env.APP_URL ??
-  "http://localhost:3000";
 
 export async function listSignupRequestsAction(
   status?: SignupRequestStatus
@@ -47,7 +41,7 @@ export async function approveSignupRequestAction(
       return { error: "Request not found or not pending." };
     }
 
-    const completionUrl = `${String(APP_URL).replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
+    const completionUrl = `${getBaseUrlForLinks()}/auth/complete?token=${encodeURIComponent(result.token)}`;
     let emailError: string | undefined;
 
     try {

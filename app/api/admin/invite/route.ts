@@ -7,16 +7,7 @@ import { NextResponse } from "next/server";
 import { getAdminOrNull } from "@/lib/admin/guard";
 import { createInvite } from "@/lib/auth/invites";
 import { sendInviteEmail } from "@/lib/email/send";
-
-function getBaseUrl(request: Request): string {
-  const env = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL;
-  if (env) return env.startsWith("http") ? env.replace(/\/+$/, "") : `https://${env}`;
-  try {
-    return new URL(request.url).origin;
-  } catch {
-    return "http://localhost:3000";
-  }
-}
+import { getBaseUrlForLinks } from "@/lib/url/site";
 
 export async function POST(request: Request) {
   const admin = await getAdminOrNull();
@@ -41,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  const baseUrl = getBaseUrl(request);
+  const baseUrl = getBaseUrlForLinks(request);
   const inviteUrl = `${baseUrl}/onboarding?token=${encodeURIComponent(result.rawToken)}`;
 
   try {

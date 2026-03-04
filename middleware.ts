@@ -116,7 +116,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     const redirectResponse = NextResponse.redirect(
-      new URL("/request-access?from=" + encodeURIComponent(pathname), request.url)
+      new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
     );
     applyCookiesToResponse(redirectResponse, cookiesToSet);
     return redirectResponse;
@@ -136,7 +136,7 @@ export async function middleware(request: NextRequest) {
     if (!profile) {
       if (user.email && isOnboardingBypassEmail(user.email)) return response;
       const redirectResponse = NextResponse.redirect(
-        new URL("/request-access?from=" + encodeURIComponent(pathname), request.url)
+        new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
       );
       applyCookiesToResponse(redirectResponse, cookiesToSet);
       return redirectResponse;

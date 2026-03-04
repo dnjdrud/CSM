@@ -105,7 +105,7 @@ export async function POST(request: Request) {
 
   if (signInError) {
     console.error("[auth/complete] signInWithPassword after createUser failed", signInError.message);
-    const back = new URL("/login", baseUrl(request));
+    const back = new URL("/onboarding", baseUrl(request));
     back.searchParams.set("message", "account_created");
     return NextResponse.redirect(back.toString());
   }

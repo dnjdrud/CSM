@@ -6,17 +6,7 @@
 import { NextResponse } from "next/server";
 import { createMagicLink } from "@/lib/auth/magicLink";
 import { sendMagicLinkEmail } from "@/lib/email/send";
-
-/** Base URL for magic link. Prefer NEXT_PUBLIC_SITE_URL (e.g. https://cellah.co.kr) so links don't use *.vercel.app and hit Vercel Deployment Protection login. */
-function getBaseUrl(request: Request): string {
-  const env = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.VERCEL_URL;
-  if (env) return env.startsWith("http") ? env.replace(/\/+$/, "") : `https://${env}`;
-  try {
-    return new URL(request.url).origin;
-  } catch {
-    return "http://localhost:3000";
-  }
-}
+import { getBaseUrlForLinks } from "@/lib/url/site";
 
 export async function POST(request: Request) {
   let body: { email?: string };
@@ -36,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  const baseUrl = getBaseUrl(request);
+  const baseUrl = getBaseUrlForLinks(request);
   const loginUrl = `${baseUrl}/auth/verify-magic?id=${encodeURIComponent(result.id)}&token=${encodeURIComponent(result.rawToken)}`;
 
   try {

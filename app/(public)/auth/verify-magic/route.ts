@@ -28,11 +28,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${base}/login?error=server_error`);
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
-    new URL(request.url).origin;
-  const redirectTo = `${baseUrl.replace(/\/$/, "")}/feed`;
+  const { getBaseUrlForLinks } = await import("@/lib/url/site");
+  const baseUrl = getBaseUrlForLinks(request);
+  const redirectTo = `${baseUrl}/feed`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",

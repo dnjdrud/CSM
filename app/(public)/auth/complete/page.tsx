@@ -18,7 +18,7 @@ export default async function AuthCompletePage({ searchParams }: Props) {
     redirect("/request-access?error=invalid_or_expired_token");
   }
   if (linkStatus.status === "already_completed") {
-    redirect("/login?message=account_already_created");
+    redirect("/onboarding?message=account_already_created");
   }
 
   return (
