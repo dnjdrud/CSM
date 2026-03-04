@@ -1,62 +1,79 @@
 /**
- * Magic link callback (Route Handler).
- * Exchanges code for session and sets cookies on the redirect response.
- * Cookies must be written with full options (httpOnly, secure, sameSite, maxAge) so the server can read them on the next request.
+ * Auth callback (Route Handler).
+ * Supports both PKCE code flow and token_hash OTP flow.
+ * Writes Supabase auth cookies so Server Components can read sessions.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-
-type CookieOption = { name: string; value: string; options?: Record<string, unknown> };
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/feed";
   const origin = requestUrl.origin;
 
-  if (!code) {
-    return NextResponse.redirect(`${origin}/onboarding`);
-  }
+  // Support multiple callback formats
+  const code = requestUrl.searchParams.get("code");
+  const token_hash = requestUrl.searchParams.get("token_hash");
+  const type = requestUrl.searchParams.get("type"); // e.g. "magiclink"
+  const next = requestUrl.searchParams.get("next") ?? "/feed";
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
   if (!url || !anonKey) {
-    return NextResponse.redirect(`${origin}/onboarding`);
+    return NextResponse.redirect(`${origin}/onboarding?error=missing_env`);
   }
 
-  const cookiesToSet: CookieOption[] = [];
+  // Use Next.js cookie store (writeable)
+  const cookieStore = await cookies();
+
+  // We'll set cookies on the response
+  const response = NextResponse.redirect(`${origin}${next.startsWith("/") ? next : "/feed"}`);
+
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
-        return request.cookies.getAll();
+        return cookieStore.getAll();
       },
-      setAll(cookies: CookieOption[]) {
-        cookies.forEach((c) => cookiesToSet.push(c));
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, { path: "/", ...options });
+        });
       },
     },
   });
 
-  const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error || !user) {
-    return NextResponse.redirect(`${origin}/onboarding`);
+  try {
+    // Case A) PKCE code flow
+    if (code) {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error || !data.user) throw error ?? new Error("No user after exchangeCodeForSession");
+
+      const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+      await ensureProfile({ userId: data.user.id, email: data.user.email });
+    }
+
+    // Case B) token_hash OTP flow (magiclink)
+    if (!code && token_hash && type) {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash,
+        type: type as any,
+      });
+      if (error || !data.user) throw error ?? new Error("No user after verifyOtp");
+
+      const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+      await ensureProfile({ userId: data.user.id, email: data.user.email });
+    }
+
+    // If neither present, we can't create a session
+    if (!code && !(token_hash && type)) {
+      return NextResponse.redirect(`${origin}/onboarding?error=missing_code`);
+    }
+  } catch (e) {
+    console.error("AUTH CALLBACK FAILED:", e);
+    return NextResponse.redirect(`${origin}/onboarding?error=auth_callback_failed`);
   }
 
-  const { ensureProfile } = await import("@/lib/auth/ensureProfile");
-  await ensureProfile({ userId: user.id, email: user.email });
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-
-  const path = profile ? (next.startsWith("/") ? next : "/feed") : "/onboarding";
-  const redirectResponse = NextResponse.redirect(`${origin}${path}`);
-
-  cookiesToSet.forEach(({ name, value, options }) => {
-    redirectResponse.cookies.set(name, value, { path: "/", ...options } as Parameters<NextResponse["cookies"]["set"]>[2]);
-  });
-
-  return redirectResponse;
+  return response;
 }
