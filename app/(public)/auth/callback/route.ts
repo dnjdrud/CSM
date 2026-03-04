@@ -1,11 +1,13 @@
 /**
  * Magic link callback (Route Handler).
  * Exchanges code for session and sets cookies on the redirect response.
- * Server Component page cannot set cookies on redirect → use route.ts.
+ * Cookies must be written with full options (httpOnly, secure, sameSite, maxAge) so the server can read them on the next request.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+
+type CookieOption = { name: string; value: string; options?: Record<string, unknown> };
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -23,18 +25,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/onboarding`);
   }
 
-  // Response we'll attach session cookies to, then copy to redirect
-  const responseWithCookies = NextResponse.next({ request });
-
+  const cookiesToSet: CookieOption[] = [];
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          responseWithCookies.cookies.set(name, value, options)
-        );
+      setAll(cookies: CookieOption[]) {
+        cookies.forEach((c) => cookiesToSet.push(c));
       },
     },
   });
@@ -43,6 +41,9 @@ export async function GET(request: NextRequest) {
   if (error || !user) {
     return NextResponse.redirect(`${origin}/onboarding`);
   }
+
+  const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+  await ensureProfile({ userId: user.id, email: user.email });
 
   const { data: profile } = await supabase
     .from("users")
@@ -53,9 +54,8 @@ export async function GET(request: NextRequest) {
   const path = profile ? (next.startsWith("/") ? next : "/feed") : "/onboarding";
   const redirectResponse = NextResponse.redirect(`${origin}${path}`);
 
-  // Copy session cookies onto the redirect response
-  responseWithCookies.cookies.getAll().forEach((cookie) => {
-    redirectResponse.cookies.set(cookie.name, cookie.value, { path: "/" });
+  cookiesToSet.forEach(({ name, value, options }) => {
+    redirectResponse.cookies.set(name, value, { path: "/", ...options } as Parameters<NextResponse["cookies"]["set"]>[2]);
   });
 
   return redirectResponse;

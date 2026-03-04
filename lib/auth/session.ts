@@ -9,31 +9,57 @@ export interface Session {
   role: UserRole;
 }
 
+const LOG_PREFIX = "[session]";
+
 /** Read session from Supabase auth + public.users row. Returns null if not logged in or no profile. */
 export async function getSession(): Promise<Session | null> {
   try {
     const { supabaseServer } = await import("@/lib/supabase/server");
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) return null;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.warn(LOG_PREFIX, "auth.getUser error:", authError.message);
+      return null;
+    }
+    if (!user?.id) {
+      console.warn(LOG_PREFIX, "auth.getUser returned no user");
+      return null;
+    }
     const { ensureAdminRoleIfAllowed } = await import("@/lib/admin/bootstrap");
     await ensureAdminRoleIfAllowed();
     const { ensureProfileForBypassEmail } = await import("@/lib/data/userProvisioning");
     const { isOnboardingBypassEmail } = await import("@/lib/auth/bypass");
+    const { ensureProfile } = await import("@/lib/auth/ensureProfile");
     await ensureProfileForBypassEmail({ userId: user.id, email: user.email });
-    let row: { id: string; role: string } | null = (await supabase
-      .from("users")
-      .select("id, role")
-      .eq("id", user.id)
-      .single()).data;
-    // Auth 유저인데 public.users에 행이 없으면 → bypass면 프로필 한 번 더 시도 후 재조회
-    if ((!row || !row.role) && user.email && isOnboardingBypassEmail(user.email)) {
-      await ensureProfileForBypassEmail({ userId: user.id, email: user.email });
-      row = (await supabase.from("users").select("id, role").eq("id", user.id).single()).data;
+    const profileResult = await supabase.from("users").select("id, role").eq("id", user.id).single();
+    let row: { id: string; role: string } | null = profileResult.data;
+    if (profileResult.error && (!row || !row.role)) {
+      console.warn(LOG_PREFIX, "users select failed for user.id:", user.id, "error:", profileResult.error.message);
     }
-    if (!row || !row.role) return null;
+    if (!row || !row.role) {
+      if (user.email && isOnboardingBypassEmail(user.email)) {
+        await ensureProfileForBypassEmail({ userId: user.id, email: user.email });
+        const retry = await supabase.from("users").select("id, role").eq("id", user.id).single();
+        row = retry.data;
+      }
+    }
+    if (!row || !row.role) {
+      const ensured = await ensureProfile({ userId: user.id, email: user.email });
+      if (ensured.created) {
+        const refetch = await supabase.from("users").select("id, role").eq("id", user.id).single();
+        row = refetch.data;
+      }
+      if (ensured.error) {
+        console.warn(LOG_PREFIX, "ensureProfile failed for user.id:", user.id, "error:", ensured.error);
+      }
+    }
+    if (!row || !row.role) {
+      console.warn(LOG_PREFIX, "no profile or role missing for user.id:", user.id);
+      return null;
+    }
     return { userId: row.id, role: row.role as UserRole };
-  } catch {
+  } catch (e) {
+    console.warn(LOG_PREFIX, "getSession threw:", e instanceof Error ? e.message : String(e));
     return null;
   }
 }

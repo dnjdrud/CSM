@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/audit", label: "Audit Log" },
   { href: "/admin/system-logs", label: "System Logs" },
+  { href: "/admin/debug", label: "Debug" },
 ];
 
 export function AdminSidebar() {

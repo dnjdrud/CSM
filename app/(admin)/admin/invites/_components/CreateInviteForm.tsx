@@ -30,7 +30,7 @@ export function CreateInviteForm() {
         toast.show("Invite created.");
       } else {
         setResult({ error: res.error });
-        toast.error();
+        toast.error(res.error ?? "Something went wrong");
       }
     } finally {
       setPending(false);
@@ -111,6 +111,11 @@ export function CreateInviteForm() {
             </button>
           </div>
         </div>
+      )}
+      {result && "error" in result && (
+        <p className="mt-3 text-sm text-red-600" role="alert">
+          {result.error}
+        </p>
       )}
     </div>
   );

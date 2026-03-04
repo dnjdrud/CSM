@@ -59,7 +59,10 @@ export async function createInviteAction(formData: FormData): Promise<CreateInvi
     revalidatePath("/admin/invites");
     return { ok: true, code: invite.code, inviteId: invite.id };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Failed to create invite" };
+    const message = e instanceof Error ? e.message : "Failed to create invite";
+    const details = e instanceof Error ? { name: e.name, stack: e.stack } : {};
+    console.error("[admin/invites] createInvite failed", { message, details, adminId: admin.userId });
+    return { ok: false, error: message };
   }
 }
 
