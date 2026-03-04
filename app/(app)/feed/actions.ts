@@ -1,22 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession } from "@/lib/auth/session";
-import { toggleReaction, listFeedPostsPage, listFollowingIds, getCurrentUser, listCommentsByPostId, createPost } from "@/lib/data/repository";
-import { isBlocked, isMuted } from "@/lib/data/repository";
-import { canViewPost } from "@/lib/domain/guards";
+import { getSession, getCurrentUser, getAuthUserId } from "@/backend/connection";
+import { canViewPost, assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/backend/permissions";
+import { createPost, toggleReaction } from "@/backend/features/posts";
+import { listFeedPostsPage, decodeCursor, encodeCursor } from "@/backend/features/feed";
+import { listFollowingIds, isBlocked, isMuted, toggleFollow } from "@/backend/features/profile";
+import { addComment, listCommentsByPostId } from "@/backend/features/comments";
 import type { ReactionType, PostWithAuthor } from "@/lib/domain/types";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
-import { decodeCursor } from "@/lib/data/feedCursor";
-import { encodeCursor } from "@/lib/domain/pagination";
-import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
+import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
 
 /** Toggle reaction (prayed / with you). Returns { ok, reacted } for optimistic UI. Revalidates feed and post. */
 export async function toggleReactionAction(postId: string, type: ReactionType): Promise<{ ok: boolean; reacted?: boolean; error?: string }> {
   const session = await getSession();
   if (!session) return { ok: false, error: "Not logged in" };
   try {
-    const { toggleReaction } = await import("@/lib/data/repository");
     const { reacted } = await toggleReaction(postId, session.userId, type);
     revalidatePath("/feed");
     revalidatePath(`/post/${postId}`);
@@ -31,7 +30,6 @@ export async function toggleFollowAction(profileId: string): Promise<boolean> {
   const session = await getSession();
   if (!session) return false;
   if (session.userId === profileId) return false;
-  const { toggleFollow } = await import("@/lib/data/repository");
   await toggleFollow(session.userId, profileId);
   revalidatePath("/feed");
   revalidatePath(`/profile/${profileId}`);
@@ -79,13 +77,18 @@ export async function composePostAction(params: {
   visibility?: Visibility;
   tags?: string[];
 }): Promise<{ ok: boolean; error?: string }> {
-  console.log("[composePostAction] hit");
+  logInfo("SERVER_ACTION", "composePostAction(feed) start", {
+    hasContent: params.content.trim().length > 0,
+    category: params.category ?? "PRAYER",
+    visibility: params.visibility ?? "MEMBERS",
+    hasTags: !!params.tags && params.tags.length > 0,
+  });
   const session = await getSession();
-  console.log("[composePostAction] session", session ? { userId: session.userId } : "null");
   if (!session) {
-    const { getAuthUserId } = await import("@/lib/auth/session");
     const authId = await getAuthUserId();
-    console.warn("[composePostAction] session null, getAuthUserId:", authId ?? "null");
+    logWarn("SERVER_ACTION", "composePostAction(feed) session null", {
+      authUserId: authId ?? null,
+    });
     return { ok: false, error: "Not logged in. Please refresh and try again." };
   }
   const trimmed = params.content.trim();
@@ -93,7 +96,12 @@ export async function composePostAction(params: {
   try {
     await assertRateLimit({ userId: session.userId, action: "CREATE_POST" });
   } catch (e) {
-    return { ok: false, error: e instanceof Error && e.message === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : "Failed" };
+    const msg = e instanceof Error ? e.message : String(e);
+    logWarn("SERVER_ACTION", "composePostAction(feed) rate limit or error", {
+      userId: session.userId,
+      rawMessage: msg,
+    });
+    return { ok: false, error: msg === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : msg || "Rate limit or server error" };
   }
   const tags = params.tags
     ? [...new Set(params.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5)
@@ -106,12 +114,21 @@ export async function composePostAction(params: {
       visibility: params.visibility ?? "MEMBERS",
       tags,
     });
+    logInfo("SERVER_ACTION", "composePostAction(feed) success", {
+      userId: session.userId,
+      contentLength: trimmed.length,
+      tagsCount: tags.length,
+    });
     revalidatePath("/feed");
     return { ok: true };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to create post";
-    console.error("[composePostAction] createPost error", msg);
-    return { ok: false, error: msg };
+    const msg = e instanceof Error ? e.message : String(e);
+    const display = (msg && msg.trim() !== "") ? msg : "Failed to create post (check server logs)";
+    logError("SERVER_ACTION", "composePostAction(feed) createPost error", {
+      userId: session.userId,
+      error: display,
+    });
+    return { ok: false, error: display };
   }
 }
 
@@ -124,7 +141,6 @@ export async function addCommentAction(
   const session = await getSession();
   console.log("[addCommentAction] session", session);
   if (!session) {
-    const { getAuthUserId } = await import("@/lib/auth/session");
     const authUserId = await getAuthUserId();
     console.warn("[addCommentAction] session null. getAuthUserId:", authUserId ?? "null", "(if auth exists but session null, check users row / RLS)");
     return { ok: false, error: "Not logged in" };
@@ -134,9 +150,9 @@ export async function addCommentAction(
   try {
     await assertRateLimit({ userId: session.userId, action: "CREATE_COMMENT" });
   } catch (e) {
-    return { ok: false, error: e instanceof Error && e.message === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : "Failed to add comment" };
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: msg === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : msg || "Failed to add comment" };
   }
-  const { addComment } = await import("@/lib/data/repository");
   try {
     const payload = {
       postId,
@@ -154,10 +170,8 @@ export async function addCommentAction(
       "[addCommentAction] supabase error",
       e instanceof Error ? e.message : e
     );
-    return {
-      ok: false,
-      error: e instanceof Error && e.message ? e.message : "Failed to add comment",
-    };
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: (msg && msg.trim() !== "") ? msg : "Failed to add comment (check server logs)" };
   }
 }
 

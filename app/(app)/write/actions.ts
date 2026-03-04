@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { createPost } from "@/lib/data/repository";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
+import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
 
 /** Publish post and redirect to feed (e.g. from /write page). */
 export async function publishPostAction(
@@ -23,13 +24,28 @@ export async function publishPostAction(
         .filter(Boolean)
         .slice(0, 5)
     : [];
-  await createPost({
-    authorId: session.userId,
-    category,
-    content: trimmed,
-    visibility: "MEMBERS",
-    tags,
-  });
+  try {
+    await createPost({
+      authorId: session.userId,
+      category,
+      content: trimmed,
+      visibility: "MEMBERS",
+      tags,
+    });
+    logInfo("SERVER_ACTION", "publishPostAction success", {
+      userId: session.userId,
+      contentLength: trimmed.length,
+      tagsCount: tags.length,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const display = (msg && msg.trim() !== "") ? msg : "Failed to create post (publish)";
+    logError("SERVER_ACTION", "publishPostAction createPost error", {
+      userId: session.userId,
+      error: display,
+    });
+    return { ok: false, error: display };
+  }
   revalidatePath("/feed");
   redirect("/feed");
 }
@@ -41,10 +57,15 @@ export async function composePostAction(params: {
   visibility?: Visibility;
   tags?: string[];
 }): Promise<{ ok: boolean; error?: string }> {
-  console.log("[composePostAction /write] hit");
+  logInfo("SERVER_ACTION", "composePostAction(write) start", {
+    hasContent: params.content.trim().length > 0,
+    category: params.category ?? "PRAYER",
+    visibility: params.visibility ?? "MEMBERS",
+    hasTags: !!params.tags && params.tags.length > 0,
+  });
   const session = await getSession();
   if (!session) {
-    console.warn("[composePostAction /write] session null");
+    logWarn("SERVER_ACTION", "composePostAction(write) session null");
     return { ok: false, error: "Not logged in. Please refresh and try again." };
   }
   const trimmed = params.content.trim();
@@ -60,11 +81,20 @@ export async function composePostAction(params: {
       visibility: params.visibility ?? "MEMBERS",
       tags,
     });
+    logInfo("SERVER_ACTION", "composePostAction(write) success", {
+      userId: session.userId,
+      contentLength: trimmed.length,
+      tagsCount: tags.length,
+    });
     revalidatePath("/feed");
     return { ok: true };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to create post";
-    console.error("[composePostAction /write] createPost error", msg);
-    return { ok: false, error: msg };
+    const msg = e instanceof Error ? e.message : String(e);
+    const display = (msg && msg.trim() !== "") ? msg : "Failed to create post (check server logs)";
+    logError("SERVER_ACTION", "composePostAction(write) createPost error", {
+      userId: session.userId,
+      error: display,
+    });
+    return { ok: false, error: display };
   }
 }
