@@ -164,13 +164,18 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                 <span className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
                   {user.name || "Welcome"}
                 </span>
-                <Link href={`/profile/${user.id}`} className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+                <Link href="/me" className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                   Profile
                 </Link>
                 {isAdmin && (
-                  <Link href="/admin" className="text-[15px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
-                    Admin
-                  </Link>
+                  <>
+                    <Link href="/admin" className="text-[15px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
+                      Admin
+                    </Link>
+                    <a href="/api/debug/auth" target="_blank" rel="noopener noreferrer" className="text-[15px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Debug auth">
+                      Debug
+                    </a>
+                  </>
                 )}
                 <form action={logoutAction} className="inline">
                   <button type="submit" className="text-[15px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
@@ -213,13 +218,24 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
             )
           )}
           {isAdmin && (
-            <Link
-              href="/admin"
-              className="text-[15px] py-2 px-2 -mx-2 rounded-md font-medium text-theme-primary hover:text-theme-primary hover:bg-theme-border/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
-              aria-label="Admin Console"
-            >
-              Admin
-            </Link>
+            <>
+              <Link
+                href="/admin"
+                className="text-[15px] py-2 px-2 -mx-2 rounded-md font-medium text-theme-primary hover:text-theme-primary hover:bg-theme-border/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
+                aria-label="Admin Console"
+              >
+                Admin
+              </Link>
+              <a
+                href="/api/debug/auth"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[15px] py-2 px-2 -mx-2 rounded-md text-theme-muted hover:text-theme-primary hover:bg-theme-border/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
+                aria-label="Debug auth"
+              >
+                Debug
+              </a>
+            </>
           )}
         </nav>
         <div className="mt-auto pt-6 border-t border-theme-border/60">
@@ -231,9 +247,14 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               <p className="text-[15px] font-medium text-theme-primary">
                 {user.name ? `${user.name}, welcome` : "Welcome"}
               </p>
-              <Link href={`/profile/${user.id}`} className="block text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+              <Link href="/me" className="block text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                 My profile
               </Link>
+              {isAdmin && (
+                <a href="/api/debug/auth" target="_blank" rel="noopener noreferrer" className="block text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+                  Debug
+                </a>
+              )}
               <div className="text-[12px] text-theme-muted leading-snug space-y-1">
                 <p className="font-medium text-theme-primary">Haven for Digital Exodus</p>
                 <ul className="list-none space-y-0.5 pl-0" aria-label="Community guidelines">

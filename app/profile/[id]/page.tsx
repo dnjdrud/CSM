@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProfileById, getUserPosts } from "@/lib/data/profileRepository";
-import { getCurrentUser } from "@/lib/data/repository";
+import { getCurrentUser, listFollowerIds, listFollowingIds } from "@/lib/data/repository";
 import { PostCard } from "@/components/PostCard";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +12,12 @@ export default async function ProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [profile, posts, currentUser] = await Promise.all([
+  const [profile, posts, currentUser, followerIds, followingIds] = await Promise.all([
     getProfileById(id),
     getUserPosts(id),
     getCurrentUser(),
+    listFollowerIds(id),
+    listFollowingIds(id),
   ]);
 
   if (!profile) notFound();
@@ -36,6 +38,9 @@ export default async function ProfilePage({
         <h1 className="text-xl font-semibold text-theme-primary tracking-tight">
           {profile.name || "Unnamed"}
         </h1>
+        {profile.role && (
+          <p className="mt-1 text-[14px] text-theme-muted">Role: {profile.role}</p>
+        )}
         {profile.bio && (
           <p className="mt-2 text-[15px] text-theme-text leading-relaxed">
             {profile.bio}
@@ -46,6 +51,10 @@ export default async function ProfilePage({
             Church: {profile.affiliation}
           </p>
         )}
+        <div className="mt-3 flex gap-4 text-[14px] text-theme-muted">
+          <span>Followers: {followerIds.length}</span>
+          <span>Following: {followingIds.length}</span>
+        </div>
       </header>
 
       {/* List of posts */}

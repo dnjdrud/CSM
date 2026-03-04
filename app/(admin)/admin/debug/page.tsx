@@ -1,6 +1,8 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { getSession } from "@/lib/auth/session";
 import { supabaseServer } from "@/lib/supabase/server";
+import { runDiagnostics } from "./actions";
+import { DiagnosticsTable } from "./_components/DiagnosticsTable";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,8 @@ export default async function AdminDebugPage() {
   let inviteCount: number | string = "—";
   const { count: inviteCountVal } = await supabase.from("invite_codes").select("id", { count: "exact", head: true });
   if (inviteCountVal != null) inviteCount = inviteCountVal;
+
+  const diagnostics = await runDiagnostics();
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
@@ -65,6 +69,9 @@ export default async function AdminDebugPage() {
           <dd className="mt-0.5 font-mono text-theme-text">{inviteCount}</dd>
         </div>
       </dl>
+
+      <h2 className="mt-8 text-lg font-semibold text-theme-text">Diagnostics (runDiagnostics)</h2>
+      <DiagnosticsTable result={diagnostics} />
     </div>
   );
 }

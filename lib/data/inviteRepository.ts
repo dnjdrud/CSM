@@ -58,10 +58,10 @@ function rowToInvite(r: {
 }
 
 /** Generate short readable code (8–10 chars, uppercase, no ambiguous). */
-function generateCode(): string {
-  const bytes = randomBytes(CODE_LENGTH);
+function generateCode(length: number = CODE_LENGTH): string {
+  const bytes = randomBytes(length);
   let s = "";
-  for (let i = 0; i < CODE_LENGTH; i++) s += CODE_CHARS[bytes[i]! % CODE_CHARS.length];
+  for (let i = 0; i < length; i++) s += CODE_CHARS[bytes[i]! % CODE_CHARS.length];
   return s;
 }
 
@@ -97,7 +97,8 @@ export async function createInvite(input: CreateInviteInput): Promise<InviteCode
   const minimalPayload = { code: "", created_by: input.adminId };
 
   while (attempts < maxAttempts) {
-    const code = generateCode();
+    const codeLength = attempts >= 2 ? CODE_LENGTH + 4 : CODE_LENGTH;
+    const code = generateCode(codeLength);
     fullPayload.code = code;
     minimalPayload.code = code;
 
