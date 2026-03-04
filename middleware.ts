@@ -58,10 +58,6 @@ function isAppPath(pathname: string): boolean {
   );
 }
 
-function isServerActionRequest(request: NextRequest): boolean {
-  return request.headers.get("Next-Action") != null;
-}
-
 /** Apply Supabase cookiesToSet to a response; use options as given, only ensure path. */
 function applyCookiesToResponse(
   response: NextResponse,
@@ -83,7 +79,6 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isOnboardingOrRequestAccessPath(pathname) && isPublicPath(pathname)) return NextResponse.next();
-  if (isServerActionRequest(request)) return NextResponse.next();
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

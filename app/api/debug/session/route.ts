@@ -1,7 +1,7 @@
 /**
  * GET /api/debug/session
- * Diagnostic: same cookie/supabase context as RSC. Returns getSession(), getUser(), and cookie list
- * so we can verify server-side session is readable (HeaderWrapper / feed page).
+ * Diagnostic: same cookie/supabase context as RSC. Returns auth.getUser(),
+ * public.users row for auth user, getSession(), and cookie list.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -15,6 +15,8 @@ type Payload = {
   request: { host: string; pathname: string };
   cookiesFromHeaders: string[];
   getUser: { userId: string | null; email: string | null } | null;
+  usersRow: { id: string; role: string; name: string } | null;
+  usersRowError: string | null;
   getSession: { userId: string; role: string } | null;
   feedWouldGetCurrentUserId: string | null;
 };
@@ -25,6 +27,8 @@ export async function GET(request: NextRequest) {
     request: { host: requestUrl.host, pathname: requestUrl.pathname },
     cookiesFromHeaders: [],
     getUser: null,
+    usersRow: null,
+    usersRowError: null,
     getSession: null,
     feedWouldGetCurrentUserId: null,
   };
@@ -47,6 +51,21 @@ export async function GET(request: NextRequest) {
         userId: authData.user.id,
         email: authData.user.email ?? null,
       };
+
+      const { data: userRow, error: userError } = await supabase
+        .from("users")
+        .select("id, role, name")
+        .eq("id", authData.user.id)
+        .single();
+      if (userError) {
+        payload.usersRowError = userError.message;
+      } else if (userRow) {
+        payload.usersRow = {
+          id: userRow.id,
+          role: (userRow.role as string) ?? "",
+          name: (userRow.name as string) ?? "",
+        };
+      }
     }
 
     const session = await getSession();

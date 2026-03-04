@@ -148,6 +148,13 @@ export async function getUserById(id: string): Promise<User | null> {
   return users.find((u) => u.id === id) ?? null;
 }
 
+/** For profile page: returns user and error message when fetch fails (no notFound). */
+export async function getProfileWithError(id: string): Promise<{ user: User | null; errorMessage: string | null }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getUserByIdWithError(id);
+  const u = users.find((u) => u.id === id) ?? null;
+  return { user: u, errorMessage: null };
+}
+
 /** Soft-deactivate account (Supabase only). Sets deactivated_at and hides user's posts. Caller should sign out after. */
 export async function deactivateUser(userId: string): Promise<void> {
   if (DATA_MODE === "supabase") return supabaseRepo.deactivateUser(userId);

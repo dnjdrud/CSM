@@ -745,10 +745,17 @@ export async function listPostsByAuthorId(authorId: string): Promise<PostWithAut
 }
 
 export async function getUserById(id: string): Promise<User | null> {
+  const r = await getUserByIdWithError(id);
+  return r.user;
+}
+
+/** Returns user and optional error message for profile/error UI. */
+export async function getUserByIdWithError(id: string): Promise<{ user: User | null; errorMessage: string | null }> {
   const supabase = await supabaseServer();
   const { data, error } = await supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at").eq("id", id).single();
-  if (error || !data) return null;
-  return rowToUser(data);
+  if (error) return { user: null, errorMessage: error.message };
+  if (!data) return { user: null, errorMessage: "No row returned" };
+  return { user: rowToUser(data), errorMessage: null };
 }
 
 /** Soft-deactivate account: set deactivated_at, hide all posts by user. Caller should sign out after. */
