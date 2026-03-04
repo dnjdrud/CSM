@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted } from "@/lib/data/repository";
+import { getSession } from "@/lib/auth/session";
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { getAdminOrNull } from "@/lib/admin/guard";
@@ -20,7 +21,7 @@ export default async function FeedPage({
 }: {
   searchParams: Promise<{ scope?: string; message?: string }>;
 }) {
-  const currentUser = await getCurrentUser();
+  const [session, currentUser] = await Promise.all([getSession(), getCurrentUser()]);
   const params = await searchParams;
   const scopeParam = scopeFromSearchParams(params);
   const showAdminRequiredBanner = params.message === "admin_required";
@@ -34,58 +35,32 @@ export default async function FeedPage({
     cursor: null,
   });
 
-  const diagnostics = {
-    userId: currentUser?.id ?? null,
-    role: currentUser?.role ?? null,
-    postCount: firstPage.items.length,
-    feedError: firstPage.error ?? null,
-  };
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[FeedPage]", diagnostics);
+  if (process.env.NODE_ENV !== "production" && (firstPage.error || firstPage.items.length === 0)) {
+    console.log("[FeedPage]", { postCount: firstPage.items.length, feedError: firstPage.error });
   }
 
   const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
   const isFollowing = (followerId: string, followingId: string) =>
     followerId === currentUser?.id && followingIds.includes(followingId);
 
-  let filteredByBlock = 0;
-  let filteredByMute = 0;
-  let filteredByCanView = 0;
-  const visibleItems = currentUser
-    ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId)) {
-          filteredByBlock++;
-          return false;
-        }
-        if (isMuted(currentUser.id, post.authorId)) {
-          filteredByMute++;
-          return false;
-        }
-        if (!canViewPost(post, currentUser, isFollowing)) {
-          filteredByCanView++;
-          return false;
-        }
-        return true;
-      })
-    : [];
-
-  if (process.env.NODE_ENV !== "production" && (filteredByBlock > 0 || filteredByMute > 0 || filteredByCanView > 0)) {
-    console.log("[FeedPage] filtered", { filteredByBlock, filteredByMute, filteredByCanView, visibleCount: visibleItems.length });
-  }
+  const visibleItems =
+    currentUser != null
+      ? firstPage.items.filter((post) => {
+          if (isBlocked(currentUser.id, post.authorId)) return false;
+          if (isMuted(currentUser.id, post.authorId)) return false;
+          return canViewPost(post, currentUser, isFollowing);
+        })
+      : firstPage.items;
 
   return (
     <TimelineContainer>
       <h1 className="sr-only">Feed</h1>
-      <div className="px-4 py-2 border-b border-amber-200 bg-amber-50/80 text-[13px] text-amber-900" role="status" aria-label="Feed diagnostics">
-        <p><strong>Session:</strong> userId={diagnostics.userId ?? "—"} role={String(diagnostics.role ?? "—")}</p>
-        <p><strong>Posts from repository:</strong> {diagnostics.postCount}</p>
-        {diagnostics.postCount === 0 && !diagnostics.feedError && (
-          <p className="mt-1 text-amber-800">Feed empty (check logs).</p>
-        )}
-        {diagnostics.feedError && (
-          <p className="mt-1 font-medium text-red-700"><strong>Feed query error:</strong> {diagnostics.feedError}</p>
-        )}
-      </div>
+      {process.env.NODE_ENV !== "production" && (
+        <div className="px-4 py-2 border-b border-amber-200 bg-amber-50/80 text-[13px] text-amber-900" role="status" aria-label="Feed diagnostics">
+          <p><strong>Session:</strong> userId={session?.userId ?? "—"} role={session?.role ?? "—"}</p>
+          <p><strong>Posts from repository:</strong> {firstPage.items.length}{firstPage.error ? ` (error: ${firstPage.error})` : ""}</p>
+        </div>
+      )}
       {showAdminRequiredBanner && (
         <div className="px-4 pt-4 pb-2">
           <FlashBanner
@@ -101,10 +76,10 @@ export default async function FeedPage({
       />
       {currentUser && <FeedComposer />}
       <div className="space-y-6 sm:space-y-5 py-4">
-        {diagnostics.feedError ? (
+        {firstPage.error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             <p className="font-medium">Feed could not load.</p>
-            <p className="mt-1">{diagnostics.feedError}</p>
+            <p className="mt-1">{firstPage.error}</p>
           </div>
         ) : visibleItems.length === 0 ? (
           <EmptyState

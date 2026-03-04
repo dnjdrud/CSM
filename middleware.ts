@@ -1,7 +1,7 @@
 /**
  * Route guards. Never redirect /api/* or static assets.
- * Uses Supabase SSR pattern: one response object, setAll writes to it, return that response
- * (or copy its cookies to redirect response) so session refresh is always sent to the browser.
+ * Supabase SSR: single response, buffer cookiesToSet from setAll, apply to that response
+ * (or to redirect response) with Supabase options only — do not override domain/maxAge.
  * Public: /, /login, /onboarding, /request-access, /auth/callback, /auth/complete, etc.
  * App paths require session + profile; /admin requires session + role ADMIN.
  */
@@ -32,7 +32,6 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-/** Paths where logged-in non-ADMIN users are redirected to /feed; ADMIN is allowed through. */
 function isOnboardingOrRequestAccessPath(pathname: string): boolean {
   return (
     pathname === "/onboarding" ||
@@ -63,21 +62,13 @@ function isServerActionRequest(request: NextRequest): boolean {
   return request.headers.get("Next-Action") != null;
 }
 
-/** Copy all cookies from one response to another (e.g. so redirect still sends refreshed session). */
-function copyCookiesToResponse(
-  from: NextResponse,
-  to: NextResponse,
-  cookieDomain?: string
+/** Apply Supabase cookiesToSet to a response; use options as given, only ensure path. */
+function applyCookiesToResponse(
+  response: NextResponse,
+  cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>
 ): void {
-  const list = from.cookies.getAll();
-  const opts: { path: string; secure?: boolean; sameSite?: "lax" | "strict"; domain?: string; httpOnly?: boolean; maxAge?: number } = {
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-  };
-  if (cookieDomain) opts.domain = cookieDomain;
-  list.forEach((c) => {
-    to.cookies.set(c.name, c.value, { ...opts, maxAge: 60 * 60 * 24 * 7 });
+  cookiesToSet.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, { path: "/", ...options });
   });
 }
 
@@ -98,50 +89,46 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
-  // Single response object so setAll() writes go to the response we return
+  const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) =>
+      setAll(toSet) {
+        toSet.forEach((c) => cookiesToSet.push(c));
+        toSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, { path: "/", ...options })
         );
       },
     },
   });
 
-  // Refresh session (may call setAll); then get user
   const { data: { user } } = await supabase.auth.getUser();
 
-  // /onboarding, /request-access: allow unauthenticated; allow ADMIN; redirect other logged-in users to /feed
   if (isOnboardingOrRequestAccessPath(pathname)) {
     if (!user) return response;
     const { data: roleRow } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (roleRow?.role === "ADMIN") return response;
-    const to = new URL("/feed", request.url);
-    const redirectResponse = NextResponse.redirect(to);
-    copyCookiesToResponse(response, redirectResponse, process.env.NODE_ENV === "production" ? ".cellah.co.kr" : undefined);
+    const redirectResponse = NextResponse.redirect(new URL("/feed", request.url));
+    applyCookiesToResponse(redirectResponse, cookiesToSet);
     return redirectResponse;
   }
 
   if (!user) {
-    const to = new URL("/request-access", request.url);
-    to.searchParams.set("from", pathname);
-    const redirectResponse = NextResponse.redirect(to);
-    copyCookiesToResponse(response, redirectResponse, process.env.NODE_ENV === "production" ? ".cellah.co.kr" : undefined);
+    const redirectResponse = NextResponse.redirect(
+      new URL("/request-access?from=" + encodeURIComponent(pathname), request.url)
+    );
+    applyCookiesToResponse(redirectResponse, cookiesToSet);
     return redirectResponse;
   }
   if (isAdminPath(pathname)) {
     if (user.email && isAdminEmail(user.email)) return response;
     const { data: row } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (row?.role !== "ADMIN") {
-      const to = new URL("/feed", request.url);
-      to.searchParams.set("message", "admin_required");
-      const redirectResponse = NextResponse.redirect(to);
-      copyCookiesToResponse(response, redirectResponse, process.env.NODE_ENV === "production" ? ".cellah.co.kr" : undefined);
+      const redirectResponse = NextResponse.redirect(new URL("/feed?message=admin_required", request.url));
+      applyCookiesToResponse(redirectResponse, cookiesToSet);
       return redirectResponse;
     }
     return response;
@@ -150,19 +137,17 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await supabase.from("users").select("id, deactivated_at").eq("id", user.id).maybeSingle();
     if (!profile) {
       if (user.email && isOnboardingBypassEmail(user.email)) return response;
-      const to = new URL("/request-access", request.url);
-      to.searchParams.set("from", pathname);
-      const redirectResponse = NextResponse.redirect(to);
-      copyCookiesToResponse(response, redirectResponse, process.env.NODE_ENV === "production" ? ".cellah.co.kr" : undefined);
+      const redirectResponse = NextResponse.redirect(
+        new URL("/request-access?from=" + encodeURIComponent(pathname), request.url)
+      );
+      applyCookiesToResponse(redirectResponse, cookiesToSet);
       return redirectResponse;
     }
     if (profile.deactivated_at) {
       const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
       if (!isOwnProfile) {
-        const to = new URL("/", request.url);
-        to.searchParams.set("message", "account_deactivated");
-        const redirectResponse = NextResponse.redirect(to);
-        copyCookiesToResponse(response, redirectResponse, process.env.NODE_ENV === "production" ? ".cellah.co.kr" : undefined);
+        const redirectResponse = NextResponse.redirect(new URL("/?message=account_deactivated", request.url));
+        applyCookiesToResponse(redirectResponse, cookiesToSet);
         return redirectResponse;
       }
     }

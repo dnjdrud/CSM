@@ -33,21 +33,19 @@ export default async function ProfilePage({
   ]);
 
   if (!user) notFound();
-  if (!currentUser) notFound();
 
-  const followingIds = await listFollowingIds(currentUser.id);
-
-  const blocked = isBlocked(currentUser.id, id);
-  const muted = isMuted(currentUser.id, id);
-  const isOwnProfile = currentUser.id === id;
+  const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
+  const blocked = currentUser ? isBlocked(currentUser.id, id) : false;
+  const muted = currentUser ? isMuted(currentUser.id, id) : false;
+  const isOwnProfile = Boolean(currentUser && currentUser.id === id);
   const following = followingIds.includes(id);
   const isFollowing = (followerId: string, followingId: string) =>
-    followerId === currentUser.id && followingIds.includes(followingId);
+    Boolean(currentUser && followerId === currentUser.id && followingIds.includes(followingId));
 
   const posts = allPosts
     .filter((p) => p.category !== "TESTIMONY")
     .filter(() => !blocked && !muted)
-    .filter((p) => canViewPost(p, currentUser, isFollowing));
+    .filter((p) => canViewPost(p, currentUser ?? null, isFollowing));
 
   return (
     <TimelineContainer>
@@ -67,7 +65,7 @@ export default async function ProfilePage({
           following={following}
           isMuted={muted}
           isBlocked={blocked}
-          currentUserId={currentUser.id}
+          currentUserId={currentUser?.id ?? null}
         />
 
         <ProfileTabs profileId={id} activeTab={activeTab} />
@@ -76,7 +74,7 @@ export default async function ProfilePage({
           <RecentPosts
             posts={posts}
             profileId={id}
-            currentUserId={currentUser.id}
+            currentUserId={currentUser?.id ?? null}
             blocked={blocked}
           />
         </div>

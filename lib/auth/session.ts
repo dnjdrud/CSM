@@ -22,7 +22,9 @@ export async function getSession(): Promise<Session | null> {
       return null;
     }
     if (!user?.id) {
-      console.warn(LOG_PREFIX, "auth.getUser returned no user");
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(LOG_PREFIX, "auth.getUser returned no user (session cookies may be missing or wrong domain)");
+      }
       return null;
     }
     const { ensureAdminRoleIfAllowed } = await import("@/lib/admin/bootstrap");

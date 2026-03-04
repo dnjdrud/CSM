@@ -5,7 +5,7 @@
  * Schema (run in Supabase SQL):
  * - posts: id uuid primary key default gen_random_uuid(), author_id uuid references auth.users(id), category text,
  *   content text, visibility text default 'MEMBERS', tags text[] default '{}',
- *   created_at timestamptz default now() (optional: title text, reflection_prompt text if you add them)
+ *   created_at timestamptz default now()
  * - comments: id uuid primary key default gen_random_uuid(), post_id uuid references posts(id) on delete cascade,
  *   author_id uuid references auth.users(id), content text, parent_id uuid references comments(id), created_at timestamptz default now()
  * - follows: follower_id uuid, following_id uuid, created_at timestamptz default now(), primary key (follower_id, following_id)
@@ -32,7 +32,7 @@ import { tokenize, sortByScore } from "@/lib/search";
 
 const SEARCH_MAX = 30;
 
-/** Feed select: only columns that exist in current DB (no title column). */
+/** Feed select: only columns that exist in current DB. */
 const POSTS_FEED_SELECT = "id, author_id, category, content, visibility, tags, created_at" as const;
 
 function isColumnOrSchemaError(message: string): boolean {
@@ -168,6 +168,13 @@ export async function listFeedPosts(options: {
     rows = next.data as FeedRow[] | null;
     error = next.error;
   }
+  if (error && isColumnOrSchemaError(error.message)) {
+    let q3 = supabase.from("posts").select(POSTS_FEED_SELECT).order("created_at", { ascending: false });
+    if (authorIdsForFollowing) q3 = q3.in("author_id", authorIdsForFollowing);
+    const next = await q3;
+    rows = next.data as FeedRow[] | null;
+    error = next.error;
+  }
   if (!error && useHidden) hasHiddenAtColumn = true;
   if (error) {
     console.error("[FEED_QUERY_ERROR]", error.message);
@@ -246,6 +253,11 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
   if (error && isHiddenAtError(error.message)) {
     hasHiddenAtColumn = false;
     const next = await runQuery();
+    rows = next.data;
+    error = next.error;
+  }
+  if (error && isColumnOrSchemaError(error.message)) {
+    const next = await runQuery(POSTS_FEED_SELECT);
     rows = next.data;
     error = next.error;
   }
@@ -333,8 +345,6 @@ export async function createPost(input: {
   authorId: string;
   category: DomainPost["category"];
   content: string;
-  /** Ignored: posts table has no title column. */
-  title?: string;
   visibility?: DomainPost["visibility"];
   tags?: string[];
 }): Promise<DomainPost> {

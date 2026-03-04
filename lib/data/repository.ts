@@ -314,7 +314,6 @@ export async function createPost(input: {
   authorId: string;
   category: DomainPost["category"];
   content: string;
-  title?: string;
   visibility?: DomainPost["visibility"];
   tags?: string[];
 }): Promise<DomainPost> {
@@ -328,7 +327,6 @@ export async function createPost(input: {
     authorId: input.authorId,
     category: input.category,
     content: input.content.trim(),
-    title: input.title?.trim() || undefined,
     visibility: input.visibility ?? "MEMBERS",
     tags,
     createdAt: now,
@@ -831,7 +829,6 @@ export async function publishNoteToCommunity(params: {
     authorId: params.userId,
     category: "PRAYER",
     content: note.content,
-    title: note.title,
     visibility: "MEMBERS",
     tags: note.tags ?? [],
   });
@@ -877,7 +874,6 @@ export async function publishPrayerAsTestimony(params: {
   const post = await createPost({
     authorId: params.userId,
     category: "TESTIMONY",
-    title: "Answered Prayer",
     content,
     visibility: "MEMBERS",
     tags,

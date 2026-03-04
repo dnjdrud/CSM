@@ -1,6 +1,7 @@
 /**
  * Supabase server client. Use in Server Components, Server Actions, Route Handlers.
- * Uses Next.js cookies for session.
+ * Uses Next.js 15 cookies() (await) for session. setAll in RSC cannot write cookies;
+ * middleware is responsible for refreshing and writing session cookies.
  */
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -27,12 +28,13 @@ export async function supabaseServer() {
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            cookieStore.set(name, value, { path: "/", ...options })
           );
         } catch {
-          // Ignore in Server Component read-only context
+          // RSC/read-only context: cookie writes not allowed; middleware handles refresh
         }
       },
     },
   });
 }
+

@@ -26,8 +26,6 @@ export interface Post {
   id: string;
   authorId: string;
   category: PostCategory;
-  /** Optional display title */
-  title?: string;
   content: string;
   visibility: Visibility;
   /** Lowercase normalized in storage; max 5 per post. */
