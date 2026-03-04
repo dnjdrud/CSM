@@ -23,6 +23,7 @@ export function CommentForm({
   const router = useRouter();
   const [content, setContent] = useState("");
   const [pending, setPending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const addCommentAction = addCommentActionProp ?? addCommentActionDefault;
   const toast = useToast();
 
@@ -31,6 +32,7 @@ export function CommentForm({
     const trimmed = content.trim();
     if (!trimmed || pending) return;
     setPending(true);
+    setSubmitError(null);
     const result = await addCommentAction(postId, trimmed, parentId);
     setPending(false);
     if (result.ok) {
@@ -40,6 +42,9 @@ export function CommentForm({
       onCancel?.();
       toast.show("Saved.");
     } else {
+      const msg = result.error ?? "Failed to post comment";
+      setSubmitError(msg);
+      if (process.env.NODE_ENV !== "production") console.warn("[CommentForm]", msg);
       toast.error();
     }
   }
@@ -57,6 +62,11 @@ export function CommentForm({
         disabled={pending}
         aria-label="Comment content"
       />
+      {submitError && (
+        <p className="mt-2 text-[13px] text-red-600" role="alert">
+          {submitError}
+        </p>
+      )}
       <div className="mt-2 flex gap-2">
         <button
           type="submit"

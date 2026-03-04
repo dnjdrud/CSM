@@ -26,13 +26,30 @@ export default async function ProfilePage({
   const { id } = await params;
   const activeTab: ProfileTab = "posts";
 
-  const [user, currentUser, allPosts] = await Promise.all([
-    getUserById(id),
-    getCurrentUser(),
-    listPostsByAuthorId(id),
-  ]);
+  let user: Awaited<ReturnType<typeof getUserById>> = null;
+  let currentUser: Awaited<ReturnType<typeof getCurrentUser>> = null;
+  let allPosts: Awaited<ReturnType<typeof listPostsByAuthorId>> = [];
+  let profileError: string | null = null;
 
-  if (!user) notFound();
+  try {
+    [user, currentUser, allPosts] = await Promise.all([
+      getUserById(id),
+      getCurrentUser(),
+      listPostsByAuthorId(id),
+    ]);
+  } catch (e) {
+    profileError = e instanceof Error ? e.message : String(e);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[ProfilePage]", { profileId: id, error: profileError });
+    }
+  }
+
+  if (!user) {
+    if (process.env.NODE_ENV !== "production" && profileError) {
+      console.warn("[ProfilePage] getUserById returned null for id:", id, "error:", profileError);
+    }
+    notFound();
+  }
 
   const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
   const blocked = currentUser ? isBlocked(currentUser.id, id) : false;
@@ -50,6 +67,11 @@ export default async function ProfilePage({
   return (
     <TimelineContainer>
       <div className="max-w-2xl mx-auto px-4 py-6">
+        {process.env.NODE_ENV !== "production" && profileError && (
+          <div className="mb-4 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900" role="status">
+            <strong>Profile dev:</strong> {profileError}
+          </div>
+        )}
         <div className="pb-4">
           <Link
             href="/feed"

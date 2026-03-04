@@ -403,7 +403,11 @@ export async function listCommentsByPostId(postId: string): Promise<(Comment & {
     .eq("post_id", postId)
     .order("parent_id", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: true });
-  if (error || !rows?.length) return [];
+  if (error) {
+    if (process.env.NODE_ENV !== "production") console.warn("[listCommentsByPostId]", postId, error.message);
+    return [];
+  }
+  if (!rows?.length) return [];
   const authorIds = [...new Set(rows.map((r) => r.author_id))];
   const authorMap = await getAuthorMap(supabase, authorIds);
   const sorted = [...rows].sort((a, b) => {

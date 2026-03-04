@@ -277,10 +277,12 @@ export function PostCard({
             </button>
           </>
         )}
-        {canCommentInline ? (
+        {getCommentsForPost ? (
           <button
             type="button"
             onClick={toggleComments}
+            aria-expanded={commentsOpen}
+            aria-controls={`comments-${post.id}`}
             className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${commentsOpen ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
           >
             <span aria-hidden>💬</span>
@@ -297,19 +299,21 @@ export function PostCard({
         )}
       </div>
 
-      {canCommentInline && commentsOpen && (
-        <div className="mt-4 border-t border-theme-border pt-4 pb-2">
-          <h3 id={`comments-${post.id}`} className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-3">
+      {getCommentsForPost && commentsOpen && (
+        <div id={`comments-${post.id}`} className="mt-4 border-t border-theme-border pt-4 pb-2">
+          <h3 className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-3">
             Comments
           </h3>
           <div className="pl-3 sm:pl-4 text-[13px] leading-6 text-theme-text">
           {commentsLoading && comments === null ? (
             <>
-              <CommentForm
-                postId={post.id}
-                onSuccess={handleCommentSuccess}
-                addCommentAction={addCommentActionProp}
-              />
+              {canCommentInline && (
+                <CommentForm
+                  postId={post.id}
+                  onSuccess={handleCommentSuccess}
+                  addCommentAction={addCommentActionProp}
+                />
+              )}
               <div className="mt-4">
                 <CommentList
                   comments={[]}
@@ -326,11 +330,20 @@ export function PostCard({
             </>
           ) : (
             <>
-              <CommentForm
-                postId={post.id}
-                onSuccess={handleCommentSuccess}
-                addCommentAction={addCommentActionProp}
-              />
+              {canCommentInline && (
+                <CommentForm
+                  postId={post.id}
+                  onSuccess={handleCommentSuccess}
+                  addCommentAction={addCommentActionProp}
+                />
+              )}
+              {!canCommentInline && currentUserId === null && (
+                <p className="mb-3 text-theme-muted text-[13px]">
+                  <Link href={`/post/${post.id}`} className="underline hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent rounded">
+                    Sign in to comment
+                  </Link>
+                </p>
+              )}
               <div className="mt-4">
                 <CommentList
                   comments={comments ?? []}
