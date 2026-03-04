@@ -220,15 +220,21 @@ export async function rejectSignupRequest(
   return !error;
 }
 
-/** Verify token: exists, not used, not expired; request status APPROVED. Returns request data for completion form. */
-export async function verifyApprovalToken(
-  token: string
-): Promise<{ request: SignupRequest } | null> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return null;
+/** Result for completion link: valid (show form), invalid/expired (redirect to request-access), or already_completed (redirect to login). */
+export type CompletionLinkStatus =
+  | { status: "valid"; request: SignupRequest }
+  | { status: "invalid_or_expired" }
+  | { status: "already_completed" };
 
-  const trimmed = token.trim();
-  if (!trimmed) return null;
+/** Check token and request status for /auth/complete. Use this to decide redirect vs show form. */
+export async function getCompletionLinkStatus(
+  token: string | null | undefined
+): Promise<CompletionLinkStatus> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return { status: "invalid_or_expired" };
+
+  const trimmed = (token ?? "").trim();
+  if (!trimmed) return { status: "invalid_or_expired" };
 
   const { data: tokenRow } = await admin
     .from("approval_tokens")
@@ -236,8 +242,18 @@ export async function verifyApprovalToken(
     .eq("token", trimmed)
     .maybeSingle();
 
-  if (!tokenRow || tokenRow.used_at) return null;
-  if (new Date(tokenRow.expires_at) <= new Date()) return null;
+  if (!tokenRow) return { status: "invalid_or_expired" };
+  if (new Date(tokenRow.expires_at) <= new Date()) return { status: "invalid_or_expired" };
+
+  if (tokenRow.used_at) {
+    const { data: reqRow } = await admin
+      .from("signup_requests")
+      .select("status")
+      .eq("id", tokenRow.request_id)
+      .single();
+    if (reqRow?.status === "COMPLETED") return { status: "already_completed" };
+    return { status: "invalid_or_expired" };
+  }
 
   const { data: reqRow } = await admin
     .from("signup_requests")
@@ -246,9 +262,18 @@ export async function verifyApprovalToken(
     .eq("status", "APPROVED")
     .single();
 
-  if (!reqRow) return null;
+  if (!reqRow) return { status: "invalid_or_expired" };
 
-  return { request: rowToRequest(reqRow) };
+  return { status: "valid", request: rowToRequest(reqRow) };
+}
+
+/** Verify token: exists, not used, not expired; request status APPROVED. Returns request data for completion form. */
+export async function verifyApprovalToken(
+  token: string
+): Promise<{ request: SignupRequest } | null> {
+  const result = await getCompletionLinkStatus(token);
+  if (result.status === "valid") return { request: result.request };
+  return null;
 }
 
 /** Create public.users row with role ADMIN for bootstrap admin. Uses service role. */

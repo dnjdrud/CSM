@@ -34,8 +34,14 @@ export default async function FeedPage({
     cursor: null,
   });
 
+  const diagnostics = {
+    userId: currentUser?.id ?? null,
+    role: currentUser?.role ?? null,
+    postCount: firstPage.items.length,
+    feedError: firstPage.error ?? null,
+  };
   if (process.env.NODE_ENV !== "production") {
-    console.log("[FeedPage]", { rawCount: firstPage.items.length, firstId: firstPage.items[0]?.id ?? null, scope: scopeParam, currentUserId: currentUser?.id ?? null });
+    console.log("[FeedPage]", diagnostics);
   }
 
   const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
@@ -70,6 +76,16 @@ export default async function FeedPage({
   return (
     <TimelineContainer>
       <h1 className="sr-only">Feed</h1>
+      <div className="px-4 py-2 border-b border-amber-200 bg-amber-50/80 text-[13px] text-amber-900" role="status" aria-label="Feed diagnostics">
+        <p><strong>Session:</strong> userId={diagnostics.userId ?? "—"} role={String(diagnostics.role ?? "—")}</p>
+        <p><strong>Posts from repository:</strong> {diagnostics.postCount}</p>
+        {diagnostics.postCount === 0 && !diagnostics.feedError && (
+          <p className="mt-1 text-amber-800">Feed empty (check logs).</p>
+        )}
+        {diagnostics.feedError && (
+          <p className="mt-1 font-medium text-red-700"><strong>Feed query error:</strong> {diagnostics.feedError}</p>
+        )}
+      </div>
       {showAdminRequiredBanner && (
         <div className="px-4 pt-4 pb-2">
           <FlashBanner
@@ -85,7 +101,12 @@ export default async function FeedPage({
       />
       {currentUser && <FeedComposer />}
       <div className="space-y-6 sm:space-y-5 py-4">
-        {visibleItems.length === 0 ? (
+        {diagnostics.feedError ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p className="font-medium">Feed could not load.</p>
+            <p className="mt-1">{diagnostics.feedError}</p>
+          </div>
+        ) : visibleItems.length === 0 ? (
           <EmptyState
             title="Nothing here yet"
             description="No posts yet. Be the first to share."

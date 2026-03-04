@@ -88,7 +88,7 @@ export async function middleware(request: NextRequest) {
   });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    const to = new URL("/onboarding", request.url);
+    const to = new URL("/request-access", request.url);
     to.searchParams.set("from", pathname);
     return NextResponse.redirect(to);
   }
@@ -106,7 +106,7 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await supabase.from("users").select("id, deactivated_at").eq("id", user.id).maybeSingle();
     if (!profile) {
       if (user.email && isOnboardingBypassEmail(user.email)) return response;
-      const to = new URL("/onboarding", request.url);
+      const to = new URL("/request-access", request.url);
       to.searchParams.set("from", pathname);
       return NextResponse.redirect(to);
     }

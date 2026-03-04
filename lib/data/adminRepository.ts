@@ -219,12 +219,14 @@ export async function createDailyPrayer(adminId: string): Promise<{ postId: stri
   const today = getTodayAsiaSeoul();
   const payload = buildDailyPrayerPost({ date: new Date() });
 
+  const startOfToday = new Date(today + "T00:00:00.000Z").toISOString();
   const { data: existing } = await supabase
     .from("posts")
     .select("id")
     .eq("author_id", adminId)
     .eq("category", "PRAYER")
-    .eq("title", payload.title)
+    .contains("tags", ["daily-prayer"])
+    .gte("created_at", startOfToday)
     .limit(1)
     .maybeSingle();
 
@@ -244,7 +246,6 @@ export async function createDailyPrayer(adminId: string): Promise<{ postId: stri
     .insert({
       author_id: adminId,
       category: payload.category,
-      title: payload.title,
       content: payload.content,
       visibility: payload.visibility,
       tags: payload.tags,

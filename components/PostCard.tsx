@@ -208,16 +208,7 @@ export function PostCard({
         )}
       </header>
 
-      {post.title && (
-        <Link
-          href={`/post/${post.id}`}
-          className="mt-2 block text-[15px] font-medium text-theme-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
-        >
-          {post.title}
-        </Link>
-      )}
-
-      <div className={post.title ? "mt-1.5" : "mt-2"}>
+      <div className="mt-2">
         {shouldClamp ? (
           <>
             <div className="line-clamp-6 text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans">

@@ -32,9 +32,8 @@ import { tokenize, sortByScore } from "@/lib/search";
 
 const SEARCH_MAX = 30;
 
-/** Feed select: only columns guaranteed in minimal DB (no optional pin/daily columns). */
-const POSTS_FEED_SELECT = "id, author_id, category, title, content, visibility, tags, created_at" as const;
-const POSTS_FEED_SELECT_NO_TITLE = "id, author_id, category, content, visibility, tags, created_at" as const;
+/** Feed select: only columns that exist in current DB (no title column). */
+const POSTS_FEED_SELECT = "id, author_id, category, content, visibility, tags, created_at" as const;
 
 function isColumnOrSchemaError(message: string): boolean {
   const m = String(message).toLowerCase();
@@ -71,14 +70,12 @@ function rowToPost(r: {
   visibility: string;
   tags: string[] | null;
   created_at: string | null;
-  title?: string | null;
 }): DomainPost {
   return {
     id: r.id,
     authorId: r.author_id,
     category: r.category as DomainPost["category"],
     content: r.content,
-    title: r.title ?? undefined,
     visibility: (r.visibility as DomainPost["visibility"]) ?? "MEMBERS",
     tags: r.tags ?? [],
     reflectionPrompt: undefined,
@@ -152,7 +149,7 @@ export async function listFeedPosts(options: {
     authorIdsForFollowing = [...new Set([uid, ...followingIds])];
   }
 
-  type FeedRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null; title?: string | null };
+  type FeedRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null };
   let rows: FeedRow[] | null = null;
   let error: { message: string } | null = null;
 
@@ -171,17 +168,9 @@ export async function listFeedPosts(options: {
     rows = next.data as FeedRow[] | null;
     error = next.error;
   }
-  if (error && isColumnOrSchemaError(error.message)) {
-    let q3 = supabase.from("posts").select(POSTS_FEED_SELECT_NO_TITLE).order("created_at", { ascending: false });
-    if (hasHiddenAtColumn !== false) q3 = q3.is("hidden_at", null);
-    if (authorIdsForFollowing) q3 = q3.in("author_id", authorIdsForFollowing);
-    const next = await q3;
-    rows = (next.data ?? []).map((r: Omit<FeedRow, "title">) => ({ ...r, title: null }));
-    error = next.error;
-  }
   if (!error && useHidden) hasHiddenAtColumn = true;
   if (error) {
-    console.error("[Feed] listFeedPosts query error:", error.message);
+    console.error("[FEED_QUERY_ERROR]", error.message);
     return [];
   }
   if (!rows?.length) return [];
@@ -222,6 +211,8 @@ export type ListFeedPostsPageParams = {
 export type ListFeedPostsPageResult = {
   items: PostWithAuthor[];
   nextCursor: { createdAt: string; id: string } | null;
+  /** Set when the feed query failed so the UI can show it. */
+  error?: string;
 };
 
 export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promise<ListFeedPostsPageResult> {
@@ -258,24 +249,14 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
     rows = next.data;
     error = next.error;
   }
-  if (error && isColumnOrSchemaError(error.message)) {
-    const next = await runQuery(POSTS_FEED_SELECT_NO_TITLE);
-    if (next.data?.length) {
-      rows = next.data;
-      error = null;
-    } else {
-      rows = next.data;
-      error = next.error;
-    }
-  }
   if (!error && useHidden) hasHiddenAtColumn = true;
   if (error) {
-    console.error("[Feed] listFeedPostsPage query error:", error.message);
-    return { items: [], nextCursor: null };
+    console.error("[FEED_QUERY_ERROR]", error.message);
+    return { items: [], nextCursor: null, error: error.message };
   }
   if (!rows?.length) return { items: [], nextCursor: null };
 
-  type FeedPostRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null; title?: string | null };
+  type FeedPostRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null };
   const normalizedRows: FeedPostRow[] = (rows ?? []) as unknown as FeedPostRow[];
   const hasMore = normalizedRows.length > limit;
   const pageRows = hasMore ? normalizedRows.slice(0, limit) : normalizedRows;
@@ -317,20 +298,12 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
 }
 
 const POSTS_SINGLE_SELECT = POSTS_FEED_SELECT;
-const POSTS_SINGLE_SELECT_NO_TITLE = POSTS_FEED_SELECT_NO_TITLE;
 
 export async function getPostById(id: string): Promise<PostWithAuthor | null> {
   const supabase = await supabaseServer();
-  let { data: row, error } = await supabase.from("posts").select(POSTS_SINGLE_SELECT).eq("id", id).single();
-  if (error && isColumnOrSchemaError(error.message)) {
-    const next = await supabase.from("posts").select(POSTS_SINGLE_SELECT_NO_TITLE).eq("id", id).single();
-    if (next.data && typeof next.data === "object" && "id" in next.data) {
-      row = { ...next.data, title: null } as unknown as NonNullable<typeof row>;
-    }
-    error = next.error;
-  }
+  const { data: row, error } = await supabase.from("posts").select(POSTS_SINGLE_SELECT).eq("id", id).single();
   if (error) {
-    console.error("[Feed] getPostById query error:", error.message);
+    console.error("[FEED_QUERY_ERROR] getPostById", error.message);
     return null;
   }
   if (!row) return null;
@@ -354,46 +327,30 @@ export async function getPostById(id: string): Promise<PostWithAuthor | null> {
   } as PostWithAuthor;
 }
 
-const POSTS_INSERT_SELECT = "id, author_id, category, title, content, visibility, tags, created_at" as const;
-const POSTS_INSERT_SELECT_NO_TITLE = "id, author_id, category, content, visibility, tags, created_at" as const;
+const POSTS_INSERT_SELECT = "id, author_id, category, content, visibility, tags, created_at" as const;
 
 export async function createPost(input: {
   authorId: string;
   category: DomainPost["category"];
   content: string;
+  /** Ignored: posts table has no title column. */
   title?: string;
   visibility?: DomainPost["visibility"];
   tags?: string[];
 }): Promise<DomainPost> {
   const supabase = await supabaseServer();
   const tags = [...new Set((input.tags ?? []).map(normalizeTag).filter(Boolean))].slice(0, 5);
-  const payloadWithTitle = {
+  const payload = {
     author_id: input.authorId,
     category: input.category,
     content: input.content.trim(),
-    title: input.title?.trim() || null,
     visibility: input.visibility ?? "MEMBERS",
     tags,
   };
-  let result = await supabase
-    .from("posts")
-    .insert(payloadWithTitle)
-    .select(POSTS_INSERT_SELECT)
-    .single();
-  if (result.error && isColumnOrSchemaError(result.error.message)) {
-    const { title: _t, ...payloadWithoutTitle } = payloadWithTitle;
-    result = await supabase.from("posts").insert(payloadWithoutTitle).select(POSTS_INSERT_SELECT_NO_TITLE).single();
-  }
-  if (result.error && isColumnOrSchemaError(result.error.message)) {
-    result = await supabase
-      .from("posts")
-      .insert({ author_id: input.authorId, category: input.category, content: input.content.trim(), tags })
-      .select(POSTS_INSERT_SELECT_NO_TITLE)
-      .single();
-  }
+  const result = await supabase.from("posts").insert(payload).select(POSTS_INSERT_SELECT).single();
   if (result.error) throw new Error(result.error.message);
-  const row = result.data as Record<string, unknown>;
-  return rowToPost({ ...row, title: row?.title ?? null } as Parameters<typeof rowToPost>[0]);
+  const row = result.data;
+  return rowToPost(row as Parameters<typeof rowToPost>[0]);
 }
 
 export async function updatePost(
@@ -660,7 +617,7 @@ export async function searchPosts(params: {
       reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
     } as PostWithAuthor;
   }).filter(Boolean) as PostWithAuthor[];
-  const getSearchText = (p: PostWithAuthor) => [p.content, p.title ?? "", (p.tags ?? []).join(" "), p.author.name].join(" ");
+  const getSearchText = (p: PostWithAuthor) => [p.content, (p.tags ?? []).join(" "), p.author.name].join(" ");
   const sorted = sortByScore(withAuthor, getSearchText, tokens);
   return sorted.slice(0, SEARCH_MAX);
 }
@@ -1030,7 +987,6 @@ export async function publishNoteToCommunity(params: {
     authorId: params.userId,
     category: "PRAYER",
     content: note.content,
-    title: note.title,
     visibility: "MEMBERS",
     tags: note.tags ?? [],
   });
@@ -1084,7 +1040,6 @@ export async function publishPrayerAsTestimony(params: {
   const post = await createPost({
     authorId: params.userId,
     category: "TESTIMONY",
-    title: "Answered Prayer",
     content,
     visibility: "MEMBERS",
     tags,

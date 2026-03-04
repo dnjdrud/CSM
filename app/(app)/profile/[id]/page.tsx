@@ -13,27 +13,18 @@ import { canViewPost } from "@/lib/domain/guards";
 import { ProfileHero } from "./_components/ProfileHero";
 import { ProfileTabs } from "./_components/ProfileTabs";
 import { RecentPosts } from "./_components/RecentPosts";
-import { ProfileAboutSection } from "./_components/ProfileAboutSection";
 
 export const dynamic = "force-dynamic";
 
-type ProfileTab = "activity" | "notes" | "about";
-
-function parseTab(tab: string | null): ProfileTab {
-  if (tab === "notes" || tab === "about") return tab;
-  return "activity";
-}
+type ProfileTab = "posts" | "notes" | "testimonies";
 
 export default async function ProfilePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
-  const { tab: tabParam } = await searchParams;
-  const activeTab = parseTab(tabParam ?? null);
+  const activeTab: ProfileTab = "posts";
 
   const [user, currentUser, allPosts] = await Promise.all([
     getUserById(id),
@@ -81,36 +72,14 @@ export default async function ProfilePage({
 
         <ProfileTabs profileId={id} activeTab={activeTab} />
 
-        {activeTab === "activity" && (
-          <div className="mt-6">
-            <RecentPosts
-              posts={posts}
-              profileId={id}
-              currentUserId={currentUser.id}
-              blocked={blocked}
-            />
-          </div>
-        )}
-
-        {activeTab === "notes" && (
-          <div className="mt-6">
-            <p className="text-[15px] text-gray-600">
-              Shared notes from this person.
-            </p>
-            <Link
-              href={`/profile/${id}/notes`}
-              className="mt-3 inline-block text-[14px] font-medium text-gray-900 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
-            >
-              View all notes →
-            </Link>
-          </div>
-        )}
-
-        {activeTab === "about" && (
-          <div className="mt-6">
-            <ProfileAboutSection user={user} />
-          </div>
-        )}
+        <div className="mt-6">
+          <RecentPosts
+            posts={posts}
+            profileId={id}
+            currentUserId={currentUser.id}
+            blocked={blocked}
+          />
+        </div>
       </div>
     </TimelineContainer>
   );

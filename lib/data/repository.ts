@@ -251,7 +251,7 @@ export async function searchPosts(params: {
   });
 
   const getSearchText = (post: PostWithAuthor) =>
-    [post.content, post.title ?? "", (post.tags ?? []).join(" "), post.author.name].join(" ");
+    [post.content, (post.tags ?? []).join(" "), post.author.name].join(" ");
   const sorted = sortByScore(visible, getSearchText, tokens);
   return sorted.slice(0, SEARCH_MAX_RESULTS);
 }
@@ -413,6 +413,7 @@ export type ListFeedPostsPageParams = {
 export type ListFeedPostsPageResult = {
   items: PostWithAuthor[];
   nextCursor: { createdAt: string; id: string } | null;
+  error?: string;
 };
 
 /** Paginated feed; same visibility/scope as listFeedPosts. */

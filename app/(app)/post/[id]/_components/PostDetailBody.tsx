@@ -8,11 +8,6 @@ type Props = {
 export function PostDetailBody({ post }: Props) {
   return (
     <>
-      {post.title && (
-        <h1 className="mt-4 text-base font-medium text-gray-900">
-          {post.title}
-        </h1>
-      )}
       <div className="mt-2 text-[15px] leading-7 text-gray-900 whitespace-pre-wrap font-sans">
         {post.content}
       </div>
