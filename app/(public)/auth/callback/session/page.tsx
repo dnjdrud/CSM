@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 
@@ -18,6 +19,7 @@ export default function AuthCallbackSessionPage() {
   const safeNext = nextPath.startsWith("/") ? nextPath : "/feed";
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
   const [message, setMessage] = useState<string>("");
+  const redirectDone = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,9 +56,13 @@ export default function AuthCallbackSessionPage() {
             router.replace(redirectTo.pathname + redirectTo.search);
             return;
           }
+          if (redirectDone.current) return;
+          redirectDone.current = true;
           setStatus("done");
-          // Full page navigation so the next request includes the new session cookies.
-          window.location.replace(safeNext);
+          setMessage("Redirecting…");
+          // Brief delay so cookies are persisted before full-page navigation.
+          await new Promise((r) => setTimeout(r, 150));
+          if (typeof window !== "undefined") window.location.replace(safeNext);
           return;
         } catch (e) {
           if (!cancelled) {
@@ -78,7 +84,7 @@ export default function AuthCallbackSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, safeNext]);
 
   if (status === "error") {
     return (
@@ -88,5 +94,17 @@ export default function AuthCallbackSessionPage() {
       </div>
     );
   }
-  return null;
+
+  return (
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4" aria-live="polite">
+      <p className="text-[15px] text-theme-text">{message || "Signing you in…"}</p>
+      <p className="mt-4 text-sm text-theme-muted">
+        If you are not redirected,{" "}
+        <Link href={safeNext} className="text-theme-primary underline hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+          click here to continue
+        </Link>
+        .
+      </p>
+    </div>
+  );
 }
