@@ -1,14 +1,15 @@
-// app/(app)/profile/[id]/page.tsx
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getUserById } from "@/lib/data/repository"; // 이미 HeaderWrapper에서 쓰는 그 함수
+import { getUserById } from "@/lib/data/repository";
 
 export default async function ProfilePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const user = await getUserById(params.id);
+  const { id } = await params;
+
+  const user = await getUserById(id);
   if (!user) return notFound();
 
   return (
@@ -18,10 +19,20 @@ export default async function ProfilePage({
           {user.name || "Unknown"}
         </h1>
 
-        <div className="mt-2 text-sm text-theme-muted">
+        <div className="mt-2 text-sm text-theme-muted space-y-1">
           <div>Role: {user.role}</div>
+          {"church" in user && (user as any).church ? (
+            <div>Church: {(user as any).church}</div>
+          ) : null}
+          {"username" in user && (user as any).username ? (
+            <div>Username: {(user as any).username}</div>
+          ) : null}
           {user.affiliation ? <div>Affiliation: {user.affiliation}</div> : null}
-          {user.bio ? <div className="mt-2 whitespace-pre-wrap">{user.bio}</div> : null}
+          {user.bio ? (
+            <div className="mt-2 whitespace-pre-wrap text-theme-primary/90">
+              {user.bio}
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
