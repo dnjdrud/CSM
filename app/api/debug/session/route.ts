@@ -1,30 +1,18 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
 
+/** Dev-only: returns authUserId, profileId, role. Production returns 404. */
 export async function GET() {
-  const supabase = await supabaseServer();
-
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-
-  let profile: any = null;
-  let profileError: any = null;
-
-  if (authData?.user?.id) {
-    const res = await supabase
-      .from("users")
-      .select("id, role")
-      .eq("id", authData.user.id)
-      .single();
-    profile = res.data;
-    profileError = res.error;
+  if (process.env.NODE_ENV === "production") {
+    return new NextResponse(null, { status: 404 });
   }
-
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ authUserId: null, profileId: null, role: null });
+  }
   return NextResponse.json({
-    authUser: authData.user
-      ? { id: authData.user.id, email: authData.user.email }
-      : null,
-    authError: authError?.message ?? null,
-    profile,
-    profileError: profileError?.message ?? null,
+    authUserId: session.userId,
+    profileId: session.userId,
+    role: session.role,
   });
 }

@@ -5,20 +5,29 @@ import { Header } from "./Header";
 
 /** Fetches session + current user and passes to Header. Catches so / never 500s. */
 export async function HeaderWrapper() {
-  let user: { id: string; name: string; isAdmin: boolean } | null = null;
+  let user: { id: string; name: string; isAdmin: boolean; role?: string } | null = null;
   let unreadCount = 0;
   try {
     const session = await getSession();
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[HeaderWrapper] getSession() returned:", session ? { userId: session.userId, role: session.role } : null);
+    }
     if (session) {
       const u = await getUserById(session.userId);
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[HeaderWrapper] getUserById() returned:", u ? "row" : "null");
+      }
       if (u) {
-        const isAdmin = session.role === "ADMIN";
-        user = { id: u.id, name: u.name, isAdmin };
+        user = { id: u.id, name: u.name, isAdmin: session.role === "ADMIN", role: session.role };
         unreadCount = await countUnreadNotifications(u.id);
+      } else {
+        user = { id: session.userId, name: "", isAdmin: session.role === "ADMIN", role: session.role };
       }
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[HeaderWrapper]", err);
+    }
   }
   return <Header user={user} initialUnreadCount={unreadCount} />;
 }

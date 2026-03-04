@@ -6,6 +6,7 @@ import { RightContextPanel } from "@/components/RightContextPanel";
 import { ToastProvider } from "@/components/ui/Toast";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Cellah — Haven for Digital Exodus",

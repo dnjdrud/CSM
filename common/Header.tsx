@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { logoutAction } from "@/app/actions/auth";
 import { CellahLogo } from "@/components/CellahLogo";
 
-export type HeaderUser = { id: string; name: string; isAdmin: boolean } | null;
+export type HeaderUser = { id: string; name: string; isAdmin: boolean; role?: string } | null;
 
 const POLL_INTERVAL_MS = 10 * 1000;
 const UNREAD_COUNT_API = "/api/notifications/unread-count";
@@ -72,8 +72,9 @@ function NotificationsNavLink({
   );
 }
 
-/** Mobile: top bar. Desktop: left fixed sidebar. */
+/** Mobile: top bar. Desktop: left fixed sidebar. Renders from user prop only (no stale state). */
 export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
+  const isAdmin = user?.isAdmin === true;
   const [unreadCount, setUnreadCount] = useState(user ? initialUnreadCount : 0);
   const lastCountRef = useRef(unreadCount);
 
@@ -157,13 +158,16 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
             </Link>
             {user ? (
               <>
+                {process.env.NODE_ENV !== "production" && (
+                  <span className="text-[10px] text-theme-muted mr-1" aria-hidden>auth=yes {user.id.slice(0, 6)}</span>
+                )}
                 <span className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
                   {user.name || "Welcome"}
                 </span>
                 <Link href={`/profile/${user.id}`} className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                   Profile
                 </Link>
-                {user.isAdmin && (
+                {isAdmin && (
                   <Link href="/admin" className="text-[15px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
                     Admin
                   </Link>
@@ -208,7 +212,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               </Link>
             )
           )}
-          {user?.isAdmin && (
+          {isAdmin && (
             <Link
               href="/admin"
               className="text-[15px] py-2 px-2 -mx-2 rounded-md font-medium text-theme-primary hover:text-theme-primary hover:bg-theme-border/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
@@ -221,6 +225,9 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
         <div className="mt-auto pt-6 border-t border-theme-border/60">
           {user ? (
             <div className="space-y-3">
+              {process.env.NODE_ENV !== "production" && (
+                <p className="text-[10px] text-theme-muted" aria-hidden>auth=yes {user.id.slice(0, 6)}</p>
+              )}
               <p className="text-[15px] font-medium text-theme-primary">
                 {user.name ? `${user.name}, welcome` : "Welcome"}
               </p>
