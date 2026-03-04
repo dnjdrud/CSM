@@ -56,7 +56,8 @@ export default function AuthCallbackSessionPage() {
           }
           setMessage("Redirecting…");
           setStatus("done");
-          router.replace(safeNext);
+          // Full page navigation so the next request includes the new session cookies (avoids RSC request without cookies).
+          window.location.replace(safeNext);
           return;
         } catch (e) {
           if (!cancelled) {
