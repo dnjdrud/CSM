@@ -79,8 +79,15 @@ export async function composePostAction(params: {
   visibility?: Visibility;
   tags?: string[];
 }): Promise<{ ok: boolean; error?: string }> {
+  console.log("[composePostAction] hit");
   const session = await getSession();
-  if (!session) return { ok: false, error: "Not logged in" };
+  console.log("[composePostAction] session", session ? { userId: session.userId } : "null");
+  if (!session) {
+    const { getAuthUserId } = await import("@/lib/auth/session");
+    const authId = await getAuthUserId();
+    console.warn("[composePostAction] session null, getAuthUserId:", authId ?? "null");
+    return { ok: false, error: "Not logged in. Please refresh and try again." };
+  }
   const trimmed = params.content.trim();
   if (!trimmed) return { ok: false, error: "Content is required" };
   try {
@@ -102,7 +109,9 @@ export async function composePostAction(params: {
     revalidatePath("/feed");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+    const msg = e instanceof Error ? e.message : "Failed to create post";
+    console.error("[composePostAction] createPost error", msg);
+    return { ok: false, error: msg };
   }
 }
 

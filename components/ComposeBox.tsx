@@ -107,7 +107,9 @@ export function ComposeBox({
         if (redirectOnSuccess) router.push(redirectOnSuccess);
       }, 1200);
     } else {
-      setErrorMessage(result.error ?? "Something went wrong. Please try again.");
+      const err = result.error ?? "Something went wrong. Please try again.";
+      setErrorMessage(err);
+      toast.error(err);
     }
   }
 

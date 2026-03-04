@@ -41,8 +41,12 @@ export async function composePostAction(params: {
   visibility?: Visibility;
   tags?: string[];
 }): Promise<{ ok: boolean; error?: string }> {
+  console.log("[composePostAction /write] hit");
   const session = await getSession();
-  if (!session) return { ok: false, error: "Not logged in" };
+  if (!session) {
+    console.warn("[composePostAction /write] session null");
+    return { ok: false, error: "Not logged in. Please refresh and try again." };
+  }
   const trimmed = params.content.trim();
   if (!trimmed) return { ok: false, error: "Content is required" };
   const tags = params.tags
@@ -59,6 +63,8 @@ export async function composePostAction(params: {
     revalidatePath("/feed");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+    const msg = e instanceof Error ? e.message : "Failed to create post";
+    console.error("[composePostAction /write] createPost error", msg);
+    return { ok: false, error: msg };
   }
 }

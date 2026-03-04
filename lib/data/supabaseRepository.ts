@@ -358,7 +358,10 @@ export async function createPost(input: {
     tags,
   };
   const result = await supabase.from("posts").insert(payload).select(POSTS_INSERT_SELECT).single();
-  if (result.error) throw new Error(result.error.message);
+  if (result.error) {
+    console.error("[createPost] insert error", result.error.message, payload);
+    throw new Error(result.error.message);
+  }
   const row = result.data;
   return rowToPost(row as Parameters<typeof rowToPost>[0]);
 }
