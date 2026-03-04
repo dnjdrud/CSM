@@ -79,12 +79,11 @@ export async function POST(request: Request) {
   const response = NextResponse.redirect(redirectTo.toString());
 
   const isProduction = process.env.NODE_ENV === "production";
-  const cookieOpts: { path: string; secure?: boolean; sameSite?: "lax"; domain?: string } = {
+  const cookieOpts: { path: string; secure?: boolean; sameSite?: "lax" } = {
     path: "/",
     secure: isProduction,
     sameSite: "lax",
   };
-  if (isProduction) cookieOpts.domain = ".cellah.co.kr";
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -93,7 +92,7 @@ export async function POST(request: Request) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name: n, value, options }) =>
-          response.cookies.set(n, value, { ...cookieOpts, ...options })
+          response.cookies.set(n, value, { path: "/", ...options })
         );
       },
     },

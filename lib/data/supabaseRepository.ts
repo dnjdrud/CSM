@@ -749,10 +749,26 @@ export async function getUserById(id: string): Promise<User | null> {
   return r.user;
 }
 
-/** Returns user and optional error message for profile/error UI. */
+const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at";
+const USERS_SELECT_MINIMAL = "id, name, role, bio, affiliation, created_at";
+
+function isColumnError(msg: string): boolean {
+  return /column.*does not exist|does not exist.*column|42703/i.test(String(msg));
+}
+
+/** Returns user and optional error message for profile/error UI. Tries full select, then minimal if deactivated_at missing. */
 export async function getUserByIdWithError(id: string): Promise<{ user: User | null; errorMessage: string | null }> {
   const supabase = await supabaseServer();
-  const { data, error } = await supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at").eq("id", id).single();
+  let data: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null } | null;
+  let error: Error | null = null;
+  const full = await supabase.from("users").select(USERS_SELECT_FULL).eq("id", id).single();
+  data = full.data as typeof data;
+  error = full.error;
+  if (error && isColumnError(error.message)) {
+    const fallback = await supabase.from("users").select(USERS_SELECT_MINIMAL).eq("id", id).single();
+    data = fallback.data ? { ...fallback.data, deactivated_at: null } : null;
+    error = fallback.error;
+  }
   if (error) return { user: null, errorMessage: error.message };
   if (!data) return { user: null, errorMessage: "No row returned" };
   return { user: rowToUser(data), errorMessage: null };

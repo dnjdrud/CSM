@@ -129,7 +129,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
   if (isAppPath(pathname)) {
-    const { data: profile } = await supabase.from("users").select("id, deactivated_at").eq("id", user.id).maybeSingle();
+    const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
     if (!profile) {
       if (user.email && isOnboardingBypassEmail(user.email)) return response;
       const redirectResponse = NextResponse.redirect(
@@ -138,13 +138,18 @@ export async function middleware(request: NextRequest) {
       applyCookiesToResponse(redirectResponse, cookiesToSet);
       return redirectResponse;
     }
-    if (profile.deactivated_at) {
-      const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
-      if (!isOwnProfile) {
-        const redirectResponse = NextResponse.redirect(new URL("/?message=account_deactivated", request.url));
-        applyCookiesToResponse(redirectResponse, cookiesToSet);
-        return redirectResponse;
+    try {
+      const { data: deact } = await supabase.from("users").select("deactivated_at").eq("id", user.id).maybeSingle();
+      if (deact?.deactivated_at) {
+        const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
+        if (!isOwnProfile) {
+          const redirectResponse = NextResponse.redirect(new URL("/?message=account_deactivated", request.url));
+          applyCookiesToResponse(redirectResponse, cookiesToSet);
+          return redirectResponse;
+        }
       }
+    } catch {
+      // deactivated_at column may not exist yet; allow access
     }
   }
   return response;

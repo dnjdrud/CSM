@@ -45,15 +45,6 @@ export async function GET(request: NextRequest) {
   const redirectTarget = new URL(next.startsWith("/") ? next : "/feed", request.url);
   const response = NextResponse.redirect(redirectTarget);
 
-  const isProduction = process.env.NODE_ENV === "production";
-  const cookieDomain = isProduction ? ".cellah.co.kr" : undefined;
-  const cookieOptions: { path: string; secure?: boolean; sameSite?: "lax" | "strict"; domain?: string; httpOnly?: boolean; maxAge?: number } = {
-    path: "/",
-    secure: isProduction,
-    sameSite: "lax",
-  };
-  if (cookieDomain) cookieOptions.domain = cookieDomain;
-
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
@@ -61,7 +52,7 @@ export async function GET(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, { ...cookieOptions, ...options });
+          response.cookies.set(name, value, { path: "/", ...options });
         });
       },
     },

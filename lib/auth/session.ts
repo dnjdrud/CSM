@@ -18,12 +18,12 @@ export async function getSession(): Promise<Session | null> {
     const supabase = await supabaseServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError) {
-      console.warn(LOG_PREFIX, "auth.getUser error:", authError.message);
+      console.warn(LOG_PREFIX, "getSession null: auth.getUser error:", authError.message);
       return null;
     }
     if (!user?.id) {
       if (process.env.NODE_ENV !== "production") {
-        console.warn(LOG_PREFIX, "auth.getUser returned no user (session cookies may be missing or wrong domain)");
+        console.warn(LOG_PREFIX, "getSession null: auth.getUser returned no user (cookies missing or wrong domain)");
       }
       return null;
     }
@@ -36,7 +36,7 @@ export async function getSession(): Promise<Session | null> {
     const profileResult = await supabase.from("users").select("id, role").eq("id", user.id).single();
     let row: { id: string; role: string } | null = profileResult.data;
     if (profileResult.error && (!row || !row.role)) {
-      console.warn(LOG_PREFIX, "users select failed for user.id:", user.id, "error:", profileResult.error.message);
+      console.warn(LOG_PREFIX, "getSession null: users select failed for user.id:", user.id, "error:", profileResult.error.message);
     }
     if (!row || !row.role) {
       if (user.email && isOnboardingBypassEmail(user.email)) {
@@ -52,11 +52,11 @@ export async function getSession(): Promise<Session | null> {
         row = refetch.data;
       }
       if (ensured.error) {
-        console.warn(LOG_PREFIX, "ensureProfile failed for user.id:", user.id, "error:", ensured.error);
+        console.warn(LOG_PREFIX, "getSession null: ensureProfile failed for user.id:", user.id, "error:", ensured.error);
       }
     }
     if (!row || !row.role) {
-      console.warn(LOG_PREFIX, "no profile or role missing for user.id:", user.id);
+      console.warn(LOG_PREFIX, "getSession null: no profile or role (auth user.id=" + user.id + ", users row=" + (row ? "present" : "null") + ")");
       return null;
     }
     return { userId: row.id, role: row.role as UserRole };

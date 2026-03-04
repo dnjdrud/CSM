@@ -101,7 +101,15 @@ export async function addCommentAction(
   parentId?: string
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await getSession();
-  if (!session) return { ok: false, error: "Not logged in" };
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[addCommentAction] getSession:", session ? { userId: session.userId, role: session.role } : "null");
+  }
+  if (!session) {
+    const { getAuthUserId } = await import("@/lib/auth/session");
+    const authUserId = await getAuthUserId();
+    console.warn("[addCommentAction] session null. getAuthUserId:", authUserId ?? "null", "(if auth exists but session null, check users row / RLS)");
+    return { ok: false, error: "Not logged in" };
+  }
   const trimmed = content.trim();
   if (!trimmed) return { ok: false, error: "Comment is required" };
   try {
