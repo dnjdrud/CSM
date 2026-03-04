@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { CommentForm } from "@/app/(app)/post/[id]/_components/CommentForm";
 import { CommentList } from "@/app/(app)/post/[id]/_components/CommentList";
 import { PostActionsMenu } from "@/app/(app)/post/[id]/_components/PostActionsMenu";
+import { useClientSession } from "@/lib/auth/useClientSession";
 
 function relativeTime(iso: string): string {
   const d = new Date(iso);
@@ -63,6 +64,8 @@ export function PostCard({
   updatePostAction?: UpdatePostAction;
 }) {
   const router = useRouter();
+  const { userId: clientUserId } = useClientSession();
+  const effectiveUserId = currentUserId ?? clientUserId;
   const countsFromPost = post.reactionCounts ?? { prayed: 0, withYou: 0 };
   const [responses, setResponses] = useState(post.reactionsByCurrentUser);
   const [counts, setCounts] = useState(countsFromPost);
@@ -70,9 +73,9 @@ export function PostCard({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<CommentWithAuthor[] | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
-  const isAuthor = currentUserId != null && currentUserId === post.authorId;
+  const isAuthor = effectiveUserId != null && effectiveUserId === post.authorId;
   const canReact = Boolean(onToggleReaction);
-  const canCommentInline = Boolean(getCommentsForPost && currentUserId != null);
+  const canCommentInline = Boolean(getCommentsForPost && effectiveUserId != null);
   const isDailyPrayer =
     post.isDailyPrayer === true || post.tags?.some((t) => t.toLowerCase() === "daily-prayer");
   const isTestimony = post.category === "TESTIMONY";
@@ -318,7 +321,7 @@ export function PostCard({
                 <CommentList
                   comments={[]}
                   postId={post.id}
-                  currentUserId={currentUserId}
+                  currentUserId={effectiveUserId}
                   loading
                   onCommentDeleted={() => loadComments()}
                   onCommentUpdated={() => loadComments()}
@@ -337,7 +340,7 @@ export function PostCard({
                   addCommentAction={addCommentActionProp}
                 />
               )}
-              {!canCommentInline && currentUserId === null && (
+              {!canCommentInline && effectiveUserId === null && (
                 <p className="mb-3 text-theme-muted text-[13px]">
                   <Link href={`/post/${post.id}`} className="underline hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent rounded">
                     Sign in to comment
@@ -348,7 +351,7 @@ export function PostCard({
                 <CommentList
                   comments={comments ?? []}
                   postId={post.id}
-                  currentUserId={currentUserId}
+                  currentUserId={effectiveUserId}
                   onCommentDeleted={() => loadComments()}
                   onCommentUpdated={() => loadComments()}
                   deleteCommentAction={deleteCommentActionProp}
