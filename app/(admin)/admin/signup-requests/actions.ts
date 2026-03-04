@@ -10,6 +10,7 @@ import {
   rejectSignupRequest,
 } from "@/lib/data/signupRepository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseServer } from "@/lib/supabase/server";
 import type { SignupRequestStatus } from "@/lib/domain/types";
 
 const APP_URL =
@@ -23,57 +24,35 @@ export async function listSignupRequestsAction(
 ): Promise<{ requests: Awaited<ReturnType<typeof listSignupRequests>>; error?: string }> {
   const admin = await getAdminOrNull();
   if (!admin) return { requests: [], error: "Unauthorized" };
-  const requests = await listSignupRequests(status);
+  const supabase = await supabaseServer();
+  const requests = await listSignupRequests(status, supabase);
   return { requests };
 }
 
+/** Approve: DB update + token 생성은 관리자 세션(RLS)으로 항상 수행. 이메일은 선택(실패해도 승인 성공). */
 export async function approveSignupRequestAction(
   requestId: string
-): Promise<{ ok: true } | { error: string }> {
+): Promise<{ ok: true; link?: string } | { error: string }> {
   const admin = await getAdminOrNull();
   if (!admin) return { error: "Unauthorized" };
 
-  const supabase = getSupabaseAdmin();
-  if (supabase) {
-    const { data, error } = await supabase.functions.invoke("approve-signup", {
-      body: { requestId, adminUserId: admin.userId },
-    });
-    if (!error && data?.ok) {
-      await logAdminAction({
-        actorId: admin.userId,
-        action: ADMIN_ACTION.APPROVE_SIGNUP_REQUEST,
-        targetType: AUDIT_TARGET_TYPE.SIGNUP_REQUEST,
-        targetId: requestId,
-        metadata: { link: data.link },
-      });
-      revalidatePath("/admin/signup-requests");
-      revalidatePath("/admin/signups");
-      return { ok: true };
-    }
-    if (error) console.error("[approveSignupRequest] Edge function approve-signup error", error);
-  } else {
-    console.warn("[approveSignupRequest] No service role client; using repository fallback only.");
-  }
+  const supabase = await supabaseServer();
 
   try {
-    const result = await approveSignupRequest(admin.userId, requestId);
+    const result = await approveSignupRequest(admin.userId, requestId, supabase);
     if (!result) {
-      if (!supabase) {
-        return { error: "Server not configured. Set SUPABASE_SERVICE_ROLE_KEY in environment." };
-      }
       return { error: "Request not found or not pending." };
     }
 
     const link = `${APP_URL.replace(/\/$/, "")}/auth/complete?token=${encodeURIComponent(result.token)}`;
-    if (supabase) {
-      const { error } = await supabase.functions.invoke("send-approval-email", {
+
+    const adminClient = getSupabaseAdmin();
+    if (adminClient) {
+      const { error } = await adminClient.functions.invoke("send-approval-email", {
         body: { email: result.email, link },
       });
       if (error) {
         console.error("[approveSignupRequest] send-approval-email error", error);
-        revalidatePath("/admin/signup-requests");
-        revalidatePath("/admin/signups");
-        return { error: "Approved but failed to send email. Share the link manually: " + link };
       }
     }
 
@@ -82,15 +61,15 @@ export async function approveSignupRequestAction(
       action: ADMIN_ACTION.APPROVE_SIGNUP_REQUEST,
       targetType: AUDIT_TARGET_TYPE.SIGNUP_REQUEST,
       targetId: requestId,
-      metadata: { email: result.email },
+      metadata: { email: result.email, link },
     });
 
     revalidatePath("/admin/signup-requests");
     revalidatePath("/admin/signups");
-    return { ok: true };
+    return { ok: true, link };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error("[approveSignupRequest] approveSignupRequest threw", e);
+    console.error("[approveSignupRequest] threw", e);
     return { error: msg };
   }
 }
@@ -102,7 +81,8 @@ export async function rejectSignupRequestAction(
   const admin = await getAdminOrNull();
   if (!admin) return { error: "Unauthorized" };
 
-  const ok = await rejectSignupRequest(admin.userId, requestId, note);
+  const supabase = await supabaseServer();
+  const ok = await rejectSignupRequest(admin.userId, requestId, note, supabase);
   if (!ok) return { error: "Request not found or already processed." };
 
   await logAdminAction({

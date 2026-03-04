@@ -6,6 +6,9 @@ import type { SignupRequest, SignupRequestStatus, UserRole } from "@/lib/domain/
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { randomBytes } from "crypto";
 
+/** Supabase client (server admin or server session). Used so admin session can approve via RLS. */
+type SupabaseClientLike = NonNullable<ReturnType<typeof getSupabaseAdmin>>;
+
 const SIGNUP_ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const TOKEN_BYTES = 32;
 const TOKEN_EXPIRY_DAYS = 7;
@@ -130,14 +133,15 @@ export async function createSignupRequest(input: {
   return { id: inserted.id };
 }
 
-/** List signup requests (admin only; call from server action with getAdminOrNull). */
+/** List signup requests. Use server client (admin session) when provided so RLS allows ADMIN to select. */
 export async function listSignupRequests(
-  status?: SignupRequestStatus
+  status?: SignupRequestStatus,
+  supabase?: SupabaseClientLike
 ): Promise<SignupRequest[]> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return [];
+  const client = supabase ?? getSupabaseAdmin();
+  if (!client) return [];
 
-  let query = admin
+  let query = client
     .from("signup_requests")
     .select("id, email, name, role, church, bio, affiliation, status, created_at, reviewed_at, reviewed_by, review_note")
     .order("created_at", { ascending: false });
@@ -147,15 +151,16 @@ export async function listSignupRequests(
   return (rows ?? []).map(rowToRequest);
 }
 
-/** Approve request: set status, create token, return token + email for sending link. */
+/** Approve request: set status, create token, return token + email. Use server client when provided so RLS allows ADMIN. */
 export async function approveSignupRequest(
   adminId: string,
-  requestId: string
+  requestId: string,
+  supabase?: SupabaseClientLike
 ): Promise<{ token: string; email: string } | null> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return null;
+  const client = supabase ?? getSupabaseAdmin();
+  if (!client) return null;
 
-  const { data: req } = await admin
+  const { data: req } = await client
     .from("signup_requests")
     .select("id, email")
     .eq("id", requestId)
@@ -168,7 +173,7 @@ export async function approveSignupRequest(
   const expiresAt = new Date(now.getTime() + TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
   const token = generateToken();
 
-  const { error: updateErr } = await admin
+  const { error: updateErr } = await client
     .from("signup_requests")
     .update({
       status: "APPROVED",
@@ -180,7 +185,7 @@ export async function approveSignupRequest(
 
   if (updateErr) throw new Error(updateErr.message);
 
-  const { error: tokenErr } = await admin.from("approval_tokens").insert({
+  const { error: tokenErr } = await client.from("approval_tokens").insert({
     request_id: requestId,
     token,
     expires_at: expiresAt.toISOString(),
@@ -191,16 +196,17 @@ export async function approveSignupRequest(
   return { token, email: req.email };
 }
 
-/** Reject request. */
+/** Reject request. Use server client when provided for RLS. */
 export async function rejectSignupRequest(
   adminId: string,
   requestId: string,
-  note?: string | null
+  note?: string | null,
+  supabase?: SupabaseClientLike
 ): Promise<boolean> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return false;
+  const client = supabase ?? getSupabaseAdmin();
+  if (!client) return false;
 
-  const { error } = await admin
+  const { error } = await client
     .from("signup_requests")
     .update({
       status: "REJECTED",

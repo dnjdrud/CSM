@@ -26,10 +26,6 @@ export default async function AdminDebugPage() {
     isAdminRpc = "RPC not available";
   }
 
-  let inviteCount: number | string = "—";
-  const { count: inviteCountVal } = await supabase.from("invite_codes").select("id", { count: "exact", head: true });
-  if (inviteCountVal != null) inviteCount = inviteCountVal;
-
   const diagnostics = await runDiagnostics();
 
   return (
@@ -63,10 +59,6 @@ export default async function AdminDebugPage() {
         <div>
           <dt className="font-medium text-theme-muted">public.is_admin()</dt>
           <dd className="mt-0.5 font-mono text-theme-text">{String(isAdminRpc)}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-theme-muted">invite_codes count</dt>
-          <dd className="mt-0.5 font-mono text-theme-text">{inviteCount}</dd>
         </div>
       </dl>
 
