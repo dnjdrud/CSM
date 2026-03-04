@@ -113,7 +113,7 @@ export function CreateInviteForm() {
         </div>
       )}
       {result && "error" in result && (
-        <p className="mt-3 text-sm text-red-600" role="alert">
+        <p className="mt-3 text-sm font-mono text-red-600 break-words" role="alert">
           {result.error}
         </p>
       )}
