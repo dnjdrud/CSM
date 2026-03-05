@@ -1,10 +1,11 @@
 /**
  * Auth callback (Route Handler). Handles server-side flows only.
- * - ?code= (PKCE): exchangeCodeForSession, ensureProfile, 200+HTML redirect.
- * - ?token_hash=&type= (OTP/magic link): verifyOtp, ensureProfile, 200+HTML redirect.
+ * - ?code= (PKCE): exchangeCodeForSession, ensureProfile, redirect.
+ * - ?token_hash=&type= (OTP/magic link): verifyOtp, ensureProfile, redirect.
  * - No code/token_hash: redirect to /auth/callback/session so hash fragment can be handled client-side.
  *
- * Uses 200+HTML (not 302) so CDN/Vercel does not strip Set-Cookie headers.
+ * Uses cookieStore.set() (next/headers) — the canonical Next.js App Router approach so cookies
+ * are reliably merged into the response. Also returns 200+HTML (not 302) as a CDN safety measure.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -53,33 +54,40 @@ export async function GET(request: NextRequest) {
   const redirectUrl = `${origin}${redirectPath}`;
   const secure = isHttps(request);
 
-  // Use 200+HTML so CDN/Vercel does not strip Set-Cookie on redirects.
-  const response = new NextResponse(htmlRedirect(redirectUrl), {
-    status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-    },
-  });
-
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
+        // Use cookieStore.set() — the canonical Next.js App Router way to set cookies
+        // in route handlers. Cookies are merged into the response by the framework.
         cookiesToSet.forEach(({ name, value, options }) => {
           const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-          response.cookies.set(name, value, {
-            path: "/",
-            httpOnly: true,
-            secure,
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7,
-            ...rest,
-          });
+          try {
+            cookieStore.set(name, value, {
+              path: "/",
+              httpOnly: true,
+              secure,
+              sameSite: "lax",
+              maxAge: 60 * 60 * 24 * 7,
+              ...rest,
+            });
+          } catch {
+            // Silently ignore — can occur if called from a context that doesn't support writes.
+          }
         });
       },
+    },
+  });
+
+  // 200+HTML response: cookies set via cookieStore.set() above are merged into this response
+  // by the Next.js framework. Using 200 (not 302) so CDN/Vercel does not strip Set-Cookie.
+  const successResponse = new NextResponse(htmlRedirect(redirectUrl), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
     },
   });
 
@@ -92,7 +100,7 @@ export async function GET(request: NextRequest) {
       }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
-      return response;
+      return successResponse;
     }
 
     if (token_hash && type) {
@@ -106,7 +114,7 @@ export async function GET(request: NextRequest) {
       }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
-      return response;
+      return successResponse;
     }
 
     // No code and no token_hash/type: fragment flow. Send to client page (hash not sent to server).
