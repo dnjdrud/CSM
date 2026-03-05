@@ -1,7 +1,8 @@
 /**
  * POST /api/auth/set-session-redirect
  * Body (form): access_token, refresh_token. Query: next (default /feed)
- * Sets session cookies and returns 302 to next. Form POST from callback so browser gets Set-Cookie on document response.
+ * Sets session cookies and returns 200 + HTML that immediately redirects.
+ * 200 ensures CDN/proxies don't drop Set-Cookie (some strip it from 302). Browser applies cookies then navigates.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -22,6 +23,11 @@ function getOrigin(request: NextRequest): string {
   } catch {
     return "https://cellah.co.kr";
   }
+}
+
+function htmlRedirect(url: string): string {
+  const safe = url.replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${safe}"></head><body><p>Redirecting...</p><script>window.location.replace(${JSON.stringify(url)});</script></body></html>`;
 }
 
 export async function POST(request: NextRequest) {
@@ -58,8 +64,13 @@ export async function POST(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
   };
 
-  const response = NextResponse.redirect(redirectUrl, 302);
-  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  const response = new NextResponse(htmlRedirect(redirectUrl), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {

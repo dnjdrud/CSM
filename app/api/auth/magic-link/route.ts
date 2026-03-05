@@ -43,11 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message ?? "Failed to generate link" }, { status: 400 });
   }
 
-  // Send to client-side session page which calls verifyOtp in the browser.
-  // Browser-side verifyOtp (createBrowserClient) reliably writes session cookies —
-  // avoids server-side Route Handler cookie-setting issues.
+  // Callback runs verifyOtp then form POST to set-session-redirect → 200+Set-Cookie+HTML → redirect to feed.
   const magicUrl =
-    `${baseUrl}/auth/callback/session?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink`;
+    `${baseUrl}/auth/callback/session?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink&next=${encodeURIComponent("/feed")}`;
 
   try {
     await sendMagicLinkEmail(email, magicUrl);

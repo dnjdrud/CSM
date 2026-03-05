@@ -17,15 +17,27 @@ function isHttps(request: NextRequest): boolean {
   return request.headers.get("x-forwarded-proto") === "https";
 }
 
+function getOrigin(req: NextRequest): string {
+  try {
+    const u = new URL(req.url);
+    if (u.origin && u.origin !== "null") return u.origin;
+  } catch {
+    // ignore
+  }
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "cellah.co.kr";
+  const proto = req.headers.get("x-forwarded-proto") === "https" ? "https" : "http";
+  return proto + "://" + host.split(",")[0]!.trim();
+}
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const nextPath = requestUrl.searchParams.get("next") ?? "/feed";
   const safeNext = nextPath.startsWith("/") ? nextPath : "/feed";
-  const origin = requestUrl.origin;
+  const origin = getOrigin(request);
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
+  if (!supabaseUrl || !anonKey) {
     return NextResponse.redirect(origin + "/onboarding?error=server_config");
   }
 
@@ -37,7 +49,7 @@ export async function GET(request: NextRequest) {
     origin + "/onboarding?from=" + encodeURIComponent(safeNext) + "&message=session_not_ready"
   );
 
-  const supabase = createServerClient(url, anonKey, {
+  const supabase = createServerClient(supabaseUrl, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
