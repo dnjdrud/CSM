@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase/client";
 
-/** Login via Supabase native magic link (signInWithOtp). Supabase sends the email. */
+/** Login via magic link — calls POST /api/auth/magic-link which uses admin generateLink + Resend. */
 export function LoginForm() {
   const searchParams = useSearchParams();
   const message = searchParams.get("message");
@@ -14,27 +13,30 @@ export function LoginForm() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleEmailSubmit(e: React.FormEvent) {
+  async function handleEmailSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed || pending) return;
     setPending(true);
     setError(null);
 
-    const supabase = supabaseBrowser();
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    setPending(false);
-    if (otpError) {
-      setError(otpError.message);
-      return;
+    try {
+      const res = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        setError(json.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setPending(false);
     }
-    setSent(true);
   }
 
   if (sent) {
@@ -44,7 +46,7 @@ export function LoginForm() {
           We sent a sign-in link to <strong className="font-medium text-gray-800">{email.trim()}</strong>. Click the link in that email to continue. It may take a minute to arrive.
         </p>
         <p className="text-sm text-gray-500">
-          You can close this tab after you've signed in. If you don't see the email, check your spam folder.
+          You can close this tab after you&apos;ve signed in. If you don&apos;t see the email, check your spam folder.
         </p>
       </div>
     );

@@ -1,14 +1,25 @@
 /**
  * Send transactional emails via Resend (server-only).
+ * Magic link: sign-in link via admin generateLink + Resend.
  * Invite: admin-invite link. Reset: password reset. Approval: signup completion.
- * Login magic links are handled by Supabase natively (signInWithOtp).
  */
 import { sendEmail } from "@/lib/email/resend";
 import {
   buildInviteEmail,
   buildResetPasswordEmail,
   buildApprovalEmail,
+  buildMagicLinkEmail,
 } from "@/lib/email/templates";
+
+export async function sendMagicLinkEmail(to: string, magicUrl: string): Promise<void> {
+  const { html, text } = buildMagicLinkEmail({ magicUrl });
+  await sendEmail({
+    to: to.trim().toLowerCase(),
+    subject: "Sign in to Cellah",
+    html,
+    text,
+  });
+}
 
 export async function sendInviteEmail(to: string, inviteUrl: string): Promise<void> {
   const { html, text } = buildInviteEmail({ inviteUrl });

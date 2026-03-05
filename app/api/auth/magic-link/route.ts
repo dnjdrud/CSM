@@ -1,11 +1,12 @@
 /**
- * POST /api/auth/magic-link — Send magic link email via Supabase native OTP.
+ * POST /api/auth/magic-link — Generate a Supabase magic link via admin API and send via Resend.
  * Body: { email: string }
- * Supabase handles email delivery (configured in Supabase dashboard).
- * On success, user receives email with a link pointing to /auth/callback.
+ * Uses admin.auth.admin.generateLink() — no PKCE, no auth_magic_links table needed.
+ * The link in the email is a Supabase verify URL that redirects to /auth/callback after verification.
  */
 import { NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { sendMagicLinkEmail } from "@/lib/email/send";
 import { getBaseUrlForLinks } from "@/lib/url/site";
 
 export async function POST(request: Request) {
@@ -21,29 +22,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "email is required" }, { status: 400 });
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Server not configured" }, { status: 500 });
   }
 
   const baseUrl = getBaseUrlForLinks(request);
-  const emailRedirectTo = `${baseUrl}/auth/callback`;
+  const redirectTo = `${baseUrl}/auth/callback`;
 
-  const supabase = createServerClient(url, anonKey, {
-    cookies: {
-      getAll() { return []; },
-      setAll() {},
-    },
-  });
-
-  const { error } = await supabase.auth.signInWithOtp({
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "magiclink",
     email,
-    options: { emailRedirectTo },
+    options: { redirectTo },
   });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error || !data?.properties?.action_link) {
+    console.error("[magic-link] generateLink failed", error?.message);
+    return NextResponse.json({ error: error?.message ?? "Failed to generate link" }, { status: 400 });
+  }
+
+  try {
+    await sendMagicLinkEmail(email, data.properties.action_link);
+  } catch (sendErr) {
+    console.error("[magic-link] sendMagicLinkEmail failed", sendErr);
+    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
