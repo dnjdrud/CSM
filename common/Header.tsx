@@ -109,12 +109,13 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
         <div className="flex items-center justify-between gap-2 px-4 py-3 max-w-[100vw]">
           <CellahLogo className="text-[17px] shrink-0" />
           <nav className="flex items-center gap-3 flex-wrap justify-end" aria-label="Main navigation">
-            <Link href="/search" className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Search">
+            <Link href="/search" prefetch={false} className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Search">
               <SearchIcon className="w-5 h-5" />
             </Link>
             {user && (
               <Link
                 href="/notifications"
+                prefetch={false}
                 className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded inline-flex items-center gap-1.5"
                 aria-label={displayCount > 0 ? `Notifications, ${displayCount} unread` : "Notifications"}
               >
@@ -134,12 +135,12 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                 <span className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
                   {user.name || "Welcome"}
                 </span>
-                <Link href={user ? `/profile/${user.id}` : "/me"} className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+                <Link href={user ? `/profile/${user.id}` : "/me"} prefetch={false} className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                   Profile
                 </Link>
                 {isAdmin && (
                   <>
-                    <Link href="/admin" className="text-[15px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
+                    <Link href="/admin" prefetch={false} className="text-[15px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
                       Admin
                     </Link>
                     <a href="/api/debug/auth" target="_blank" rel="noopener noreferrer" className="text-[15px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Debug auth">
@@ -154,12 +155,12 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                 </form>
               </>
             ) : (
-              <Link href="/onboarding" className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+              <Link href="/onboarding" prefetch={false} className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
                 Sign in
               </Link>
             )}
-            <Link href="/feed" className="text-[15px] text-theme-primary hover:opacity-80">Feed</Link>
-            <Link href="/write" className="text-[15px] font-medium text-theme-primary hover:text-theme-accent">Write</Link>
+            <Link href="/feed" prefetch={false} className="text-[15px] text-theme-primary hover:opacity-80">Feed</Link>
+            <Link href="/write" prefetch={false} className="text-[15px] font-medium text-theme-primary hover:text-theme-accent">Write</Link>
           </nav>
         </div>
       </header>
