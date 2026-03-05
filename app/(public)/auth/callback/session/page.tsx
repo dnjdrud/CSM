@@ -8,8 +8,11 @@ import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 
 /**
  * Auth callback: handles token_hash (magic link) or hash fragment.
- * Uses createBrowserClient which stores session in document.cookie automatically.
  * Email scanners don't execute JS → one-time token is never consumed by prefetch.
+ *
+ * After verifyOtp/setSession, tokens are sent via form POST to set-session-redirect,
+ * which sets httpOnly cookies (cookieStore.set + NextResponse.redirect). This ensures
+ * the session persists across ALL navigations including hard links and page reloads.
  */
 export default function AuthCallbackSessionPage() {
   const router = useRouter();
@@ -20,6 +23,23 @@ export default function AuthCallbackSessionPage() {
 
   useEffect(() => {
     let cancelled = false;
+
+    /** Form POST to set-session-redirect: server sets httpOnly cookies via cookieStore.set(),
+     *  then 302-redirects to nextPath. Browser follows with cookies attached. */
+    function postSessionAndRedirect(access_token: string, refresh_token: string, nextPath: string) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/api/auth/set-session-redirect?next=" + encodeURIComponent(nextPath);
+      form.style.display = "none";
+      const a = document.createElement("input");
+      a.name = "access_token"; a.value = access_token; a.type = "hidden";
+      form.appendChild(a);
+      const r = document.createElement("input");
+      r.name = "refresh_token"; r.value = refresh_token; r.type = "hidden";
+      form.appendChild(r);
+      document.body.appendChild(form);
+      form.submit();
+    }
 
     async function run() {
       if (typeof window === "undefined") return;
@@ -48,13 +68,11 @@ export default function AuthCallbackSessionPage() {
             setTimeout(() => router.replace("/login?message=link_expired"), 2000);
             return;
           }
-          // createBrowserClient stores session in document.cookie automatically.
-          // Middleware reads these cookies on the next request.
           if (redirectDone.current) return;
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
-          router.replace(safeNext);
+          postSessionAndRedirect(data.session.access_token, data.session.refresh_token, safeNext);
           return;
         } catch (e) {
           if (!cancelled) {
@@ -87,12 +105,9 @@ export default function AuthCallbackSessionPage() {
       if (access_token && refresh_token) {
         if (redirectDone.current) return;
         redirectDone.current = true;
-        // Explicitly set session so createBrowserClient stores it in document.cookie.
-        await supabase.auth.setSession({ access_token, refresh_token });
-        if (cancelled) return;
         setStatus("done");
         setMessage("Redirecting…");
-        router.replace(safeNext);
+        postSessionAndRedirect(access_token, refresh_token, safeNext);
         return;
       }
 
