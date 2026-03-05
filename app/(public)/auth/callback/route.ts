@@ -4,8 +4,8 @@
  * - ?token_hash=&type= (OTP/magic link): verifyOtp, ensureProfile, redirect.
  * - No code/token_hash: redirect to /auth/callback/session so hash fragment can be handled client-side.
  *
- * Uses cookieStore.set() (next/headers) — the canonical Next.js App Router approach so cookies
- * are reliably merged into the response. Also returns 200+HTML (not 302) as a CDN safety measure.
+ * Sets cookies directly on the response object (response.cookies.set) for guaranteed delivery.
+ * Returns 200+HTML (not 302) as a CDN safety measure to prevent Set-Cookie stripping.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -54,40 +54,36 @@ export async function GET(request: NextRequest) {
   const redirectUrl = `${origin}${redirectPath}`;
   const secure = isHttps(request);
 
+  // Define response FIRST so setAll can set cookies directly on it.
+  // Using 200+HTML (not 302) so CDN/Vercel does not strip Set-Cookie headers.
+  const successResponse = new NextResponse(htmlRedirect(redirectUrl), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
+
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        // Use cookieStore.set() — the canonical Next.js App Router way to set cookies
-        // in route handlers. Cookies are merged into the response by the framework.
+        // Set cookies directly on the response object we will return.
+        // This is the most reliable approach — no reliance on Next.js cookie merging.
         cookiesToSet.forEach(({ name, value, options }) => {
           const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-          try {
-            cookieStore.set(name, value, {
-              path: "/",
-              httpOnly: true,
-              secure,
-              sameSite: "lax",
-              maxAge: 60 * 60 * 24 * 7,
-              ...rest,
-            });
-          } catch {
-            // Silently ignore — can occur if called from a context that doesn't support writes.
-          }
+          successResponse.cookies.set(name, value, {
+            path: "/",
+            httpOnly: true,
+            secure,
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 7,
+            ...rest,
+          });
         });
       },
-    },
-  });
-
-  // 200+HTML response: cookies set via cookieStore.set() above are merged into this response
-  // by the Next.js framework. Using 200 (not 302) so CDN/Vercel does not strip Set-Cookie.
-  const successResponse = new NextResponse(htmlRedirect(redirectUrl), {
-    status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
     },
   });
 
