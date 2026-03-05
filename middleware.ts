@@ -58,14 +58,26 @@ function isAppPath(pathname: string): boolean {
   );
 }
 
-/** Apply Supabase cookiesToResponse; host-only (no domain) so SA and RSC see session. */
+function isHttps(request: NextRequest): boolean {
+  try {
+    if (new URL(request.url).protocol === "https:") return true;
+  } catch {
+    // ignore
+  }
+  return request.headers.get("x-forwarded-proto") === "https";
+}
+
+/** Apply Supabase cookies with Secure + SameSite=Lax so they persist on next navigation (HTTPS). */
 function applyCookiesToResponse(
+  request: NextRequest,
   response: NextResponse,
   cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>
 ): void {
+  const secure = isHttps(request);
+  const base = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
   cookiesToSet.forEach(({ name, value, options }) => {
     const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-    response.cookies.set(name, value, { path: "/", ...rest });
+    response.cookies.set(name, value, { ...base, ...rest });
   });
 }
 
@@ -85,6 +97,8 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
+  const secure = isHttps(request);
+  const cookieBase = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {
@@ -96,7 +110,7 @@ export async function middleware(request: NextRequest) {
         toSet.forEach((c) => cookiesToSet.push(c));
         toSet.forEach(({ name, value, options }) => {
           const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-          response.cookies.set(name, value, { path: "/", ...rest });
+          response.cookies.set(name, value, { ...cookieBase, ...rest });
         });
       },
     },
@@ -109,7 +123,7 @@ export async function middleware(request: NextRequest) {
     const { data: roleRow } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (roleRow?.role === "ADMIN") return response;
     const redirectResponse = NextResponse.redirect(new URL("/feed", request.url));
-    applyCookiesToResponse(redirectResponse, cookiesToSet);
+    applyCookiesToResponse(request, redirectResponse, cookiesToSet);
     return redirectResponse;
   }
 
@@ -117,7 +131,7 @@ export async function middleware(request: NextRequest) {
     const redirectResponse = NextResponse.redirect(
       new URL("/login?from=" + encodeURIComponent(pathname), request.url)
     );
-    applyCookiesToResponse(redirectResponse, cookiesToSet);
+    applyCookiesToResponse(request, redirectResponse, cookiesToSet);
     return redirectResponse;
   }
 
@@ -126,7 +140,7 @@ export async function middleware(request: NextRequest) {
     const { data: row } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (row?.role !== "ADMIN") {
       const redirectResponse = NextResponse.redirect(new URL("/feed?message=admin_required", request.url));
-      applyCookiesToResponse(redirectResponse, cookiesToSet);
+      applyCookiesToResponse(request, redirectResponse, cookiesToSet);
       return redirectResponse;
     }
     return response;
@@ -139,7 +153,7 @@ export async function middleware(request: NextRequest) {
       const redirectResponse = NextResponse.redirect(
         new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url)
       );
-      applyCookiesToResponse(redirectResponse, cookiesToSet);
+      applyCookiesToResponse(request, redirectResponse, cookiesToSet);
       return redirectResponse;
     }
     try {
@@ -148,7 +162,7 @@ export async function middleware(request: NextRequest) {
         const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
         if (!isOwnProfile) {
           const redirectResponse = NextResponse.redirect(new URL("/?message=account_deactivated", request.url));
-          applyCookiesToResponse(redirectResponse, cookiesToSet);
+          applyCookiesToResponse(request, redirectResponse, cookiesToSet);
           return redirectResponse;
         }
       }
