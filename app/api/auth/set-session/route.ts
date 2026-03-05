@@ -3,12 +3,22 @@
  * Body: { access_token: string; refresh_token: string }
  * Accepts tokens obtained by the browser (e.g. from verifyOtp) and sets them as
  * server-side HttpOnly session cookies via createServerClient + setAll.
- * This is more reliable than document.cookie because the middleware reads
- * HttpOnly cookies from request.cookies, not from localStorage or JS-accessible cookies.
+ * Explicit Secure + SameSite=Lax so cookies persist on HTTPS (e.g. cellah.co.kr).
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+
+function isHttps(request: NextRequest): boolean {
+  try {
+    const u = new URL(request.url);
+    if (u.protocol === "https:") return true;
+    const proto = request.headers.get("x-forwarded-proto");
+    return proto === "https";
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(request: NextRequest) {
   let body: { access_token?: string; refresh_token?: string };
@@ -30,6 +40,8 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ ok: true });
+  const secure = isHttps(request);
+  const defaultCookieOptions = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -39,7 +51,7 @@ export async function POST(request: NextRequest) {
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
           const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-          response.cookies.set(name, value, { path: "/", ...rest });
+          response.cookies.set(name, value, { ...defaultCookieOptions, ...rest });
         });
       },
     },

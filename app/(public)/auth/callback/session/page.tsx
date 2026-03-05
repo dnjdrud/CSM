@@ -79,6 +79,9 @@ export default function AuthCallbackSessionPage() {
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
+          // Brief delay so browser persists Set-Cookie before navigating
+          await new Promise((r) => setTimeout(r, 250));
+          if (cancelled) return;
           window.location.href = safeNext;
           return;
         } catch (e) {
@@ -123,6 +126,8 @@ export default function AuthCallbackSessionPage() {
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
+          await new Promise((r) => setTimeout(r, 250));
+          if (cancelled) return;
           window.location.href = safeNext;
           return;
         } catch (e) {
