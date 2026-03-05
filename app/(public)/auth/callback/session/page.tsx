@@ -9,9 +9,11 @@ import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 /**
  * Client-only auth callback page.
  * Handles two flows:
- * 1. Hash fragment: #access_token=...&refresh_token=... → setSession
- * 2. Query params: ?token_hash=...&type=... → verifyOtp (magic link from email)
- * All auth is browser-side so session cookies are reliably written.
+ * 1. Query params: ?token_hash=...&type=... → verifyOtp in browser,
+ *    then POST /api/auth/set-session to write server-side HttpOnly cookies.
+ * 2. Hash fragment: #access_token=...&refresh_token=... → setSession,
+ *    then POST /api/auth/set-session to write server-side HttpOnly cookies.
+ * Using a server endpoint for final cookie-writing ensures middleware can read the session.
  */
 export default function AuthCallbackSessionPage() {
   const router = useRouter();
@@ -22,6 +24,20 @@ export default function AuthCallbackSessionPage() {
 
   useEffect(() => {
     let cancelled = false;
+
+    async function setSessionOnServer(access_token: string, refresh_token: string): Promise<boolean> {
+      try {
+        const res = await fetch("/api/auth/set-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ access_token, refresh_token }),
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }
 
     async function run() {
       if (typeof window === "undefined") return;
@@ -44,25 +60,33 @@ export default function AuthCallbackSessionPage() {
             type: type as "magiclink" | "email",
           });
           if (cancelled) return;
-          if (error || !data.user) {
+          if (error || !data.user || !data.session) {
             setStatus("error");
             setMessage(error?.message ?? "Sign-in failed. The link may have expired.");
             setTimeout(() => router.replace("/login?message=link_expired"), 2000);
+            return;
+          }
+          // Write session as server-side HttpOnly cookies so middleware can read them
+          const ok = await setSessionOnServer(data.session.access_token, data.session.refresh_token);
+          if (cancelled) return;
+          if (!ok) {
+            setStatus("error");
+            setMessage("Failed to establish session. Please try again.");
+            setTimeout(() => router.replace("/login"), 2000);
             return;
           }
           if (redirectDone.current) return;
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
-          await new Promise((r) => setTimeout(r, 150));
-          if (!cancelled) window.location.href = safeNext;
+          window.location.href = safeNext;
           return;
         } catch (e) {
           if (!cancelled) {
             setStatus("error");
             setMessage(e instanceof Error ? e.message : "Sign-in failed");
           }
-          router.replace("/login?message=link_expired");
+          setTimeout(() => router.replace("/login"), 1500);
           return;
         }
       }
@@ -87,32 +111,31 @@ export default function AuthCallbackSessionPage() {
 
       if (access_token && refresh_token) {
         try {
-          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          const ok = await setSessionOnServer(access_token, refresh_token);
           if (cancelled) return;
-          if (error) {
+          if (!ok) {
             setStatus("error");
-            setMessage(error.message);
-            router.replace("/login?message=link_expired");
+            setMessage("Failed to establish session. Please try again.");
+            setTimeout(() => router.replace("/login"), 2000);
             return;
           }
           if (redirectDone.current) return;
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
-          await new Promise((r) => setTimeout(r, 100));
-          if (!cancelled) window.location.href = safeNext;
+          window.location.href = safeNext;
           return;
         } catch (e) {
           if (!cancelled) {
             setStatus("error");
             setMessage(e instanceof Error ? e.message : "Sign-in failed");
           }
-          router.replace("/login?message=link_expired");
+          setTimeout(() => router.replace("/login"), 1500);
           return;
         }
       }
 
-      // No usable params — send to login
+      // No usable params
       if (!cancelled) setStatus("done");
       router.replace("/login");
     }
