@@ -25,18 +25,24 @@ export default function AuthCallbackSessionPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function setSessionOnServer(access_token: string, refresh_token: string): Promise<boolean> {
-      try {
-        const res = await fetch("/api/auth/set-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
-          body: JSON.stringify({ access_token, refresh_token }),
-        });
-        return res.ok;
-      } catch {
-        return false;
-      }
+    /** Full-page form POST so server responds with 302 + Set-Cookie; browser then follows redirect with cookies. */
+    function submitSessionForm(access_token: string, refresh_token: string, nextPath: string) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/api/auth/set-session-redirect?next=" + encodeURIComponent(nextPath);
+      form.style.display = "none";
+      const a = document.createElement("input");
+      a.name = "access_token";
+      a.value = access_token;
+      a.type = "hidden";
+      form.appendChild(a);
+      const r = document.createElement("input");
+      r.name = "refresh_token";
+      r.value = refresh_token;
+      r.type = "hidden";
+      form.appendChild(r);
+      document.body.appendChild(form);
+      form.submit();
     }
 
     async function run() {
@@ -66,23 +72,11 @@ export default function AuthCallbackSessionPage() {
             setTimeout(() => router.replace("/login?message=link_expired"), 2000);
             return;
           }
-          // Write session as server-side HttpOnly cookies so middleware can read them
-          const ok = await setSessionOnServer(data.session.access_token, data.session.refresh_token);
-          if (cancelled) return;
-          if (!ok) {
-            setStatus("error");
-            setMessage("Failed to establish session. Please try again.");
-            setTimeout(() => router.replace("/login"), 2000);
-            return;
-          }
           if (redirectDone.current) return;
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
-          // Brief delay so browser persists Set-Cookie before navigating
-          await new Promise((r) => setTimeout(r, 250));
-          if (cancelled) return;
-          window.location.href = safeNext;
+          submitSessionForm(data.session.access_token, data.session.refresh_token, safeNext);
           return;
         } catch (e) {
           if (!cancelled) {
@@ -113,31 +107,12 @@ export default function AuthCallbackSessionPage() {
       }
 
       if (access_token && refresh_token) {
-        try {
-          const ok = await setSessionOnServer(access_token, refresh_token);
-          if (cancelled) return;
-          if (!ok) {
-            setStatus("error");
-            setMessage("Failed to establish session. Please try again.");
-            setTimeout(() => router.replace("/login"), 2000);
-            return;
-          }
-          if (redirectDone.current) return;
-          redirectDone.current = true;
-          setStatus("done");
-          setMessage("Redirecting…");
-          await new Promise((r) => setTimeout(r, 250));
-          if (cancelled) return;
-          window.location.href = safeNext;
-          return;
-        } catch (e) {
-          if (!cancelled) {
-            setStatus("error");
-            setMessage(e instanceof Error ? e.message : "Sign-in failed");
-          }
-          setTimeout(() => router.replace("/login"), 1500);
-          return;
-        }
+        if (redirectDone.current) return;
+        redirectDone.current = true;
+        setStatus("done");
+        setMessage("Redirecting…");
+        submitSessionForm(access_token, refresh_token, safeNext);
+        return;
       }
 
       // No usable params
