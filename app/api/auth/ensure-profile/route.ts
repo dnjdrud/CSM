@@ -1,13 +1,21 @@
 /**
  * GET /api/auth/ensure-profile?next=/feed
  * Ensures public.users row exists for the current auth user, then redirects to ?next= (default /feed).
- * Used by middleware so logged-in users without a profile go here first and then to feed (no onboarding flash).
+ * Writes Supabase cookies to the redirect response (Secure + SameSite=Lax) so session persists on next request.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { ensureProfile } from "@/lib/auth/ensureProfile";
+
+function isHttps(request: NextRequest): boolean {
+  try {
+    if (new URL(request.url).protocol === "https:") return true;
+  } catch {
+    // ignore
+  }
+  return request.headers.get("x-forwarded-proto") === "https";
+}
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -21,25 +29,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(origin + "/onboarding?error=server_config");
   }
 
-  const cookieStore = await cookies();
+  const secure = isHttps(request);
+  const cookieBase = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
+
+  const redirectToApp = NextResponse.redirect(origin + safeNext);
+  const redirectToOnboarding = NextResponse.redirect(
+    origin + "/onboarding?from=" + encodeURIComponent(safeNext) + "&message=session_not_ready"
+  );
+
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return request.cookies.getAll();
       },
-      setAll() {
-        // no-op for this read-only flow; redirect will use existing cookies
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+          redirectToApp.cookies.set(name, value, { ...cookieBase, ...rest });
+          redirectToOnboarding.cookies.set(name, value, { ...cookieBase, ...rest });
+        });
       },
     },
   });
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user?.id) {
-    return NextResponse.redirect(
-      origin + "/onboarding?from=" + encodeURIComponent(safeNext) + "&message=session_not_ready"
-    );
+    return redirectToOnboarding;
   }
 
   await ensureProfile({ userId: user.id, email: user.email ?? undefined });
-  return NextResponse.redirect(origin + safeNext);
+  return redirectToApp;
 }
