@@ -1,7 +1,7 @@
 /**
- * GET /auth/callback/hash — Plain HTML callback for hash fragment flow.
- * No React; inline script parses hash, loads Supabase via ESM import, setSession, redirects.
- * Redirect URL must be in Supabase Dashboard: Authentication → URL Configuration → Redirect URLs.
+ * GET /auth/callback/hash — Plain HTML callback (CDN Supabase = localStorage only).
+ * Do NOT use as magic link redirectTo: server reads cookies, so session would never be seen.
+ * Magic link should use /auth/callback/session (createBrowserClient = cookies).
  */
 import { NextResponse } from "next/server";
 
@@ -41,7 +41,7 @@ export async function GET() {
 </head>
 <body>
   <p id="msg">Signing you in…</p>
-  <a id="link" href="/api/auth/ensure-profile?next=/feed" style="display:none; margin-top: 1rem;">Continue to feed</a>
+  <a id="link" href="/feed" style="display:none; margin-top: 1rem;">Continue to feed</a>
   <script>
     window.__SUPABASE_URL = '${escapeJs(url)}';
     window.__SUPABASE_ANON = '${escapeJs(anon)}';
@@ -55,7 +55,6 @@ export async function GET() {
   var params = new URLSearchParams(search);
   var nextPath = params.get('next') || '/feed';
   if (!nextPath.startsWith('/')) nextPath = '/feed';
-  var ensureUrl = '/api/auth/ensure-profile?next=' + encodeURIComponent(nextPath);
 
   var msg = document.getElementById('msg');
   var linkEl = document.getElementById('link');
@@ -114,8 +113,8 @@ export async function GET() {
         return;
       }
       msg.textContent = 'Redirecting…';
-      await new Promise(function(r) { setTimeout(r, 350); });
-      window.location.replace(ensureUrl);
+      await new Promise(function(r) { setTimeout(r, 1000); });
+      window.location.replace(nextPath);
     } catch (e) {
       showError('Error: ' + (e && e.message ? e.message : 'Unknown'), '/onboarding');
     }

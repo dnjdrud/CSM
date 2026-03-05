@@ -30,8 +30,8 @@ export async function GET(request: Request) {
 
   const { getBaseUrlForLinks } = await import("@/lib/url/site");
   const baseUrl = getBaseUrlForLinks(request);
-  // Plain HTML callback at /auth/callback/hash parses hash and sets session without React (more reliable).
-  const redirectTo = `${baseUrl}/auth/callback/hash?next=/feed`;
+  // Must use /auth/callback/session (React + createBrowserClient) so setSession writes COOKIES; /hash uses CDN client which only writes localStorage and server never sees session.
+  const redirectTo = `${baseUrl}/auth/callback/session?next=/feed`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",

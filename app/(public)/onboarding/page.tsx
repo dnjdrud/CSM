@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/data/repository";
 import { getAuthUserId, getAuthUserEmail } from "@/lib/auth/session";
@@ -50,12 +51,17 @@ export default async function OnboardingPage({ searchParams }: Props) {
           </div>
         )}
         {message === "session_not_ready" && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-3">
             <FlashBanner
               title="로그인 처리 중"
-              body="세션이 아직 반영되지 않았을 수 있습니다."
-              optional="잠시 후 아래 'Sign in'으로 로그인하거나, 피드로 이동해 보세요."
+              body="세션이 아직 반영되지 않았을 수 있습니다. 잠시 후 아래 버튼으로 피드를 열어 보세요."
             />
+            <Link
+              href="/feed"
+              className="block w-full rounded-lg bg-gray-800 px-4 py-3 text-center text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-800 focus-visible:ring-offset-2"
+            >
+              피드로 이동
+            </Link>
           </div>
         )}
         <h1 className="text-xl font-serif font-normal text-gray-800 tracking-tight">

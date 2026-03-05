@@ -64,7 +64,7 @@ export default function AuthCallbackSessionPage() {
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
-          await new Promise((r) => setTimeout(r, 200));
+          await new Promise((r) => setTimeout(r, 100));
           if (!cancelled && typeof window !== "undefined") window.location.href = safeNext;
           return;
         } catch (e) {
