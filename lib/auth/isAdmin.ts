@@ -1,10 +1,22 @@
 /**
- * Admin check by email. Uses ADMIN_EMAILS (comma-separated) from env.
- * Re-exports logic from lib/admin/bootstrap for use in auth-scoped code.
+ * Admin check using getAuthUserEmail() and ADMIN_EMAILS (comma-separated).
+ * Reused by admin-only pages and server actions.
  */
-import { isAdminEmail } from "@/lib/admin/bootstrap";
+import { getAuthUserEmail } from "@/lib/auth/session";
 
-/** True if the given email is in ADMIN_EMAILS allowlist (case-insensitive). */
-export function isAdmin(email: string | null | undefined): boolean {
-  return isAdminEmail(email);
+function getAdminEmails(): string[] {
+  const raw = process.env.ADMIN_EMAILS;
+  if (!raw || typeof raw !== "string") return [];
+  return raw
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** True if the current auth user's email is in ADMIN_EMAILS. Calls getAuthUserEmail(). */
+export async function isAdmin(): Promise<boolean> {
+  const email = await getAuthUserEmail();
+  if (!email) return false;
+  const list = getAdminEmails();
+  return list.includes(email.trim().toLowerCase());
 }

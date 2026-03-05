@@ -1,8 +1,9 @@
 "use server";
 
-import { getAdminOrNull } from "@/lib/admin/guard";
+import { getAuthUserId } from "@/lib/auth/session";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { extractYouTubeId } from "@/lib/youtube";
+import { isAdmin } from "@/lib/auth/isAdmin";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
 
 const CATEGORIES: PostCategory[] = ["PRAYER", "DEVOTIONAL", "MINISTRY", "TESTIMONY"];
@@ -21,9 +22,14 @@ export type CreatePostResult =
   | { ok: false; error: string };
 
 export async function createPostAction(formData: FormData): Promise<CreatePostResult> {
-  const admin = await getAdminOrNull();
-  if (!admin) {
-    return { ok: false, error: "권한이 없습니다. 관리자 계정으로 로그인해 주세요." };
+  const adminOk = await isAdmin();
+  if (!adminOk) {
+    throw new Error("관리자만 게시물을 생성할 수 있습니다.");
+  }
+
+  const authorId = await getAuthUserId();
+  if (!authorId) {
+    return { ok: false, error: "로그인된 사용자 정보를 찾을 수 없습니다." };
   }
 
   const title = formData.get("title")?.toString()?.trim();
@@ -64,14 +70,14 @@ export async function createPostAction(formData: FormData): Promise<CreatePostRe
   const tags = parseTags(tagsInput);
 
   const payload = {
-    author_id: admin.userId,
+    author_id: authorId,
     title,
     content: content || "(내용 없음)",
+    youtube_id: youtubeId,
+    thumbnail_url: thumbnailUrl,
     category,
     visibility,
     tags,
-    youtube_id: youtubeId,
-    thumbnail_url: thumbnailUrl,
   };
 
   const { data, error } = await client

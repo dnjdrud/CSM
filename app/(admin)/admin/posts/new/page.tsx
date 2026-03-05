@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getAdminOrNull } from "@/lib/admin/guard";
+import { isAdmin } from "@/lib/auth/isAdmin";
 import { CATEGORY_LABELS } from "@/lib/domain/types";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
 import { NewPostForm } from "./_components/NewPostForm";
@@ -16,13 +15,13 @@ const VISIBILITY_LABELS: Record<Visibility, string> = {
 };
 
 export default async function AdminNewPostPage() {
-  const admin = await getAdminOrNull();
-  if (!admin) {
+  const adminOk = await isAdmin();
+  if (!adminOk) {
     return (
       <div className="mx-auto max-w-xl px-6 py-10">
-        <h1 className="text-xl font-semibold text-gray-800">권한 없음</h1>
+        <h1 className="text-xl font-semibold text-gray-800">접근 제한</h1>
         <p className="mt-2 text-sm text-gray-600">
-          이 페이지는 관리자만 이용할 수 있습니다.
+          관리자만 게시물을 생성할 수 있습니다.
         </p>
         <Link
           href="/community"
