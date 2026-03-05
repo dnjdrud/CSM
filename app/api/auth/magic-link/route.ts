@@ -43,10 +43,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message ?? "Failed to generate link" }, { status: 400 });
   }
 
-  // Build a direct link to our callback route using the hashed_token.
-  // verifyOtp in /auth/callback handles this — no Supabase redirect-URL allowlist needed.
+  // Send to client-side session page which calls verifyOtp in the browser.
+  // Browser-side verifyOtp (createBrowserClient) reliably writes session cookies —
+  // avoids server-side Route Handler cookie-setting issues.
   const magicUrl =
-    `${baseUrl}/auth/callback?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink`;
+    `${baseUrl}/auth/callback/session?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink`;
 
   try {
     await sendMagicLinkEmail(email, magicUrl);

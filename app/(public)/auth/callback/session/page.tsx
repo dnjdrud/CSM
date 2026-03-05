@@ -7,9 +7,11 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 
 /**
- * Client-only auth callback page for hash fragment flow.
- * Tokens in URL hash are not sent to the server; this page reads hash, setSession, then redirects.
- * Does not use useSearchParams to avoid suspend and mount delay; reads next from window.location.search in effect.
+ * Client-only auth callback page.
+ * Handles two flows:
+ * 1. Hash fragment: #access_token=...&refresh_token=... → setSession
+ * 2. Query params: ?token_hash=...&type=... → verifyOtp (magic link from email)
+ * All auth is browser-side so session cookies are reliably written.
  */
 export default function AuthCallbackSessionPage() {
   const router = useRouter();
@@ -30,6 +32,42 @@ export default function AuthCallbackSessionPage() {
       const safeNext = next.startsWith("/") ? next : "/feed";
       setNextPath(safeNext);
 
+      const supabase = supabaseBrowser();
+
+      // Flow 1: token_hash + type in query params (magic link from email)
+      const tokenHash = params.get("token_hash");
+      const type = params.get("type");
+      if (tokenHash && type) {
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type as "magiclink" | "email",
+          });
+          if (cancelled) return;
+          if (error || !data.user) {
+            setStatus("error");
+            setMessage(error?.message ?? "Sign-in failed. The link may have expired.");
+            setTimeout(() => router.replace("/login?message=link_expired"), 2000);
+            return;
+          }
+          if (redirectDone.current) return;
+          redirectDone.current = true;
+          setStatus("done");
+          setMessage("Redirecting…");
+          await new Promise((r) => setTimeout(r, 150));
+          if (!cancelled) window.location.href = safeNext;
+          return;
+        } catch (e) {
+          if (!cancelled) {
+            setStatus("error");
+            setMessage(e instanceof Error ? e.message : "Sign-in failed");
+          }
+          router.replace("/login?message=link_expired");
+          return;
+        }
+      }
+
+      // Flow 2: hash fragment — #access_token=...&refresh_token=...
       const { access_token, refresh_token, error: hashError, error_description } = getTokensFromHash(hash);
       const allHash = parseHashParams(hash);
       const errorCode = allHash.error_code ?? null;
@@ -39,7 +77,7 @@ export default function AuthCallbackSessionPage() {
           setStatus("error");
           setMessage(hashError + (error_description ? ": " + error_description : ""));
         }
-        const redirectTo = new URL("/onboarding", window.location.origin);
+        const redirectTo = new URL("/login", window.location.origin);
         redirectTo.searchParams.set("error", hashError);
         if (error_description) redirectTo.searchParams.set("error_description", error_description);
         if (errorCode) redirectTo.searchParams.set("error_code", errorCode);
@@ -49,15 +87,12 @@ export default function AuthCallbackSessionPage() {
 
       if (access_token && refresh_token) {
         try {
-          const supabase = supabaseBrowser();
           const { error } = await supabase.auth.setSession({ access_token, refresh_token });
           if (cancelled) return;
           if (error) {
             setStatus("error");
             setMessage(error.message);
-            const redirectTo = new URL("/onboarding", window.location.origin);
-            redirectTo.searchParams.set("error", "auth_callback_failed");
-            router.replace(redirectTo.pathname + redirectTo.search);
+            router.replace("/login?message=link_expired");
             return;
           }
           if (redirectDone.current) return;
@@ -65,22 +100,21 @@ export default function AuthCallbackSessionPage() {
           setStatus("done");
           setMessage("Redirecting…");
           await new Promise((r) => setTimeout(r, 100));
-          if (!cancelled && typeof window !== "undefined") window.location.href = safeNext;
+          if (!cancelled) window.location.href = safeNext;
           return;
         } catch (e) {
           if (!cancelled) {
             setStatus("error");
             setMessage(e instanceof Error ? e.message : "Sign-in failed");
           }
-          const redirectTo = new URL("/onboarding", window.location.origin);
-          redirectTo.searchParams.set("error", "auth_callback_failed");
-          router.replace(redirectTo.pathname + redirectTo.search);
+          router.replace("/login?message=link_expired");
           return;
         }
       }
 
+      // No usable params — send to login
       if (!cancelled) setStatus("done");
-      router.replace("/onboarding");
+      router.replace("/login");
     }
 
     run();
