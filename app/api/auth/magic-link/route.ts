@@ -2,10 +2,10 @@
  * POST /api/auth/magic-link — Generate a magic link via Supabase admin API and send via Resend.
  * Body: { email: string }
  *
- * Uses admin.auth.admin.generateLink() to get a hashed_token, then builds a direct link to
- * /auth/callback?token_hash=...&type=magiclink so the user's browser verifies on our server
- * (via supabase.auth.verifyOtp). This avoids: Supabase redirect-URL allowlist issues,
- * hash-fragment loss in redirects, and PKCE code-verifier mismatches.
+ * Links to /auth/callback/session (client-side) so email scanners (Gmail, Outlook, etc.)
+ * don't consume the one-time token. Email scanners follow HTTP redirects but don't execute JS.
+ * The browser's JS calls verifyOtp, and @supabase/ssr's createBrowserClient stores the session
+ * in document.cookie — readable by the SSR middleware.
  */
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -43,9 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message ?? "Failed to generate link" }, { status: 400 });
   }
 
-  // Server-side callback: verifyOtp → 200+HTML with Set-Cookie → redirect to feed.
+  // Client-side page: browser JS calls verifyOtp (email scanners don't run JS → token not consumed).
   const magicUrl =
-    `${baseUrl}/auth/callback?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink&next=${encodeURIComponent("/feed")}`;
+    `${baseUrl}/auth/callback/session?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink&next=${encodeURIComponent("/feed")}`;
 
   try {
     await sendMagicLinkEmail(email, magicUrl);
