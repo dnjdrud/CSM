@@ -4,8 +4,8 @@
  * - ?token_hash=&type= (OTP/magic link): verifyOtp, ensureProfile, redirect.
  * - No code/token_hash: redirect to /auth/callback/session so hash fragment can be handled client-side.
  *
- * Sets cookies directly on the response object (response.cookies.set) for guaranteed delivery.
- * Returns 200+HTML (not 302) as a CDN safety measure to prevent Set-Cookie stripping.
+ * Uses cookieStore.set() (next/headers) + NextResponse.redirect() — the canonical Supabase SSR
+ * pattern. Next.js merges cookies() writes into the outgoing response automatically.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -14,11 +14,6 @@ import { createServerClient } from "@supabase/ssr";
 import { isHttps } from "@/lib/auth/cookieOptions";
 
 const LOG_PREFIX = "[auth/callback]";
-
-function htmlRedirect(url: string): string {
-  const safe = url.replace(/</g, "&lt;").replace(/"/g, "&quot;");
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${safe}"></head><body><p>Redirecting...</p><script>window.location.replace(${JSON.stringify(url)});</script></body></html>`;
-}
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -54,35 +49,29 @@ export async function GET(request: NextRequest) {
   const redirectUrl = `${origin}${redirectPath}`;
   const secure = isHttps(request);
 
-  // Define response FIRST so setAll can set cookies directly on it.
-  // Using 200+HTML (not 302) so CDN/Vercel does not strip Set-Cookie headers.
-  const successResponse = new NextResponse(htmlRedirect(redirectUrl), {
-    status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-    },
-  });
-
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        // Set cookies directly on the response object we will return.
-        // This is the most reliable approach — no reliance on Next.js cookie merging.
-        cookiesToSet.forEach(({ name, value, options }) => {
-          const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-          successResponse.cookies.set(name, value, {
-            path: "/",
-            httpOnly: true,
-            secure,
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7,
-            ...rest,
+        // cookieStore.set() is the canonical Next.js way — Next.js merges these
+        // into the outgoing response (including NextResponse.redirect).
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+            cookieStore.set(name, value, {
+              path: "/",
+              httpOnly: true,
+              secure,
+              sameSite: "lax",
+              maxAge: 60 * 60 * 24 * 7,
+              ...rest,
+            });
           });
-        });
+        } catch {
+          // Silently ignore — read-only context (e.g. RSC).
+        }
       },
     },
   });
@@ -96,7 +85,7 @@ export async function GET(request: NextRequest) {
       }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
-      return successResponse;
+      return NextResponse.redirect(redirectUrl);
     }
 
     if (token_hash && type) {
@@ -110,7 +99,7 @@ export async function GET(request: NextRequest) {
       }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
-      return successResponse;
+      return NextResponse.redirect(redirectUrl);
     }
 
     // No code and no token_hash/type: fragment flow. Send to client page (hash not sent to server).
