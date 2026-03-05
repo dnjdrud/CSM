@@ -39,9 +39,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Server not configured" }, { status: 500 });
   }
 
-  const response = NextResponse.json({ ok: true });
+  const response = NextResponse.json({ ok: true }, {
+    headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+  });
   const secure = isHttps(request);
-  const defaultCookieOptions = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
+  const defaultCookieOptions = {
+    path: "/" as const,
+    httpOnly: true,
+    secure,
+    sameSite: "lax" as const,
+    maxAge: 60 * 60 * 24 * 7,
+  };
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {

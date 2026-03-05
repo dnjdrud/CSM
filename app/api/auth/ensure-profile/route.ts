@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   }
 
   const secure = isHttps(request);
-  const cookieBase = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
+  const cookieBase = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const, maxAge: 60 * 60 * 24 * 7 };
 
   const redirectToApp = NextResponse.redirect(origin + safeNext);
   const redirectToOnboarding = NextResponse.redirect(

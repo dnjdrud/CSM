@@ -67,14 +67,16 @@ function isHttps(request: NextRequest): boolean {
   return request.headers.get("x-forwarded-proto") === "https";
 }
 
-/** Apply Supabase cookies with Secure + SameSite=Lax so they persist on next navigation (HTTPS). */
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+
+/** Apply Supabase cookies with Secure + SameSite=Lax + maxAge so they persist on next navigation. */
 function applyCookiesToResponse(
   request: NextRequest,
   response: NextResponse,
   cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>
 ): void {
   const secure = isHttps(request);
-  const base = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
+  const base = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const, maxAge: COOKIE_MAX_AGE };
   cookiesToSet.forEach(({ name, value, options }) => {
     const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
     response.cookies.set(name, value, { ...base, ...rest });
@@ -98,7 +100,7 @@ export async function middleware(request: NextRequest) {
   if (!url || !anonKey) return NextResponse.next();
 
   const secure = isHttps(request);
-  const cookieBase = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
+  const cookieBase = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const, maxAge: COOKIE_MAX_AGE };
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {

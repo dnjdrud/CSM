@@ -1,9 +1,8 @@
 /**
  * POST /api/auth/set-session-redirect
- * Body (JSON or form): access_token, refresh_token
- * Query: next (default /feed)
- * Sets session cookies and returns 302 to next. Same response carries Set-Cookie + Location
- * so the browser sends cookies on the redirected request (fixes cellah.co.kr login loop).
+ * Body (JSON or form): access_token, refresh_token. Query: next (default /feed)
+ * Sets session cookies and returns 200 + HTML that immediately redirects.
+ * 200 ensures Set-Cookie is applied before navigation (some proxies drop Set-Cookie on 302).
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -11,12 +10,16 @@ import { createServerClient } from "@supabase/ssr";
 
 function isHttps(request: NextRequest): boolean {
   try {
-    const u = new URL(request.url);
-    if (u.protocol === "https:") return true;
-    return request.headers.get("x-forwarded-proto") === "https";
+    if (new URL(request.url).protocol === "https:") return true;
   } catch {
-    return false;
+    // ignore
   }
+  return request.headers.get("x-forwarded-proto") === "https";
+}
+
+function htmlRedirect(nextUrl: string): string {
+  const esc = nextUrl.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${esc}"></head><body><p>Redirecting…</p><script>window.location.replace(${JSON.stringify(nextUrl)});</script></body></html>`;
 }
 
 function getOrigin(request: NextRequest): string {
@@ -62,9 +65,21 @@ export async function POST(request: NextRequest) {
   const redirectUrl = origin + safeNext;
 
   const secure = isHttps(request);
-  const defaultCookieOptions = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const };
+  const defaultCookieOptions = {
+    path: "/" as const,
+    httpOnly: true,
+    secure,
+    sameSite: "lax" as const,
+    maxAge: 60 * 60 * 24 * 7,
+  };
 
-  const response = NextResponse.redirect(redirectUrl, 302);
+  const response = new NextResponse(htmlRedirect(redirectUrl), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {

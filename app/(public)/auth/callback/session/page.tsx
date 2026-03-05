@@ -25,24 +25,19 @@ export default function AuthCallbackSessionPage() {
   useEffect(() => {
     let cancelled = false;
 
-    /** Full-page form POST so server responds with 302 + Set-Cookie; browser then follows redirect with cookies. */
-    function submitSessionForm(access_token: string, refresh_token: string, nextPath: string) {
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = "/api/auth/set-session-redirect?next=" + encodeURIComponent(nextPath);
-      form.style.display = "none";
-      const a = document.createElement("input");
-      a.name = "access_token";
-      a.value = access_token;
-      a.type = "hidden";
-      form.appendChild(a);
-      const r = document.createElement("input");
-      r.name = "refresh_token";
-      r.value = refresh_token;
-      r.type = "hidden";
-      form.appendChild(r);
-      document.body.appendChild(form);
-      form.submit();
+    /** Set session via fetch (same-origin, cookies in response) then redirect. Faster than form POST + no extra page. */
+    async function setSessionThenRedirect(access_token: string, refresh_token: string, nextPath: string) {
+      const res = await fetch("/api/auth/set-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ access_token, refresh_token }),
+      });
+      if (!res.ok) return false;
+      await new Promise((r) => setTimeout(r, 100));
+      const target = nextPath.startsWith("http") ? nextPath : window.location.origin + nextPath;
+      window.location.replace(target);
+      return true;
     }
 
     async function run() {
@@ -76,7 +71,12 @@ export default function AuthCallbackSessionPage() {
           redirectDone.current = true;
           setStatus("done");
           setMessage("Redirecting…");
-          submitSessionForm(data.session.access_token, data.session.refresh_token, safeNext);
+          const ok = await setSessionThenRedirect(data.session.access_token, data.session.refresh_token, safeNext);
+          if (!ok && !cancelled) {
+            setStatus("error");
+            setMessage("Failed to establish session. Please try again.");
+            setTimeout(() => router.replace("/login"), 2000);
+          }
           return;
         } catch (e) {
           if (!cancelled) {
@@ -111,7 +111,12 @@ export default function AuthCallbackSessionPage() {
         redirectDone.current = true;
         setStatus("done");
         setMessage("Redirecting…");
-        submitSessionForm(access_token, refresh_token, safeNext);
+        const ok = await setSessionThenRedirect(access_token, refresh_token, safeNext);
+        if (!ok && !cancelled) {
+          setStatus("error");
+          setMessage("Failed to establish session. Please try again.");
+          setTimeout(() => router.replace("/login"), 2000);
+        }
         return;
       }
 
