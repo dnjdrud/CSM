@@ -7,12 +7,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 
 /**
- * Client-only auth callback page.
- * Handles two flows:
- * 1. Query params: ?token_hash=...&type=... → verifyOtp in browser,
- *    then form POST to /api/auth/set-session-redirect (302+Set-Cookie) → feed.
- * 2. Hash fragment: #access_token=...&refresh_token=... → form POST same.
- * Form POST ensures Set-Cookie is on document response so browser sends cookies on redirect.
+ * Auth callback: magic link or hash tokens → verifyOtp / parse hash → form POST to set-session-redirect → feed.
+ * See docs/auth-flow.md for full flow.
  */
 export default function AuthCallbackSessionPage() {
   const router = useRouter();

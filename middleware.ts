@@ -1,14 +1,12 @@
 /**
- * Route guards. Never redirect /api/* or static assets.
- * Supabase SSR: single response, buffer cookiesToSet from setAll, apply to that response
- * (or to redirect response) with Supabase options only — do not override domain/maxAge.
- * Public: /, /login, /auth/callback, /privacy, /terms, /contact, etc.
- * App paths require session + profile; /admin requires session + role ADMIN.
+ * Route guards. Skips /api, /_next, /auth, static. Public paths allowed. App = session+profile, Admin = ADMIN.
+ * Cookie options from lib/auth/cookieOptions so session persists across navigations.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
+import { getAuthCookieOptions, applySupabaseCookies } from "@/lib/auth/cookieOptions";
 
 const PUBLIC_PATHS = [
   "/",
@@ -58,31 +56,6 @@ function isAppPath(pathname: string): boolean {
   );
 }
 
-function isHttps(request: NextRequest): boolean {
-  try {
-    if (new URL(request.url).protocol === "https:") return true;
-  } catch {
-    // ignore
-  }
-  return request.headers.get("x-forwarded-proto") === "https";
-}
-
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
-
-/** Apply Supabase cookies with Secure + SameSite=Lax + maxAge so they persist on next navigation. */
-function applyCookiesToResponse(
-  request: NextRequest,
-  response: NextResponse,
-  cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>
-): void {
-  const secure = isHttps(request);
-  const base = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const, maxAge: COOKIE_MAX_AGE };
-  cookiesToSet.forEach(({ name, value, options }) => {
-    const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-    response.cookies.set(name, value, { ...base, ...rest });
-  });
-}
-
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -99,8 +72,7 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
-  const secure = isHttps(request);
-  const cookieBase = { path: "/" as const, httpOnly: true, secure, sameSite: "lax" as const, maxAge: COOKIE_MAX_AGE };
+  const cookieBase = getAuthCookieOptions(request);
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {
@@ -110,10 +82,7 @@ export async function middleware(request: NextRequest) {
       },
       setAll(toSet) {
         toSet.forEach((c) => cookiesToSet.push(c));
-        toSet.forEach(({ name, value, options }) => {
-          const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-          response.cookies.set(name, value, { ...cookieBase, ...rest });
-        });
+        applySupabaseCookies(request, response, toSet);
       },
     },
   });
@@ -125,7 +94,7 @@ export async function middleware(request: NextRequest) {
     const { data: roleRow } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (roleRow?.role === "ADMIN") return response;
     const redirectResponse = NextResponse.redirect(new URL("/feed", request.url));
-    applyCookiesToResponse(request, redirectResponse, cookiesToSet);
+    applySupabaseCookies(request, redirectResponse, cookiesToSet);
     return redirectResponse;
   }
 
@@ -133,7 +102,7 @@ export async function middleware(request: NextRequest) {
     const redirectResponse = NextResponse.redirect(
       new URL("/login?from=" + encodeURIComponent(pathname), request.url)
     );
-    applyCookiesToResponse(request, redirectResponse, cookiesToSet);
+    applySupabaseCookies(request, redirectResponse, cookiesToSet);
     return redirectResponse;
   }
 
@@ -142,7 +111,7 @@ export async function middleware(request: NextRequest) {
     const { data: row } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (row?.role !== "ADMIN") {
       const redirectResponse = NextResponse.redirect(new URL("/feed?message=admin_required", request.url));
-      applyCookiesToResponse(request, redirectResponse, cookiesToSet);
+      applySupabaseCookies(request, redirectResponse, cookiesToSet);
       return redirectResponse;
     }
     return response;
@@ -155,7 +124,7 @@ export async function middleware(request: NextRequest) {
       const redirectResponse = NextResponse.redirect(
         new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url)
       );
-      applyCookiesToResponse(request, redirectResponse, cookiesToSet);
+      applySupabaseCookies(request, redirectResponse, cookiesToSet);
       return redirectResponse;
     }
     try {
@@ -164,7 +133,7 @@ export async function middleware(request: NextRequest) {
         const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
         if (!isOwnProfile) {
           const redirectResponse = NextResponse.redirect(new URL("/?message=account_deactivated", request.url));
-          applyCookiesToResponse(request, redirectResponse, cookiesToSet);
+          applySupabaseCookies(request, redirectResponse, cookiesToSet);
           return redirectResponse;
         }
       }
