@@ -1,8 +1,11 @@
 /**
- * POST /api/auth/magic-link — Generate a Supabase magic link via admin API and send via Resend.
+ * POST /api/auth/magic-link — Generate a magic link via Supabase admin API and send via Resend.
  * Body: { email: string }
- * Uses admin.auth.admin.generateLink() — no PKCE, no auth_magic_links table needed.
- * The link in the email is a Supabase verify URL that redirects to /auth/callback after verification.
+ *
+ * Uses admin.auth.admin.generateLink() to get a hashed_token, then builds a direct link to
+ * /auth/callback?token_hash=...&type=magiclink so the user's browser verifies on our server
+ * (via supabase.auth.verifyOtp). This avoids: Supabase redirect-URL allowlist issues,
+ * hash-fragment loss in redirects, and PKCE code-verifier mismatches.
  */
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -28,21 +31,25 @@ export async function POST(request: Request) {
   }
 
   const baseUrl = getBaseUrlForLinks(request);
-  const redirectTo = `${baseUrl}/auth/callback`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: { redirectTo },
+    options: { redirectTo: `${baseUrl}/auth/callback` },
   });
 
-  if (error || !data?.properties?.action_link) {
+  if (error || !data?.properties?.hashed_token) {
     console.error("[magic-link] generateLink failed", error?.message);
     return NextResponse.json({ error: error?.message ?? "Failed to generate link" }, { status: 400 });
   }
 
+  // Build a direct link to our callback route using the hashed_token.
+  // verifyOtp in /auth/callback handles this — no Supabase redirect-URL allowlist needed.
+  const magicUrl =
+    `${baseUrl}/auth/callback?token_hash=${encodeURIComponent(data.properties.hashed_token)}&type=magiclink`;
+
   try {
-    await sendMagicLinkEmail(email, data.properties.action_link);
+    await sendMagicLinkEmail(email, magicUrl);
   } catch (sendErr) {
     console.error("[magic-link] sendMagicLinkEmail failed", sendErr);
     return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
