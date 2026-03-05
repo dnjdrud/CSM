@@ -3,6 +3,7 @@ import {
   listCommunityPosts,
   getCommunityPost,
 } from "@/lib/data/communityRepository";
+import { getSession } from "@/lib/auth/session";
 import { CommunityShell } from "./_components/CommunityShell";
 
 export const dynamic = "force-dynamic";
@@ -15,13 +16,15 @@ export default async function CommunityPage({ searchParams }: Props) {
   const params = await searchParams;
   const postId = params.post?.trim() || null;
 
-  const [{ posts, error: fetchError }, postResult] = await Promise.all([
+  const [session, { posts, error: fetchError }, postResult] = await Promise.all([
+    getSession(),
     listCommunityPosts(),
     postId ? getCommunityPost(postId) : Promise.resolve({ post: null, error: null }),
   ]);
 
   const selectedPost = postResult.post ?? null;
   const postError = postResult.error ?? null;
+  const currentUserId = session?.userId ?? null;
 
   return (
     <div className="w-full flex flex-col min-h-0 flex-1 px-0 md:px-4 py-4 md:py-6">
@@ -37,6 +40,7 @@ export default async function CommunityPage({ searchParams }: Props) {
           selectedId={postId}
           fetchError={fetchError}
           postError={postError}
+          currentUserId={currentUserId}
         />
       </Suspense>
     </div>

@@ -61,6 +61,16 @@ curl -X POST https://your-app.com/api/auth/magic-link \
 
 - 링크: `/auth/verify-magic?id={uuid}&token={rawToken}` → 클릭 시 토큰 소비 후 Supabase 세션으로 리다이렉트.
 
+**매직 링크 클릭 후 로그인 안 될 때**  
+Supabase가 리다이렉트하는 URL을 허용 목록에 넣어야 합니다.
+
+1. [Supabase Dashboard](https://supabase.com/dashboard) → 프로젝트 → **Authentication** → **URL Configuration**
+2. **Redirect URLs**에 다음을 추가 (프로덕션 도메인 기준):
+   - `https://cellah.co.kr/auth/callback/hash`
+   - `https://cellah.co.kr/auth/callback/session`
+   - 로컬: `http://localhost:3000/auth/callback/hash`
+3. **Site URL**이 실제 서비스 URL과 같게 설정되어 있는지 확인 (예: `https://cellah.co.kr`).
+
 ### 3. 비밀번호 재설정
 
 ```bash

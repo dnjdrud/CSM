@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import type { CommunityPost } from "@/lib/data/communityRepository";
+import { Comments } from "./Comments";
+import { CommentForm } from "./CommentForm";
 
 function formatDate(iso: string): string {
   try {
@@ -19,6 +22,7 @@ interface ContentPanelProps {
   postError: string | null;
   onBackToFeed: () => void;
   showBackButton: boolean;
+  currentUserId: string | null;
 }
 
 export function ContentPanel({
@@ -26,7 +30,9 @@ export function ContentPanel({
   postError,
   onBackToFeed,
   showBackButton,
+  currentUserId,
 }: ContentPanelProps) {
+  const [commentsRefreshKey, setCommentsRefreshKey] = useState(0);
   if (postError) {
     return (
       <div className="p-6" role="alert">
@@ -96,6 +102,13 @@ export function ContentPanel({
             {post.content.trim()}
           </div>
         )}
+
+        <Comments postId={post.id} refreshKey={commentsRefreshKey} />
+        <CommentForm
+          postId={post.id}
+          currentUserId={currentUserId}
+          onCommentAdded={() => setCommentsRefreshKey((k) => k + 1)}
+        />
       </div>
     </article>
   );

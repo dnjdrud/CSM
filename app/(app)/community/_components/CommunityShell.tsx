@@ -14,6 +14,7 @@ interface CommunityShellProps {
   selectedId: string | null;
   fetchError: string | null;
   postError: string | null;
+  currentUserId: string | null;
 }
 
 export function CommunityShell({
@@ -22,6 +23,7 @@ export function CommunityShell({
   selectedId,
   fetchError,
   postError,
+  currentUserId,
 }: CommunityShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -101,6 +103,7 @@ export function CommunityShell({
             postError={postError}
             onBackToFeed={goToFeed}
             showBackButton={!!selectedId}
+            currentUserId={currentUserId}
           />
         </div>
       </section>

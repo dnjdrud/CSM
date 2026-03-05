@@ -136,8 +136,9 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
     if (!profile) {
       if (user.email && isOnboardingBypassEmail(user.email)) return response;
+      // Logged-in but no profile (e.g. right after magic link): ensure profile then go to app (no onboarding flash).
       const redirectResponse = NextResponse.redirect(
-        new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
+        new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url)
       );
       applyCookiesToResponse(redirectResponse, cookiesToSet);
       return redirectResponse;

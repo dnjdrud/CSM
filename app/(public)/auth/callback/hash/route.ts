@@ -1,11 +1,12 @@
 /**
  * GET /auth/callback/hash — Plain HTML callback for hash fragment flow.
- * No React; inline script parses hash, sets Supabase session, redirects.
- * Use this as redirectTo for magic link so tokens are applied without waiting for React.
+ * No React; inline script parses hash, loads Supabase via ESM import, setSession, redirects.
+ * Redirect URL must be in Supabase Dashboard: Authentication → URL Configuration → Redirect URLs.
  */
 import { NextResponse } from "next/server";
 
-const SUPABASE_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+// ESM bundle that works in browser (esm.sh resolves deps; fallback: jsdelivr +esm)
+const SUPABASE_ESM = "https://esm.sh/@supabase/supabase-js@2";
 
 function escapeJs(s: string): string {
   return s
@@ -40,24 +41,33 @@ export async function GET() {
 </head>
 <body>
   <p id="msg">Signing you in…</p>
-  <a id="link" href="/feed" style="display:none; margin-top: 1rem;">Continue to feed</a>
+  <a id="link" href="/api/auth/ensure-profile?next=/feed" style="display:none; margin-top: 1rem;">Continue to feed</a>
   <script>
+    window.__SUPABASE_URL = '${escapeJs(url)}';
+    window.__SUPABASE_ANON = '${escapeJs(anon)}';
+  </script>
+  <script type="module">
 (function() {
-  var SUPABASE_URL = '${escapeJs(url)}';
-  var SUPABASE_ANON = '${escapeJs(anon)}';
+  var SUPABASE_URL = window.__SUPABASE_URL;
+  var SUPABASE_ANON = window.__SUPABASE_ANON;
   var hash = (window.location.hash || '').slice(1);
   var search = window.location.search || '';
   var params = new URLSearchParams(search);
   var nextPath = params.get('next') || '/feed';
   if (!nextPath.startsWith('/')) nextPath = '/feed';
+  var ensureUrl = '/api/auth/ensure-profile?next=' + encodeURIComponent(nextPath);
 
   var msg = document.getElementById('msg');
   var linkEl = document.getElementById('link');
 
-  if (!hash) {
-    msg.textContent = 'No sign-in data. Redirecting…';
-    linkEl.href = '/onboarding';
+  function showError(text, href) {
+    msg.textContent = text;
+    linkEl.href = href || '/onboarding';
     linkEl.style.display = 'inline';
+  }
+
+  if (!hash) {
+    showError('No sign-in data. Redirecting…', '/onboarding');
     window.location.href = '/onboarding';
     return;
   }
@@ -77,56 +87,37 @@ export async function GET() {
   var err = map.error;
 
   if (err) {
-    msg.textContent = 'Error: ' + (map.error_description || err);
-    linkEl.href = '/onboarding?error=' + encodeURIComponent(err);
-    linkEl.style.display = 'inline';
+    showError('Error: ' + (map.error_description || err), '/onboarding?error=' + encodeURIComponent(err));
     return;
   }
 
   if (!access_token || !refresh_token) {
-    msg.textContent = 'Missing tokens. Redirecting…';
-    linkEl.href = '/onboarding';
-    linkEl.style.display = 'inline';
+    showError('Missing tokens. Redirecting…', '/onboarding');
     window.location.href = '/onboarding';
     return;
   }
 
-  var script = document.createElement('script');
-  script.src = '${SUPABASE_CDN}';
-  script.async = false;
-  script.onload = function() {
+  (async function() {
     try {
-      var supabase = window.supabase;
-      if (!supabase || typeof supabase.createClient !== 'function') {
-        msg.textContent = 'Could not load auth. Use the link below.';
+      var mod = await import('${SUPABASE_ESM}');
+      var createClient = mod.createClient;
+      if (typeof createClient !== 'function') {
+        showError('Auth library load failed. Use the link below.', nextPath);
         linkEl.href = nextPath;
         linkEl.style.display = 'inline';
-        window.location.href = nextPath;
         return;
       }
-      var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-      sb.auth.setSession({ access_token: access_token, refresh_token: refresh_token })
-        .then(function() {
-          msg.textContent = 'Redirecting…';
-          setTimeout(function() { window.location.href = nextPath; }, 150);
-        })
-        .catch(function(e) {
-          msg.textContent = 'Sign-in failed: ' + (e && e.message ? e.message : 'Unknown error');
-          linkEl.href = '/onboarding';
-          linkEl.style.display = 'inline';
-        });
+      var sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+      var result = await sb.auth.setSession({ access_token: access_token, refresh_token: refresh_token });
+      if (result.error) {
+        showError('Sign-in failed: ' + (result.error.message || 'Unknown error'), '/onboarding');
+        return;
+      }
+      window.location.replace(ensureUrl);
     } catch (e) {
-      msg.textContent = 'Error: ' + (e && e.message ? e.message : 'Unknown');
-      linkEl.href = '/onboarding';
-      linkEl.style.display = 'inline';
+      showError('Error: ' + (e && e.message ? e.message : 'Unknown'), '/onboarding');
     }
-  };
-  script.onerror = function() {
-    msg.textContent = 'Could not load auth library. Use the link below.';
-    linkEl.href = nextPath;
-    linkEl.style.display = 'inline';
-  };
-  document.body.appendChild(script);
+  })();
 })();
   </script>
 </body>
