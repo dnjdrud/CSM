@@ -1,8 +1,7 @@
 /**
  * POST /api/auth/set-session-redirect
- * Body (JSON or form): access_token, refresh_token. Query: next (default /feed)
- * Sets session cookies and returns 200 + HTML that immediately redirects.
- * 200 ensures Set-Cookie is applied before navigation (some proxies drop Set-Cookie on 302).
+ * Body (form): access_token, refresh_token. Query: next (default /feed)
+ * Sets session cookies and returns 302 to next. Form POST from callback so browser gets Set-Cookie on document response.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -17,11 +16,6 @@ function isHttps(request: NextRequest): boolean {
   return request.headers.get("x-forwarded-proto") === "https";
 }
 
-function htmlRedirect(nextUrl: string): string {
-  const esc = nextUrl.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${esc}"></head><body><p>Redirecting…</p><script>window.location.replace(${JSON.stringify(nextUrl)});</script></body></html>`;
-}
-
 function getOrigin(request: NextRequest): string {
   try {
     return new URL(request.url).origin;
@@ -31,25 +25,16 @@ function getOrigin(request: NextRequest): string {
 }
 
 export async function POST(request: NextRequest) {
-  let access_token: string | null = null;
-  let refresh_token: string | null = null;
-
   const contentType = request.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    try {
-      const body = await request.json();
-      access_token = body.access_token ?? null;
-      refresh_token = body.refresh_token ?? null;
-    } catch {
-      return NextResponse.redirect(new URL("/login?error=invalid", getOrigin(request)), 302);
-    }
-  } else if (contentType.includes("application/x-www-form-urlencoded")) {
-    const form = await request.formData();
-    access_token = form.get("access_token") as string | null;
-    refresh_token = form.get("refresh_token") as string | null;
+  if (!contentType.includes("application/x-www-form-urlencoded")) {
+    return NextResponse.redirect(new URL("/login?error=invalid", getOrigin(request)), 302);
   }
 
-  if (!access_token || !refresh_token) {
+  const form = await request.formData();
+  const access_token = form.get("access_token") as string | null;
+  const refresh_token = form.get("refresh_token") as string | null;
+
+  if (!access_token?.trim() || !refresh_token?.trim()) {
     return NextResponse.redirect(new URL("/login?error=missing_tokens", getOrigin(request)), 302);
   }
 
@@ -65,7 +50,7 @@ export async function POST(request: NextRequest) {
   const redirectUrl = origin + safeNext;
 
   const secure = isHttps(request);
-  const defaultCookieOptions = {
+  const cookieOpts = {
     path: "/" as const,
     httpOnly: true,
     secure,
@@ -73,13 +58,8 @@ export async function POST(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
   };
 
-  const response = new NextResponse(htmlRedirect(redirectUrl), {
-    status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-    },
-  });
+  const response = NextResponse.redirect(redirectUrl, 302);
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -89,15 +69,15 @@ export async function POST(request: NextRequest) {
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
           const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-          response.cookies.set(name, value, { ...defaultCookieOptions, ...rest });
+          response.cookies.set(name, value, { ...cookieOpts, ...rest });
         });
       },
     },
   });
 
-  const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+  const { error } = await supabase.auth.setSession({ access_token: access_token.trim(), refresh_token: refresh_token.trim() });
   if (error) {
-    return NextResponse.redirect(new URL("/login?error=session", getOrigin(request)), 302);
+    return NextResponse.redirect(new URL("/login?error=session", origin), 302);
   }
 
   return response;
