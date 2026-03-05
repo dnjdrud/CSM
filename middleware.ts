@@ -2,14 +2,13 @@
  * Route guards. Never redirect /api/* or static assets.
  * Supabase SSR: single response, buffer cookiesToSet from setAll, apply to that response
  * (or to redirect response) with Supabase options only — do not override domain/maxAge.
- * Public: /, /login, /onboarding, /request-access, /auth/callback, /auth/complete, etc.
+ * Public: /, /login, /auth/callback, /privacy, /terms, /contact, etc.
  * App paths require session + profile; /admin requires session + role ADMIN.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
-import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 
 const PUBLIC_PATHS = [
   "/",
@@ -82,7 +81,6 @@ export async function middleware(request: NextRequest) {
 
   if (!isOnboardingOrRequestAccessPath(pathname) && isPublicPath(pathname)) return NextResponse.next();
 
-  // Do NOT early-return for Server Action (Next-Action): SA requests must run auth refresh so getSession() sees session.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
@@ -117,11 +115,12 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     const redirectResponse = NextResponse.redirect(
-      new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
+      new URL("/login?from=" + encodeURIComponent(pathname), request.url)
     );
     applyCookiesToResponse(redirectResponse, cookiesToSet);
     return redirectResponse;
   }
+
   if (isAdminPath(pathname)) {
     if (user.email && isAdminEmail(user.email)) return response;
     const { data: row } = await supabase.from("users").select("role").eq("id", user.id).single();
@@ -132,11 +131,11 @@ export async function middleware(request: NextRequest) {
     }
     return response;
   }
+
   if (isAppPath(pathname)) {
     const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
     if (!profile) {
-      if (user.email && isOnboardingBypassEmail(user.email)) return response;
-      // Logged-in but no profile (e.g. right after magic link): ensure profile then go to app (no onboarding flash).
+      // Logged-in but no profile: ensure profile then go to app.
       const redirectResponse = NextResponse.redirect(
         new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url)
       );

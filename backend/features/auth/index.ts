@@ -6,4 +6,3 @@ export {
   deactivateUser,
   restoreUser,
 } from "@/lib/data/repository";
-export { ensureProfileForBypassEmail } from "@/lib/data/userProvisioning";

@@ -1,11 +1,11 @@
 /**
- * POST /api/auth/magic-link — Send magic link email (passwordless login).
+ * POST /api/auth/magic-link — Send magic link email via Supabase native OTP.
  * Body: { email: string }
- * Creates row in auth_magic_links (token_hash), sends Resend email. Link: /auth/verify-magic?id=id&token=rawToken
+ * Supabase handles email delivery (configured in Supabase dashboard).
+ * On success, user receives email with a link pointing to /auth/callback.
  */
 import { NextResponse } from "next/server";
-import { createMagicLink } from "@/lib/auth/magicLink";
-import { sendMagicLinkEmail } from "@/lib/email/send";
+import { createServerClient } from "@supabase/ssr";
 import { getBaseUrlForLinks } from "@/lib/url/site";
 
 export async function POST(request: Request) {
@@ -21,19 +21,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "email is required" }, { status: 400 });
   }
 
-  const result = await createMagicLink(email);
-  if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    return NextResponse.json({ error: "Server not configured" }, { status: 500 });
   }
 
   const baseUrl = getBaseUrlForLinks(request);
-  const loginUrl = `${baseUrl}/auth/verify-magic?id=${encodeURIComponent(result.id)}&token=${encodeURIComponent(result.rawToken)}`;
+  const emailRedirectTo = `${baseUrl}/auth/callback`;
 
-  try {
-    await sendMagicLinkEmail(email, loginUrl);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: `Failed to send email: ${msg}` }, { status: 502 });
+  const supabase = createServerClient(url, anonKey, {
+    cookies: {
+      getAll() { return []; },
+      setAll() {},
+    },
+  });
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo },
+  });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

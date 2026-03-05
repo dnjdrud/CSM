@@ -1,5 +1,5 @@
 /**
- * Email templates for invite, magic-link, and password-reset.
+ * Email templates for invite, password-reset, and approval.
  * Returns { html, text } for Resend. Simple HTML with button link.
  */
 
@@ -21,29 +21,6 @@ If you didn't expect this invite, you can ignore this email.`;
   <p style="color: #555;">Open the link below to complete your signup. This link expires in 7 days.</p>
   <p style="margin: 24px 0;"><a href="${escapeHtml(inviteUrl)}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 8px;">Complete signup</a></p>
   <p style="color: #888; font-size: 14px;">If you didn't expect this invite, you can ignore this email.</p>
-</body>
-</html>`;
-  return { html: html.trim(), text };
-}
-
-export function buildMagicLinkEmail(params: { loginUrl: string }): { html: string; text: string } {
-  const { loginUrl } = params;
-  const text = `Sign in to Cellah
-
-Click the link below to sign in. This link expires in 1 hour.
-
-${loginUrl}
-
-If you didn't request this, you can ignore this email.`;
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Sign in</title></head>
-<body style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
-  <p style="color: #333;">Sign in to Cellah</p>
-  <p style="color: #555;">Click the link below to sign in. This link expires in 1 hour.</p>
-  <p style="margin: 24px 0;"><a href="${escapeHtml(loginUrl)}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 8px;">Sign in</a></p>
-  <p style="color: #888; font-size: 14px;">If you didn't request this, you can ignore this email.</p>
 </body>
 </html>`;
   return { html: html.trim(), text };
@@ -72,7 +49,7 @@ If you didn't request a password reset, you can ignore this email.`;
   return { html: html.trim(), text };
 }
 
-/** Approval (signup request approved) — completion link. Reused from existing copy. */
+/** Approval (signup request approved) — completion link. */
 export function buildApprovalEmail(params: { completionUrl: string }): { html: string; text: string } {
   const { completionUrl } = params;
   const text = `Your request to join has been approved. Complete your signup by opening the link below and setting your password.
