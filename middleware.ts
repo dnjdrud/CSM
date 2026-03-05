@@ -1,12 +1,12 @@
 /**
  * Route guards. Skips /api, /_next, /auth, static. Public paths allowed. App = session+profile, Admin = ADMIN.
- * Cookie options from lib/auth/cookieOptions so session persists across navigations.
+ * Uses the official Supabase SSR setAll pattern: updates request.cookies AND reassigns response,
+ * so token refreshes are correctly propagated to the browser on every navigation.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
-import { getAuthCookieOptions, applySupabaseCookies } from "@/lib/auth/cookieOptions";
 
 const PUBLIC_PATHS = [
   "/",
@@ -72,76 +72,82 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
-  const cookieBase = getAuthCookieOptions(request);
-  const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
-  let response = NextResponse.next({ request });
+  // Official Supabase SSR pattern: supabaseResponse is reassigned in setAll so
+  // token refreshes are reflected in both the request (for same-run reads) and the
+  // response (Set-Cookie headers sent to the browser).
+  let supabaseResponse = NextResponse.next({ request });
+
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(toSet) {
-        toSet.forEach((c) => cookiesToSet.push(c));
-        applySupabaseCookies(request, response, toSet);
+      setAll(cookiesToSet) {
+        // Step 1: update request so subsequent same-request reads see fresh tokens.
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        // Step 2: create a new response that embeds the updated request.
+        supabaseResponse = NextResponse.next({ request });
+        // Step 3: set cookies on the new response (sent as Set-Cookie to browser).
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options ?? {})
+        );
       },
     },
   });
 
+  // IMPORTANT: No logic between createServerClient and getUser().
   const { data: { user } } = await supabase.auth.getUser();
 
+  /** Copy session cookies from supabaseResponse to a redirect, so token refreshes reach the browser. */
+  function withSessionCookies(redirect: NextResponse): NextResponse {
+    supabaseResponse.cookies.getAll().forEach(({ name, value, ...opts }) => {
+      redirect.cookies.set(name, value, opts);
+    });
+    return redirect;
+  }
+
   if (isOnboardingOrRequestAccessPath(pathname)) {
-    if (!user) return response;
+    if (!user) return supabaseResponse;
     const { data: roleRow } = await supabase.from("users").select("role").eq("id", user.id).single();
-    if (roleRow?.role === "ADMIN") return response;
-    const redirectResponse = NextResponse.redirect(new URL("/feed", request.url));
-    applySupabaseCookies(request, redirectResponse, cookiesToSet);
-    return redirectResponse;
+    if (roleRow?.role === "ADMIN") return supabaseResponse;
+    return withSessionCookies(NextResponse.redirect(new URL("/feed", request.url)));
   }
 
   if (!user) {
-    const redirectResponse = NextResponse.redirect(
+    return NextResponse.redirect(
       new URL("/login?from=" + encodeURIComponent(pathname), request.url)
     );
-    applySupabaseCookies(request, redirectResponse, cookiesToSet);
-    return redirectResponse;
   }
 
   if (isAdminPath(pathname)) {
-    if (user.email && isAdminEmail(user.email)) return response;
+    if (user.email && isAdminEmail(user.email)) return supabaseResponse;
     const { data: row } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (row?.role !== "ADMIN") {
-      const redirectResponse = NextResponse.redirect(new URL("/feed?message=admin_required", request.url));
-      applySupabaseCookies(request, redirectResponse, cookiesToSet);
-      return redirectResponse;
+      return withSessionCookies(NextResponse.redirect(new URL("/feed?message=admin_required", request.url)));
     }
-    return response;
+    return supabaseResponse;
   }
 
   if (isAppPath(pathname)) {
     const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
     if (!profile) {
-      // Logged-in but no profile: ensure profile then go to app.
-      const redirectResponse = NextResponse.redirect(
-        new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url)
+      return withSessionCookies(
+        NextResponse.redirect(new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url))
       );
-      applySupabaseCookies(request, redirectResponse, cookiesToSet);
-      return redirectResponse;
     }
     try {
       const { data: deact } = await supabase.from("users").select("deactivated_at").eq("id", user.id).maybeSingle();
       if (deact?.deactivated_at) {
         const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
         if (!isOwnProfile) {
-          const redirectResponse = NextResponse.redirect(new URL("/?message=account_deactivated", request.url));
-          applySupabaseCookies(request, redirectResponse, cookiesToSet);
-          return redirectResponse;
+          return withSessionCookies(NextResponse.redirect(new URL("/?message=account_deactivated", request.url)));
         }
       }
     } catch {
       // deactivated_at column may not exist yet; allow access
     }
   }
-  return response;
+  return supabaseResponse;
 }
 
 export const config = {
