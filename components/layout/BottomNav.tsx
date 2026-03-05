@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 
-type TabKey = "home" | "connect" | "community" | "cell" | "profile";
+type TabKey = "home" | "connect" | "cell" | "profile";
 
 type Tab = {
   key: TabKey;
@@ -23,12 +23,6 @@ const TABS: Tab[] = [
     href: "/feed?scope=ALL",
     label: "Connect",
     icon: "🌐",
-  },
-  {
-    key: "community",
-    href: "/community",
-    label: "Community",
-    icon: "📺",
   },
   {
     key: "cell",
@@ -52,9 +46,6 @@ function isActive(tab: Tab, pathname: string, search: URLSearchParams): boolean 
   if (tab.key === "connect" && pathname === "/feed") {
     const scope = search.get("scope");
     return scope === "ALL";
-  }
-  if (tab.key === "community") {
-    return pathname.startsWith("/community");
   }
   if (tab.key === "cell") {
     return pathname.startsWith("/cell");

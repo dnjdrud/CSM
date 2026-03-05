@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted } from "@/lib/data/repository";
+import { listCommunityPosts, getCommunityPost } from "@/lib/data/communityRepository";
 import { getSession } from "@/lib/auth/session";
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
@@ -12,6 +13,7 @@ import { scopeFromSearchParams } from "./_lib/scope";
 import { FeedHeader } from "./_components/FeedHeader";
 import { FeedComposer } from "./_components/FeedComposer";
 import { FeedList } from "./_components/FeedList";
+import { UnifiedHomeLayout } from "./_components/UnifiedHomeLayout";
 
 export const dynamic = "force-dynamic";
 const FEED_PAGE_SIZE = 20;
@@ -19,21 +21,30 @@ const FEED_PAGE_SIZE = 20;
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ scope?: string; message?: string }>;
+  searchParams: Promise<{ scope?: string; message?: string; post?: string }>;
 }) {
   const [session, currentUser] = await Promise.all([getSession(), getCurrentUser()]);
   const params = await searchParams;
   const scopeParam = scopeFromSearchParams(params);
   const showAdminRequiredBanner = params.message === "admin_required";
+  const communityPostId = params.post?.trim() || null;
   const adminContext = await getAdminOrNull();
   const isAdmin = Boolean(adminContext);
 
-  const firstPage = await listFeedPostsPage({
-    currentUserId: currentUser?.id ?? null,
-    scope: scopeParam,
-    limit: FEED_PAGE_SIZE,
-    cursor: null,
-  });
+  const [firstPage, communityResult, selectedCommunityResult] = await Promise.all([
+    listFeedPostsPage({
+      currentUserId: currentUser?.id ?? null,
+      scope: scopeParam,
+      limit: FEED_PAGE_SIZE,
+      cursor: null,
+    }),
+    listCommunityPosts(),
+    communityPostId ? getCommunityPost(communityPostId) : Promise.resolve({ post: null, error: null }),
+  ]);
+
+  const { posts: communityPosts, error: communityFetchError } = communityResult;
+  const selectedCommunityPost = selectedCommunityResult.post ?? null;
+  const selectedCommunityError = selectedCommunityResult.error ?? null;
 
   if (process.env.NODE_ENV !== "production" && (firstPage.error || firstPage.items.length === 0)) {
     console.log("[FeedPage]", { postCount: firstPage.items.length, feedError: firstPage.error });
@@ -52,24 +63,8 @@ export default async function FeedPage({
         })
       : firstPage.items;
 
-  return (
-    <TimelineContainer>
-      <h1 className="sr-only">Feed</h1>
-      {process.env.NODE_ENV !== "production" && (
-        <div className="px-4 py-2 border-b border-amber-200 bg-amber-50/80 text-[13px] text-amber-900" role="status" aria-label="Feed diagnostics">
-          <p><strong>Session:</strong> userId={session?.userId ?? "—"} role={session?.role ?? "—"}</p>
-          <p><strong>Posts from repository:</strong> {firstPage.items.length}{firstPage.error ? ` (error: ${firstPage.error})` : ""}</p>
-        </div>
-      )}
-      {showAdminRequiredBanner && (
-        <div className="px-4 pt-4 pb-2">
-          <FlashBanner
-            title="Admin access required"
-            body="This area is only available to admin accounts."
-            optional="If you believe this is a mistake, contact an admin."
-          />
-        </div>
-      )}
+  const feedChildren = (
+    <>
       <FeedHeader
         initialScope={scopeParam === "FOLLOWING" ? "following" : "all"}
         isAdmin={isAdmin}
@@ -105,6 +100,36 @@ export default async function FeedPage({
           Search posts & people →
         </Link>
       </p>
+    </>
+  );
+
+  return (
+    <TimelineContainer>
+      <h1 className="sr-only">Feed</h1>
+      {process.env.NODE_ENV !== "production" && (
+        <div className="px-4 py-2 border-b border-amber-200 bg-amber-50/80 text-[13px] text-amber-900" role="status" aria-label="Feed diagnostics">
+          <p><strong>Session:</strong> userId={session?.userId ?? "—"} role={session?.role ?? "—"}</p>
+          <p><strong>Posts from repository:</strong> {firstPage.items.length}{firstPage.error ? ` (error: ${firstPage.error})` : ""}</p>
+        </div>
+      )}
+      {showAdminRequiredBanner && (
+        <div className="px-4 pt-4 pb-2">
+          <FlashBanner
+            title="Admin access required"
+            body="This area is only available to admin accounts."
+            optional="If you believe this is a mistake, contact an admin."
+          />
+        </div>
+      )}
+      <UnifiedHomeLayout
+        feedChildren={feedChildren}
+        posts={communityPosts}
+        selectedPost={selectedCommunityPost}
+        selectedId={communityPostId}
+        fetchError={communityFetchError}
+        postError={selectedCommunityError}
+        currentUserId={currentUser?.id ?? null}
+      />
     </TimelineContainer>
   );
 }

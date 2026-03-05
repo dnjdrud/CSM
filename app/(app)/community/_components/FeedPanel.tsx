@@ -27,10 +27,13 @@ interface FeedPanelProps {
   posts: CommunityPost[];
   selectedId: string | null;
   fetchError: string | null;
+  /** Base path for post selection (e.g. /feed). Query param is "post". */
+  postLinkBase?: string;
 }
 
-export function FeedPanel({ posts, selectedId, fetchError }: FeedPanelProps) {
+export function FeedPanel({ posts, selectedId, fetchError, postLinkBase = "/community" }: FeedPanelProps) {
   const router = useRouter();
+  const base = postLinkBase.replace(/\/$/, "");
 
   if (fetchError) {
     return (
@@ -56,7 +59,7 @@ export function FeedPanel({ posts, selectedId, fetchError }: FeedPanelProps) {
           <li key={post.id}>
             <button
               type="button"
-              onClick={() => router.push(`/community?post=${post.id}`, { scroll: false })}
+              onClick={() => router.push(`${base}?post=${post.id}`, { scroll: false })}
               className="w-full text-left p-4 border-b border-theme-border hover:bg-theme-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-inset transition-colors"
               style={{
                 backgroundColor: isSelected ? "var(--surface-2)" : undefined,

@@ -1,48 +1,9 @@
-import { Suspense } from "react";
-import {
-  listCommunityPosts,
-  getCommunityPost,
-} from "@/lib/data/communityRepository";
-import { getSession } from "@/lib/auth/session";
-import { CommunityShell } from "./_components/CommunityShell";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-type Props = {
-  searchParams: Promise<{ post?: string }>;
-};
-
-export default async function CommunityPage({ searchParams }: Props) {
-  const params = await searchParams;
-  const postId = params.post?.trim() || null;
-
-  const [session, { posts, error: fetchError }, postResult] = await Promise.all([
-    getSession(),
-    listCommunityPosts(),
-    postId ? getCommunityPost(postId) : Promise.resolve({ post: null, error: null }),
-  ]);
-
-  const selectedPost = postResult.post ?? null;
-  const postError = postResult.error ?? null;
-  const currentUserId = session?.userId ?? null;
-
-  return (
-    <div className="w-full flex flex-col min-h-0 flex-1 px-0 md:px-4 py-4 md:py-6">
-      <h1 className="sr-only">Community</h1>
-      <Suspense
-        fallback={
-          <div className="p-6 text-theme-muted text-sm">Loading…</div>
-        }
-      >
-        <CommunityShell
-          posts={posts}
-          selectedPost={selectedPost}
-          selectedId={postId}
-          fetchError={fetchError}
-          postError={postError}
-          currentUserId={currentUserId}
-        />
-      </Suspense>
-    </div>
-  );
+export default function CommunityPage() {
+  // 커뮤니티는 이제 /feed 안의 통합 레이아웃에서 노출되므로,
+  // 기존 /community 접근은 피드로 리다이렉트.
+  redirect("/feed");
 }
