@@ -32,7 +32,7 @@ export function NewPostForm({
     try {
       const result = await createPostAction(formData);
       if (result.ok) {
-        router.push(`/community?post=${result.id}`);
+        router.push(`/feed?post=${result.id}`);
         return;
       }
       setError(result.error);
@@ -178,7 +178,7 @@ export function NewPostForm({
           {submitting ? "저장 중…" : "저장 후 커뮤니티에서 보기"}
         </button>
         <Link
-          href="/community"
+          href="/feed"
           className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
         >
           취소

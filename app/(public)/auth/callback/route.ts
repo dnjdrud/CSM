@@ -1,16 +1,23 @@
 /**
  * Auth callback (Route Handler). Handles server-side flows only.
- * - ?code= (PKCE): exchangeCodeForSession, ensureProfile, redirect.
- * - ?token_hash=&type= (OTP): verifyOtp, ensureProfile, redirect.
- * - No code/token_hash: redirect to /auth/callback (client page) so hash fragment can be handled there.
- * Redirects use request.url as base so query params are preserved when needed.
+ * - ?code= (PKCE): exchangeCodeForSession, ensureProfile, 200+HTML redirect.
+ * - ?token_hash=&type= (OTP/magic link): verifyOtp, ensureProfile, 200+HTML redirect.
+ * - No code/token_hash: redirect to /auth/callback/session so hash fragment can be handled client-side.
+ *
+ * Uses 200+HTML (not 302) so CDN/Vercel does not strip Set-Cookie headers.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { isHttps } from "@/lib/auth/cookieOptions";
 
 const LOG_PREFIX = "[auth/callback]";
+
+function htmlRedirect(url: string): string {
+  const safe = url.replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${safe}"></head><body><p>Redirecting...</p><script>window.location.replace(${JSON.stringify(url)});</script></body></html>`;
+}
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -42,8 +49,18 @@ export async function GET(request: NextRequest) {
   }
 
   const cookieStore = await cookies();
-  const redirectTarget = new URL(next.startsWith("/") ? next : "/feed", request.url);
-  const response = NextResponse.redirect(redirectTarget);
+  const redirectPath = next.startsWith("/") ? next : "/feed";
+  const redirectUrl = `${origin}${redirectPath}`;
+  const secure = isHttps(request);
+
+  // Use 200+HTML so CDN/Vercel does not strip Set-Cookie on redirects.
+  const response = new NextResponse(htmlRedirect(redirectUrl), {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+    },
+  });
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -52,7 +69,15 @@ export async function GET(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, { path: "/", ...options });
+          const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+          response.cookies.set(name, value, {
+            path: "/",
+            httpOnly: true,
+            secure,
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 7,
+            ...rest,
+          });
         });
       },
     },

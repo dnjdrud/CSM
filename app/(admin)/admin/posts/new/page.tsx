@@ -24,10 +24,10 @@ export default async function AdminNewPostPage() {
           관리자만 게시물을 생성할 수 있습니다.
         </p>
         <Link
-          href="/community"
+          href="/feed"
           className="mt-4 inline-block text-sm text-theme-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
         >
-          커뮤니티로 이동 →
+          홈으로 이동 →
         </Link>
       </div>
     );
