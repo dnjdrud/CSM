@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user?.id) {
-    return NextResponse.redirect(origin + "/onboarding?from=" + encodeURIComponent(safeNext));
+    return NextResponse.redirect(
+      origin + "/onboarding?from=" + encodeURIComponent(safeNext) + "&message=session_not_ready"
+    );
   }
 
   await ensureProfile({ userId: user.id, email: user.email ?? undefined });

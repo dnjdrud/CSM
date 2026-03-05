@@ -49,6 +49,15 @@ export default async function OnboardingPage({ searchParams }: Props) {
             />
           </div>
         )}
+        {message === "session_not_ready" && (
+          <div className="mb-6">
+            <FlashBanner
+              title="로그인 처리 중"
+              body="세션이 아직 반영되지 않았을 수 있습니다."
+              optional="잠시 후 아래 'Sign in'으로 로그인하거나, 피드로 이동해 보세요."
+            />
+          </div>
+        )}
         <h1 className="text-xl font-serif font-normal text-gray-800 tracking-tight">
           Request access
         </h1>

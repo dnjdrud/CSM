@@ -113,6 +113,8 @@ export async function GET() {
         showError('Sign-in failed: ' + (result.error.message || 'Unknown error'), '/onboarding');
         return;
       }
+      msg.textContent = 'Redirecting…';
+      await new Promise(function(r) { setTimeout(r, 350); });
       window.location.replace(ensureUrl);
     } catch (e) {
       showError('Error: ' + (e && e.message ? e.message : 'Unknown'), '/onboarding');
