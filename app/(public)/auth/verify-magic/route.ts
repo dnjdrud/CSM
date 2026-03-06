@@ -78,7 +78,15 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=verify_failed`);
   }
 
-  // Step 4: apply session cookies to the redirect response.
+  // Step 4: ensure a profile row exists (idempotent). Must complete before redirect
+  // so the middleware's profile check in isAppPath passes on the very first /feed load.
+  const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+  await ensureProfile({
+    userId: sessionData.session.user.id,
+    email: sessionData.session.user.email,
+  });
+
+  // Step 5: apply session cookies to the redirect response.
   // Keep Supabase's DEFAULT_COOKIE_OPTIONS (httpOnly:false, sameSite:lax) so the
   // browser client can also read them for client-side auth state.
   const redirectResponse = NextResponse.redirect(`${origin}/feed`);

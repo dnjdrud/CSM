@@ -112,7 +112,10 @@ export async function middleware(request: NextRequest) {
   if (isOnboardingOrRequestAccessPath(pathname)) {
     if (!user) return response;
     const { data: roleRow } = await supabase.from("users").select("role").eq("id", user.id).single();
-    if (roleRow?.role === "ADMIN") return response;
+    // No profile row → user needs to complete onboarding; let them through.
+    // Only redirect to /feed when we know they already have a completed profile.
+    if (!roleRow) return response;
+    if (roleRow.role === "ADMIN") return response;
     const redirectResponse = NextResponse.redirect(new URL("/feed", request.url));
     applyCookiesToResponse(redirectResponse, cookiesToSet);
     return redirectResponse;
@@ -136,8 +139,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
   if (isAppPath(pathname)) {
-    const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
-    if (!profile) {
+    const { data: profile, error: profileError } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
+    // Only redirect when the query succeeded and definitively found no profile.
+    // If there was a DB/network error, allow access rather than risking a false redirect.
+    if (!profile && !profileError) {
       if (user.email && isOnboardingBypassEmail(user.email)) return response;
       const redirectResponse = NextResponse.redirect(
         new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
