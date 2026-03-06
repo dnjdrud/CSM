@@ -66,13 +66,14 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.redirect(redirectUrl, { status: 302 });
   for (const { name, value, options } of pendingCookies) {
     const { domain: _d, ...rest } = options;
+    // Our options come LAST so they override Supabase's DEFAULT_COOKIE_OPTIONS.httpOnly:false
     response.cookies.set(name, value, {
+      ...rest,
       path: "/",
       httpOnly: true,
       secure,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7,
-      ...rest,
     });
   }
   return response;

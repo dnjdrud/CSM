@@ -74,6 +74,7 @@ export function BottomNav() {
             <li key={tab.key} className="flex-1">
               <Link
                 href={tab.href}
+                prefetch={false}
                 className={`flex flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[11px] ${
                   active
                     ? "text-theme-primary font-medium"

@@ -55,6 +55,8 @@ export function applySupabaseCookies(
   const base = getAuthCookieOptions(request);
   cookiesToSet.forEach(({ name, value, options }) => {
     const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-    response.cookies.set(name, value, { ...base, ...rest });
+    // Our base options come LAST so they override Supabase's DEFAULT_COOKIE_OPTIONS
+    // (which has httpOnly: false). This ensures httpOnly: true always wins.
+    response.cookies.set(name, value, { ...rest, ...base });
   });
 }

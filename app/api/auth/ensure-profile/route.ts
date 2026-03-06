@@ -34,13 +34,14 @@ export async function GET(request: NextRequest) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
             const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+            // Our options come LAST so they override Supabase's DEFAULT_COOKIE_OPTIONS.httpOnly:false
             cookieStore.set(name, value, {
+              ...rest,
               path: "/",
               httpOnly: true,
               secure,
               sameSite: "lax",
               maxAge: 60 * 60 * 24 * 7,
-              ...rest,
             });
           });
         } catch {

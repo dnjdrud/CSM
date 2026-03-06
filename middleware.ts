@@ -96,8 +96,11 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // IMPORTANT: No logic between createServerClient and getUser().
-  const { data: { user } } = await supabase.auth.getUser();
+  // Use getSession() to read the session locally from cookies without a network call.
+  // getUser() makes an external API request on every middleware run which can fail
+  // under load/latency and cause spurious logouts on navigation.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   /** Copy session cookies from supabaseResponse to a redirect, so token refreshes reach the browser. */
   function withSessionCookies(redirect: NextResponse): NextResponse {
@@ -130,22 +133,17 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAppPath(pathname)) {
-    const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
+    const { data: profile } = await supabase.from("users").select("id, deactivated_at").eq("id", user.id).maybeSingle();
     if (!profile) {
       return withSessionCookies(
         NextResponse.redirect(new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url))
       );
     }
-    try {
-      const { data: deact } = await supabase.from("users").select("deactivated_at").eq("id", user.id).maybeSingle();
-      if (deact?.deactivated_at) {
-        const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
-        if (!isOwnProfile) {
-          return withSessionCookies(NextResponse.redirect(new URL("/?message=account_deactivated", request.url)));
-        }
+    if (profile.deactivated_at) {
+      const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
+      if (!isOwnProfile) {
+        return withSessionCookies(NextResponse.redirect(new URL("/?message=account_deactivated", request.url)));
       }
-    } catch {
-      // deactivated_at column may not exist yet; allow access
     }
   }
   return supabaseResponse;
