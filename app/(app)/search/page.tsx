@@ -28,18 +28,15 @@ export default async function SearchPage({
   let people: Awaited<ReturnType<typeof searchPeople>> = [];
   let tags: string[] = [];
 
-  const loadPeople = currentUser && (q || tab === "people");
   if (q && currentUser) {
     const [postsResult, peopleResult, tagsResult] = await Promise.all([
       searchPosts({ q, currentUserId: currentUser.id, scope: "ALL" }),
-      loadPeople ? searchPeople({ q, viewerId: currentUser.id }) : Promise.resolve([]),
+      Promise.resolve(searchPeople({ q, viewerId: currentUser.id })),
       Promise.resolve(searchTags(q)),
     ]);
     posts = postsResult;
     people = peopleResult;
     tags = tagsResult;
-  } else if (loadPeople) {
-    people = await searchPeople({ q, viewerId: currentUser!.id });
   }
 
   return (

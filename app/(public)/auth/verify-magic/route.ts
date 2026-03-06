@@ -31,7 +31,9 @@ export async function GET(request: Request) {
   const { getBaseUrlForLinks } = await import("@/lib/url/site");
   const baseUrl = getBaseUrlForLinks(request);
   // Supabase appends tokens in URL hash; only /auth/callback/session reads hash and sets session.
-  const redirectTo = `${baseUrl}/auth/callback/session?next=/feed`;
+  // After login, we first send the user to /onboarding; middleware + page logic
+  // will then either show the onboarding flow (no profile) or redirect to /feed (profile exists).
+  const redirectTo = `${baseUrl}/auth/callback/session?next=/onboarding`;
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",

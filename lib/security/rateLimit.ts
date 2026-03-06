@@ -1,10 +1,8 @@
 /**
  * Lightweight rate limiting for write actions. Supabase mode only; memory mode bypasses.
- * Uses service role (admin) client for rate_limits so RLS does not block SELECT/INSERT.
- * If admin client is unavailable or check/insert fails, we allow the action (no block).
  */
 import { DATA_MODE } from "@/lib/data/repositoryMode";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseServer } from "@/lib/supabase/server";
 
 export const RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED";
 
@@ -31,35 +29,25 @@ const DEFAULT_MAX_PER_10_MIN = 20;
 /**
  * Check counts in last 1 and 10 minutes; if over limits, throw.
  * Otherwise insert a row for this action.
- * Uses supabaseAdmin (service role) so RLS does not block. On any failure, allow the action.
+ * In memory mode, does nothing (no throw, no insert).
  */
 export async function assertRateLimit(params: AssertRateLimitParams): Promise<void> {
   if (DATA_MODE !== "supabase") return;
 
-  const admin = getSupabaseAdmin();
-  if (!admin) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[rateLimit] admin client unavailable, allowing action", { action: params.action });
-    }
-    return;
-  }
-
   const { userId, action, maxPerMinute = DEFAULT_MAX_PER_MINUTE, maxPer10Min = DEFAULT_MAX_PER_10_MIN } = params;
+  const supabase = await supabaseServer();
   const now = new Date();
   const oneMinAgo = new Date(now.getTime() - 60 * 1000).toISOString();
   const tenMinAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
 
-  const { data: rows, error: selectError } = await admin
+  const { data: rows, error: selectError } = await supabase
     .from("rate_limits")
     .select("created_at")
     .eq("user_id", userId)
     .eq("action", action)
     .gte("created_at", tenMinAgo);
 
-  if (selectError) {
-    console.error("[rateLimit] Rate limit check failed", selectError);
-    return;
-  }
+  if (selectError) throw new Error("Rate limit check failed");
 
   const list = rows ?? [];
   const inLast10 = list.length;
@@ -71,12 +59,10 @@ export async function assertRateLimit(params: AssertRateLimitParams): Promise<vo
     throw err;
   }
 
-  const { error: insertError } = await admin.from("rate_limits").insert({
+  const { error: insertError } = await supabase.from("rate_limits").insert({
     user_id: userId,
     action,
   });
 
-  if (insertError) {
-    console.error("[rateLimit] Rate limit record failed", insertError);
-  }
+  if (insertError) throw new Error("Rate limit record failed");
 }
