@@ -2,7 +2,7 @@
 
 import { RequestAccessForm } from "./RequestAccessForm";
 
-/** Logged in but no profile: show request access form. */
+/** Logged in but no profile (and not bypass): show request access form and note about approval link. */
 export function OnboardingFlow() {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">

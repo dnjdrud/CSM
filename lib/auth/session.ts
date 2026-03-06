@@ -23,27 +23,40 @@ export async function getSession(): Promise<Session | null> {
     }
     if (!user?.id) {
       if (process.env.NODE_ENV !== "production") {
-        console.warn(LOG_PREFIX, "getSession null: no auth user (cookies missing or wrong domain)");
+        console.warn(LOG_PREFIX, "getSession null: auth.getUser returned no user (cookies missing or wrong domain)");
       }
       return null;
     }
     const { ensureAdminRoleIfAllowed } = await import("@/lib/admin/bootstrap");
     await ensureAdminRoleIfAllowed();
+    const { ensureProfileForBypassEmail } = await import("@/lib/data/userProvisioning");
+    const { isOnboardingBypassEmail } = await import("@/lib/auth/bypass");
+    const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+    await ensureProfileForBypassEmail({ userId: user.id, email: user.email });
     const profileResult = await supabase.from("users").select("id, role").eq("id", user.id).single();
     let row: { id: string; role: string } | null = profileResult.data;
+    if (profileResult.error && (!row || !row.role)) {
+      console.warn(LOG_PREFIX, "getSession null: users select failed for user.id:", user.id, "error:", profileResult.error.message);
+    }
     if (!row || !row.role) {
-      const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+      if (user.email && isOnboardingBypassEmail(user.email)) {
+        await ensureProfileForBypassEmail({ userId: user.id, email: user.email });
+        const retry = await supabase.from("users").select("id, role").eq("id", user.id).single();
+        row = retry.data;
+      }
+    }
+    if (!row || !row.role) {
       const ensured = await ensureProfile({ userId: user.id, email: user.email });
       if (ensured.created) {
         const refetch = await supabase.from("users").select("id, role").eq("id", user.id).single();
         row = refetch.data;
       }
       if (ensured.error) {
-        console.warn(LOG_PREFIX, "getSession: ensureProfile failed:", ensured.error);
+        console.warn(LOG_PREFIX, "getSession null: ensureProfile failed for user.id:", user.id, "error:", ensured.error);
       }
     }
     if (!row || !row.role) {
-      console.warn(LOG_PREFIX, "getSession null: no profile row for user.id=" + user.id);
+      console.warn(LOG_PREFIX, "getSession null: no profile or role (auth user.id=" + user.id + ", users row=" + (row ? "present" : "null") + ")");
       return null;
     }
     return { userId: row.id, role: row.role as UserRole };
@@ -67,7 +80,7 @@ export async function clearSession(): Promise<void> {
   }
 }
 
-/** Auth user id only (no profile check). */
+/** Auth user id only (no profile check). For onboarding: show profile form when auth exists but no profile. */
 export async function getAuthUserId(): Promise<string | null> {
   try {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;

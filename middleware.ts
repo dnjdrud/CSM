@@ -1,12 +1,15 @@
 /**
- * Route guards. Skips /api, /_next, /auth, static. Public paths allowed. App = session+profile, Admin = ADMIN.
- * Uses the official Supabase SSR setAll pattern: updates request.cookies AND reassigns response,
- * so token refreshes are correctly propagated to the browser on every navigation.
+ * Route guards. Never redirect /api/* or static assets.
+ * Supabase SSR: single response, buffer cookiesToSet from setAll, apply to that response
+ * (or to redirect response) with Supabase options only — do not override domain/maxAge.
+ * Public: /, /login, /onboarding, /request-access, /auth/callback, /auth/complete, etc.
+ * App paths require session + profile; /admin requires session + role ADMIN.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
+import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 
 const PUBLIC_PATHS = [
   "/",
@@ -45,16 +48,25 @@ function isAdminPath(pathname: string): boolean {
 function isAppPath(pathname: string): boolean {
   return (
     pathname.startsWith("/feed") ||
-    pathname.startsWith("/community") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/me") ||
-    pathname.startsWith("/cell") ||
     pathname.startsWith("/post/") ||
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/search") ||
     pathname.startsWith("/topics") ||
     pathname.startsWith("/write")
   );
+}
+
+/** Apply Supabase cookiesToResponse; host-only (no domain) so SA and RSC see session. */
+function applyCookiesToResponse(
+  response: NextResponse,
+  cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>
+): void {
+  cookiesToSet.forEach(({ name, value, options }) => {
+    const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+    response.cookies.set(name, value, { path: "/", ...rest });
+  });
 }
 
 export async function middleware(request: NextRequest) {
@@ -69,84 +81,81 @@ export async function middleware(request: NextRequest) {
 
   if (!isOnboardingOrRequestAccessPath(pathname) && isPublicPath(pathname)) return NextResponse.next();
 
+  // Do NOT early-return for Server Action (Next-Action): SA requests must run auth refresh so getSession() sees session.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
-  // Official Supabase SSR pattern: supabaseResponse is reassigned in setAll so
-  // token refreshes are reflected in both the request (for same-run reads) and the
-  // response (Set-Cookie headers sent to the browser).
-  let supabaseResponse = NextResponse.next({ request });
-
+  const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
+  let response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
-        // Step 1: update request so subsequent same-request reads see fresh tokens.
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        // Step 2: create a new response that embeds the updated request.
-        supabaseResponse = NextResponse.next({ request });
-        // Step 3: set cookies on the new response (sent as Set-Cookie to browser).
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options ?? {})
-        );
+      setAll(toSet) {
+        toSet.forEach((c) => cookiesToSet.push(c));
+        toSet.forEach(({ name, value, options }) => {
+          const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
+          response.cookies.set(name, value, { path: "/", ...rest });
+        });
       },
     },
   });
 
-  // Use getSession() to read the session locally from cookies without a network call.
-  // getUser() makes an external API request on every middleware run which can fail
-  // under load/latency and cause spurious logouts on navigation.
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-
-  /** Copy session cookies from supabaseResponse to a redirect, so token refreshes reach the browser. */
-  function withSessionCookies(redirect: NextResponse): NextResponse {
-    supabaseResponse.cookies.getAll().forEach(({ name, value, ...opts }) => {
-      redirect.cookies.set(name, value, opts);
-    });
-    return redirect;
-  }
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (isOnboardingOrRequestAccessPath(pathname)) {
-    if (!user) return supabaseResponse;
+    if (!user) return response;
     const { data: roleRow } = await supabase.from("users").select("role").eq("id", user.id).single();
-    if (roleRow?.role === "ADMIN") return supabaseResponse;
-    return withSessionCookies(NextResponse.redirect(new URL("/feed", request.url)));
+    if (roleRow?.role === "ADMIN") return response;
+    const redirectResponse = NextResponse.redirect(new URL("/feed", request.url));
+    applyCookiesToResponse(redirectResponse, cookiesToSet);
+    return redirectResponse;
   }
 
   if (!user) {
-    return NextResponse.redirect(
-      new URL("/login?from=" + encodeURIComponent(pathname), request.url)
+    const redirectResponse = NextResponse.redirect(
+      new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
     );
+    applyCookiesToResponse(redirectResponse, cookiesToSet);
+    return redirectResponse;
   }
-
   if (isAdminPath(pathname)) {
-    if (user.email && isAdminEmail(user.email)) return supabaseResponse;
+    if (user.email && isAdminEmail(user.email)) return response;
     const { data: row } = await supabase.from("users").select("role").eq("id", user.id).single();
     if (row?.role !== "ADMIN") {
-      return withSessionCookies(NextResponse.redirect(new URL("/feed?message=admin_required", request.url)));
+      const redirectResponse = NextResponse.redirect(new URL("/feed?message=admin_required", request.url));
+      applyCookiesToResponse(redirectResponse, cookiesToSet);
+      return redirectResponse;
     }
-    return supabaseResponse;
+    return response;
   }
-
   if (isAppPath(pathname)) {
-    const { data: profile } = await supabase.from("users").select("id, deactivated_at").eq("id", user.id).maybeSingle();
+    const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
     if (!profile) {
-      return withSessionCookies(
-        NextResponse.redirect(new URL("/api/auth/ensure-profile?next=" + encodeURIComponent(pathname), request.url))
+      if (user.email && isOnboardingBypassEmail(user.email)) return response;
+      const redirectResponse = NextResponse.redirect(
+        new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
       );
+      applyCookiesToResponse(redirectResponse, cookiesToSet);
+      return redirectResponse;
     }
-    if (profile.deactivated_at) {
-      const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
-      if (!isOwnProfile) {
-        return withSessionCookies(NextResponse.redirect(new URL("/?message=account_deactivated", request.url)));
+    try {
+      const { data: deact } = await supabase.from("users").select("deactivated_at").eq("id", user.id).maybeSingle();
+      if (deact?.deactivated_at) {
+        const isOwnProfile = pathname === `/profile/${user.id}` || pathname.startsWith(`/profile/${user.id}/`);
+        if (!isOwnProfile) {
+          const redirectResponse = NextResponse.redirect(new URL("/?message=account_deactivated", request.url));
+          applyCookiesToResponse(redirectResponse, cookiesToSet);
+          return redirectResponse;
+        }
       }
+    } catch {
+      // deactivated_at column may not exist yet; allow access
     }
   }
-  return supabaseResponse;
+  return response;
 }
 
 export const config = {

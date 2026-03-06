@@ -1,17 +1,14 @@
 /**
  * Auth callback (Route Handler). Handles server-side flows only.
  * - ?code= (PKCE): exchangeCodeForSession, ensureProfile, redirect.
- * - ?token_hash=&type= (OTP/magic link): verifyOtp, ensureProfile, redirect.
- * - No code/token_hash: redirect to /auth/callback/session so hash fragment can be handled client-side.
- *
- * Uses cookieStore.set() (next/headers) + NextResponse.redirect() — the canonical Supabase SSR
- * pattern. Next.js merges cookies() writes into the outgoing response automatically.
+ * - ?token_hash=&type= (OTP): verifyOtp, ensureProfile, redirect.
+ * - No code/token_hash: redirect to /auth/callback (client page) so hash fragment can be handled there.
+ * Redirects use request.url as base so query params are preserved when needed.
  */
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { isHttps } from "@/lib/auth/cookieOptions";
 
 const LOG_PREFIX = "[auth/callback]";
 
@@ -45,9 +42,8 @@ export async function GET(request: NextRequest) {
   }
 
   const cookieStore = await cookies();
-  const redirectPath = next.startsWith("/") ? next : "/feed";
-  const redirectUrl = `${origin}${redirectPath}`;
-  const secure = isHttps(request);
+  const redirectTarget = new URL(next.startsWith("/") ? next : "/feed", request.url);
+  const response = NextResponse.redirect(redirectTarget);
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -55,23 +51,9 @@ export async function GET(request: NextRequest) {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        // cookieStore.set() is the canonical Next.js way — Next.js merges these
-        // into the outgoing response (including NextResponse.redirect).
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
-            cookieStore.set(name, value, {
-              path: "/",
-              httpOnly: true,
-              secure,
-              sameSite: "lax",
-              maxAge: 60 * 60 * 24 * 7,
-              ...rest,
-            });
-          });
-        } catch {
-          // Silently ignore — read-only context (e.g. RSC).
-        }
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, { path: "/", ...options });
+        });
       },
     },
   });
@@ -85,7 +67,7 @@ export async function GET(request: NextRequest) {
       }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
-      return NextResponse.redirect(redirectUrl);
+      return response;
     }
 
     if (token_hash && type) {
@@ -99,7 +81,7 @@ export async function GET(request: NextRequest) {
       }
       const { ensureProfile } = await import("@/lib/auth/ensureProfile");
       await ensureProfile({ userId: data.user.id, email: data.user.email });
-      return NextResponse.redirect(redirectUrl);
+      return response;
     }
 
     // No code and no token_hash/type: fragment flow. Send to client page (hash not sent to server).

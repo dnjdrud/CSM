@@ -1,7 +1,5 @@
 import { TimelineContainer } from "@/components/TimelineContainer";
 
-export const dynamic = "force-dynamic";
-
 export default function CellHomePage() {
   return (
     <TimelineContainer>

@@ -1,75 +1,29 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
 
 /**
- * Auth callback: handles token_hash (magic link) or hash fragment.
- * Email scanners don't execute JS → one-time token is never consumed by prefetch.
- *
- * After verifyOtp succeeds, createBrowserClient has already stored the session in
- * browser cookies. We use window.location.replace() so the next full GET request
- * carries those cookies through middleware. No server round-trip needed.
+ * Client-only auth callback page for hash fragment flow.
+ * Tokens in URL hash are not sent to the server; this page reads hash, setSession, then redirects.
+ * Use redirect URL https://yoursite.com/auth/callback/session for Supabase magic link / implicit flow.
+ * Supports ?next=/path for post-login redirect (default /feed).
  */
 export default function AuthCallbackSessionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") ?? "/feed";
+  const safeNext = nextPath.startsWith("/") ? nextPath : "/feed";
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
   const [message, setMessage] = useState<string>("");
-  const [nextPath, setNextPath] = useState("/feed");
-  const redirectDone = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
-      if (typeof window === "undefined") return;
-      const hash = window.location.hash || "";
-      const search = window.location.search || "";
-      const params = new URLSearchParams(search);
-      const next = params.get("next") ?? "/feed";
-      const safeNext = next.startsWith("/") ? next : "/feed";
-      setNextPath(safeNext);
-
-      const supabase = supabaseBrowser();
-
-      // Flow 1: token_hash + type in query params (magic link from email)
-      const tokenHash = params.get("token_hash");
-      const type = params.get("type");
-      if (tokenHash && type) {
-        try {
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: type as "magiclink" | "email",
-          });
-          if (cancelled) return;
-          if (error || !data.user || !data.session) {
-            setStatus("error");
-            setMessage(error?.message ?? "Sign-in failed. The link may have expired.");
-            setTimeout(() => router.replace("/login?message=link_expired"), 2000);
-            return;
-          }
-          if (redirectDone.current) return;
-          redirectDone.current = true;
-          setStatus("done");
-          setMessage("Redirecting…");
-          // verifyOtp stored the session in cookies via createBrowserClient.
-          // Use a full navigation so middleware sees the cookies on a fresh GET request.
-          window.location.replace(safeNext);
-          return;
-        } catch (e) {
-          if (!cancelled) {
-            setStatus("error");
-            setMessage(e instanceof Error ? e.message : "Sign-in failed");
-          }
-          setTimeout(() => router.replace("/login"), 1500);
-          return;
-        }
-      }
-
-      // Flow 2: hash fragment — #access_token=...&refresh_token=...
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
       const { access_token, refresh_token, error: hashError, error_description } = getTokensFromHash(hash);
       const allHash = parseHashParams(hash);
       const errorCode = allHash.error_code ?? null;
@@ -79,7 +33,7 @@ export default function AuthCallbackSessionPage() {
           setStatus("error");
           setMessage(hashError + (error_description ? ": " + error_description : ""));
         }
-        const redirectTo = new URL("/login", window.location.origin);
+        const redirectTo = new URL("/onboarding", window.location.origin);
         redirectTo.searchParams.set("error", hashError);
         if (error_description) redirectTo.searchParams.set("error_description", error_description);
         if (errorCode) redirectTo.searchParams.set("error_code", errorCode);
@@ -88,19 +42,36 @@ export default function AuthCallbackSessionPage() {
       }
 
       if (access_token && refresh_token) {
-        if (redirectDone.current) return;
-        redirectDone.current = true;
-        await supabase.auth.setSession({ access_token, refresh_token });
-        if (cancelled) return;
-        setStatus("done");
-        setMessage("Redirecting…");
-        window.location.replace(safeNext);
-        return;
+        try {
+          const supabase = supabaseBrowser();
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (cancelled) return;
+          if (error) {
+            setStatus("error");
+            setMessage(error.message);
+            const redirectTo = new URL("/onboarding", window.location.origin);
+            redirectTo.searchParams.set("error", "auth_callback_failed");
+            router.replace(redirectTo.pathname + redirectTo.search);
+            return;
+          }
+          setStatus("done");
+          // Full page navigation so the next request includes the new session cookies.
+          window.location.replace(safeNext);
+          return;
+        } catch (e) {
+          if (!cancelled) {
+            setStatus("error");
+            setMessage(e instanceof Error ? e.message : "Sign-in failed");
+          }
+          const redirectTo = new URL("/onboarding", window.location.origin);
+          redirectTo.searchParams.set("error", "auth_callback_failed");
+          router.replace(redirectTo.pathname + redirectTo.search);
+          return;
+        }
       }
 
-      // No usable params
       if (!cancelled) setStatus("done");
-      router.replace("/login");
+      router.replace("/onboarding");
     }
 
     run();
@@ -117,17 +88,5 @@ export default function AuthCallbackSessionPage() {
       </div>
     );
   }
-
-  return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4" aria-live="polite">
-      <p className="text-[15px] text-theme-text">{message || "Signing you in…"}</p>
-      <p className="mt-4 text-sm text-theme-muted">
-        If you are not redirected,{" "}
-        <Link href={nextPath} className="text-theme-primary underline hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
-          click here to continue
-        </Link>
-        .
-      </p>
-    </div>
-  );
+  return null;
 }

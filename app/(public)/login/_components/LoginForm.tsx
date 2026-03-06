@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
-/** Login via magic link — calls POST /api/auth/magic-link which uses admin generateLink + Resend. */
+/** Login magic link is sent via Resend (POST /api/auth/magic-link), not Supabase Auth. */
 export function LoginForm() {
   const searchParams = useSearchParams();
   const message = searchParams.get("message");
@@ -13,30 +14,24 @@ export function LoginForm() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleEmailSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed || pending) return;
     setPending(true);
     setError(null);
-
-    try {
-      const res = await fetch("/api/auth/magic-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed }),
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        setError(json.error ?? "Something went wrong. Please try again.");
-        return;
-      }
-      setSent(true);
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setPending(false);
+    const res = await fetch("/api/auth/magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: trimmed }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setPending(false);
+    if (!res.ok) {
+      setError(typeof data?.error === "string" ? data.error : "Failed to send sign-in link.");
+      return;
     }
+    setSent(true);
   }
 
   if (sent) {
@@ -46,7 +41,7 @@ export function LoginForm() {
           We sent a sign-in link to <strong className="font-medium text-gray-800">{email.trim()}</strong>. Click the link in that email to continue. It may take a minute to arrive.
         </p>
         <p className="text-sm text-gray-500">
-          You can close this tab after you&apos;ve signed in. If you don&apos;t see the email, check your spam folder.
+          You can close this tab after you’ve signed in. If you don’t see the email, check your spam folder.
         </p>
       </div>
     );
@@ -61,7 +56,7 @@ export function LoginForm() {
       )}
       {message === "profile_missing" && (
         <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800" role="status">
-          Please sign in to access your account.
+          Please complete your profile to continue.
         </p>
       )}
 
@@ -94,6 +89,13 @@ export function LoginForm() {
           {pending ? "Sending…" : "Send sign-in link"}
         </button>
       </form>
+
+      <p className="mt-6 text-center text-sm text-gray-500">
+        Don’t have an account?{" "}
+        <Link href="/request-access" className="font-medium text-gray-700 underline hover:text-gray-900">
+          Request access
+        </Link>
+      </p>
     </div>
   );
 }
