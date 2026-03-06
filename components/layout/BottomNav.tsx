@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 type TabKey = "home" | "connect" | "cell" | "profile";
@@ -71,7 +72,7 @@ export function BottomNav() {
           const active = isActive(tab, pathname, search);
           return (
             <li key={tab.key} className="flex-1">
-              <a
+              <Link
                 href={tab.href}
                 className={`flex flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[11px] ${
                   active
@@ -83,7 +84,7 @@ export function BottomNav() {
                   {tab.icon}
                 </span>
                 <span>{tab.label}</span>
-              </a>
+              </Link>
             </li>
           );
         })}

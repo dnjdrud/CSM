@@ -48,6 +48,7 @@ function isAppPath(pathname: string): boolean {
     pathname.startsWith("/community") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/me") ||
+    pathname.startsWith("/cell") ||
     pathname.startsWith("/post/") ||
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/search") ||
