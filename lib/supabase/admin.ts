@@ -15,6 +15,12 @@ export function getMissingAdminEnv(): string[] {
   return missing;
 }
 
+/** Service role client for server-only use (e.g. rate_limits bypassing RLS). Do not use in Client Components. */
+export const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export function getSupabaseAdmin() {
   if (!url || !serviceRoleKey) {
     if (process.env.NODE_ENV === "development") {
