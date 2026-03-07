@@ -39,23 +39,18 @@ export async function GET(request: NextRequest) {
     payload.cookiesFromHeaders = all.map((c) => c.name).filter((n) => n.startsWith("sb-"));
 
     const supabase = await supabaseServer();
-    const { data: authData, error: authError } = await supabase.auth.getSession().then(r => ({ data: { user: r.data.session?.user ?? null }, error: null }));
-    if (authError) {
-      return NextResponse.json({
-        ...payload,
-        authError: authError.message,
-      });
-    }
-    if (authData?.user) {
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    const authUser = authSession?.user ?? null;
+    if (authUser) {
       payload.getUser = {
-        userId: authData.user.id,
-        email: authData.user.email ?? null,
+        userId: authUser.id,
+        email: authUser.email ?? null,
       };
 
       const { data: userRow, error: userError } = await supabase
         .from("users")
         .select("id, role, name")
-        .eq("id", authData.user.id)
+        .eq("id", authUser.id)
         .single();
       if (userError) {
         payload.usersRowError = userError.message;

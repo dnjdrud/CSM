@@ -61,18 +61,15 @@ export async function GET(request: NextRequest) {
     };
 
     const supabase = await supabaseServer();
-    const { data: authData, error: authError } = await supabase.auth.getSession().then(r => ({ data: { user: r.data.session?.user ?? null }, error: null }));
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    const authUser = authSession?.user ?? null;
 
-    if (authError) {
-      payload.authError = authError.message;
-      return NextResponse.json(payload, { status: 200 });
-    }
-    if (authData?.user) {
-      payload.authUser = { id: authData.user.id, email: authData.user.email ?? null };
+    if (authUser) {
+      payload.authUser = { id: authUser.id, email: authUser.email ?? null };
       const { data: profileRow } = await supabase
         .from("users")
         .select("id, role")
-        .eq("id", authData.user.id)
+        .eq("id", authUser.id)
         .single();
       if (profileRow) {
         payload.profile = { id: profileRow.id, role: profileRow.role };
