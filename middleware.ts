@@ -95,6 +95,10 @@ export async function middleware(request: NextRequest) {
       },
       setAll(toSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
         toSet.forEach((c) => cookiesToSet.push(c));
+        // Update request cookies so server components see the refreshed token.
+        toSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        // Recreate response with updated request headers, then apply cookies.
+        response = NextResponse.next({ request });
         toSet.forEach(({ name, value, options }) => {
           const { domain: _d, ...rest } = (options ?? {}) as Record<string, unknown>;
           response.cookies.set(name, value, { path: "/", ...rest });
