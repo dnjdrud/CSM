@@ -113,7 +113,8 @@ export async function getCurrentUser(): Promise<User | null> {
   try {
     const { supabaseServer } = await import("@/lib/supabase/server");
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
     if (!user?.id) return null;
     const { data: row } = await supabase
       .from("users")

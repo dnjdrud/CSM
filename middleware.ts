@@ -9,7 +9,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
-import { isOnboardingBypassEmail } from "@/lib/auth/bypass";
 
 const PUBLIC_PATHS = [
   "/",
@@ -143,28 +142,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
   if (isAppPath(pathname)) {
-    const { data: profile, error: profileError } = await supabase.from("users").select("id").eq("id", user.id).maybeSingle();
-    // Only redirect when the query succeeded and definitively found no profile.
-    // If there was a DB/network error, allow access rather than risking a false redirect.
-    if (!profile && !profileError) {
-      if (user.email && isOnboardingBypassEmail(user.email)) return response;
-      // Before redirecting, try to create the profile row. Auth users may have a valid
-      // session but no public.users row (e.g. logged in before ensureProfile was added).
-      // ensureProfile is idempotent: if the row already exists it returns immediately.
-      try {
-        const { ensureProfile } = await import("@/lib/auth/ensureProfile");
-        const result = await ensureProfile({ userId: user.id, email: user.email ?? null });
-        // If profile now exists (was just created or already present), allow through.
-        if (!result.error) return response;
-      } catch {
-        // If ensureProfile throws, fall through to redirect below.
-      }
-      const redirectResponse = NextResponse.redirect(
-        new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
-      );
-      applyCookiesToResponse(redirectResponse, cookiesToSet);
-      return redirectResponse;
-    }
+    // Profile existence is checked at the page level (getCurrentUser → redirect).
+    // Middleware only enforces authentication (done above via !user check).
+    // Removing the profile DB query from middleware eliminates Edge Runtime complexity
+    // and false redirects caused by RLS, transient DB errors, or missing profile rows.
     try {
       const { data: deact } = await supabase.from("users").select("deactivated_at").eq("id", user.id).maybeSingle();
       if (deact?.deactivated_at) {
