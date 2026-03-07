@@ -116,11 +116,23 @@ export async function getCurrentUser(): Promise<User | null> {
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
     if (!user?.id) return null;
-    const { data: row } = await supabase
+    let { data: row } = await supabase
       .from("users")
       .select("id, name, role, bio, affiliation, created_at, deactivated_at")
       .eq("id", user.id)
       .single();
+    // Profile row may not exist yet (first login before ensureProfile was added).
+    // Create it idempotently, then retry the query.
+    if (!row) {
+      const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+      await ensureProfile({ userId: user.id, email: user.email ?? null });
+      const retry = await supabase
+        .from("users")
+        .select("id, name, role, bio, affiliation, created_at, deactivated_at")
+        .eq("id", user.id)
+        .single();
+      row = retry.data;
+    }
     if (!row) return null;
     return {
       id: row.id,
