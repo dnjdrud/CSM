@@ -148,6 +148,17 @@ export async function middleware(request: NextRequest) {
     // If there was a DB/network error, allow access rather than risking a false redirect.
     if (!profile && !profileError) {
       if (user.email && isOnboardingBypassEmail(user.email)) return response;
+      // Before redirecting, try to create the profile row. Auth users may have a valid
+      // session but no public.users row (e.g. logged in before ensureProfile was added).
+      // ensureProfile is idempotent: if the row already exists it returns immediately.
+      try {
+        const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+        const result = await ensureProfile({ userId: user.id, email: user.email ?? null });
+        // If profile now exists (was just created or already present), allow through.
+        if (!result.error) return response;
+      } catch {
+        // If ensureProfile throws, fall through to redirect below.
+      }
       const redirectResponse = NextResponse.redirect(
         new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
       );
