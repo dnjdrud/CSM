@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     payload.cookiesFromHeaders = all.map((c) => c.name).filter((n) => n.startsWith("sb-"));
 
     const supabase = await supabaseServer();
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getSession().then(r => ({ data: { user: r.data.session?.user ?? null }, error: null }));
     if (authError) {
       return NextResponse.json({
         ...payload,

@@ -22,8 +22,8 @@ export async function requireAdmin(): Promise<AdminContext> {
   if (session.role === "ADMIN") return { userId: session.userId };
 
   const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user?.email && isAdminEmail(user.email)) return { userId: session.userId };
+  const { data: { session: authSession } } = await supabase.auth.getSession();
+  if (authSession?.user?.email && isAdminEmail(authSession.user.email)) return { userId: session.userId };
 
   redirect("/feed?message=admin_required");
 }
@@ -37,8 +37,8 @@ export async function getAdminOrNull(): Promise<AdminContext | null> {
   if (session.role === "ADMIN") return { userId: session.userId };
 
   const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user?.email && isAdminEmail(user.email)) return { userId: session.userId };
+  const { data: { session: authSession } } = await supabase.auth.getSession();
+  if (authSession?.user?.email && isAdminEmail(authSession.user.email)) return { userId: session.userId };
 
   return null;
 }

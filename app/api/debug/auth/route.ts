@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     };
 
     const supabase = await supabaseServer();
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getSession().then(r => ({ data: { user: r.data.session?.user ?? null }, error: null }));
 
     if (authError) {
       payload.authError = authError.message;
