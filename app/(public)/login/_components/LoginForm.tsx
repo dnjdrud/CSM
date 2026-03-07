@@ -8,6 +8,7 @@ import Link from "next/link";
 export function LoginForm() {
   const searchParams = useSearchParams();
   const message = searchParams.get("message");
+  const urlError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
@@ -57,6 +58,17 @@ export function LoginForm() {
       {message === "profile_missing" && (
         <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800" role="status">
           Please complete your profile to continue.
+        </p>
+      )}
+      {urlError && (
+        <p className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-800" role="alert">
+          {urlError === "invalid_or_expired"
+            ? "This sign-in link has expired or already been used. Please request a new one."
+            : urlError === "verify_failed" || urlError === "link_failed"
+            ? "Sign-in failed. Please try again."
+            : urlError === "missing_params"
+            ? "Invalid sign-in link. Please request a new one."
+            : "Something went wrong. Please try again."}
         </p>
       )}
 

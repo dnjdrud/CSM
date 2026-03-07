@@ -1,6 +1,10 @@
 /**
  * Session via Supabase Auth only. No mock cookie.
- * getSession: auth.getUser() + public.users row (userId, role).
+ * getSession: auth.getSession() + public.users row (userId, role).
+ *
+ * IMPORTANT: Uses getSession() (local JWT read) NOT getUser() (network call).
+ * getUser() triggers auto-signout on auth errors in writable-cookie contexts
+ * (Server Actions, Route Handlers), which clears browser session cookies.
  */
 import type { UserRole } from "@/lib/domain/types";
 
@@ -16,15 +20,13 @@ export async function getSession(): Promise<Session | null> {
   try {
     const { supabaseServer } = await import("@/lib/supabase/server");
     const supabase = await supabaseServer();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { session: authSession }, error: authError } = await supabase.auth.getSession();
+    const user = authSession?.user ?? null;
     if (authError) {
-      console.warn(LOG_PREFIX, "getSession null: auth.getUser error:", authError.message);
+      console.warn(LOG_PREFIX, "getSession null: auth.getSession error:", authError.message);
       return null;
     }
     if (!user?.id) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(LOG_PREFIX, "getSession null: auth.getUser returned no user (cookies missing or wrong domain)");
-      }
       return null;
     }
     const { ensureAdminRoleIfAllowed } = await import("@/lib/admin/bootstrap");
@@ -83,11 +85,10 @@ export async function clearSession(): Promise<void> {
 /** Auth user id only (no profile check). For onboarding: show profile form when auth exists but no profile. */
 export async function getAuthUserId(): Promise<string | null> {
   try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
     const { supabaseServer } = await import("@/lib/supabase/server");
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    return user?.id ?? null;
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.id ?? null;
   } catch {
     return null;
   }
@@ -98,8 +99,8 @@ export async function getAuthUserEmail(): Promise<string | null> {
   try {
     const { supabaseServer } = await import("@/lib/supabase/server");
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
-    return user?.email ?? null;
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.email ?? null;
   } catch {
     return null;
   }
