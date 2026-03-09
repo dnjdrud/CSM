@@ -212,18 +212,19 @@ export async function middleware(request: NextRequest) {
   const fallbackUserId = fallbackUserIdFromRequest;
   if (!user && fallbackUserId) usedFallback = true;
 
-  if (!user) {
+  const isStaleRefreshToken =
+    (sessionError as { code?: string } | null)?.code === "refresh_token_already_used" ||
+    (typeof sessionError?.message === "string" && sessionError.message.includes("Already Used"));
+
+  if (!user && !isStaleRefreshToken) {
     const sbCookieNames = request.cookies.getAll().filter((c) => c.name.startsWith("sb-")).map((c) => c.name);
-    const isAlreadyUsed = (sessionError as { code?: string } | null)?.code === "refresh_token_already_used";
-    if (!isAlreadyUsed) {
-      console.warn(
-        "[middleware]", pathname,
-        "| sdkSession: null",
-        "| fallbackUserId:", fallbackUserId ?? "null",
-        "| sbCookies:", sbCookieNames,
-        "| sdkError:", sessionError?.message ?? null
-      );
-    }
+    console.warn(
+      "[middleware]", pathname,
+      "| sdkSession: null",
+      "| fallbackUserId:", fallbackUserId ?? "null",
+      "| sbCookies:", sbCookieNames,
+      "| sdkError:", sessionError?.message ?? null
+    );
   }
 
   // Determine effective user ID for route checks
@@ -248,11 +249,10 @@ export async function middleware(request: NextRequest) {
     const redirectResponse = NextResponse.redirect(
       new URL("/onboarding?from=" + encodeURIComponent(pathname), request.url)
     );
-    // IMPORTANT: Do NOT apply cookiesToSet to this redirect.
-    // If the SDK's getSession() triggered a failed refresh, _removeSession() was called
-    // internally, which queues cookie-deletion in cookiesToSet via SIGNED_OUT → applyServerStorage.
-    // Applying those deletions here would erase the browser's valid session cookies
-    // (e.g. freshly auto-refreshed by the browser client) → permanent logout.
+    // When the failure is refresh_token_already_used, the cookie is stale (e.g. expired access token).
+    // Apply cookiesToSet so we clear the invalid cookie and the user can sign in again cleanly.
+    // When it was a race (browser refreshed first), we had fallbackUserId so we never reach here.
+    if (isStaleRefreshToken) applyCookiesToResponse(redirectResponse, cookiesToSet);
     return redirectResponse;
   }
 
