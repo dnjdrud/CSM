@@ -220,9 +220,10 @@ export async function middleware(request: NextRequest) {
   const fallbackUserId = fallbackUserIdFromRequest;
   if (!user && fallbackUserId) usedFallback = true;
 
+  const err = sessionError as { code?: string; message?: string } | null;
   const isStaleRefreshToken =
-    (sessionError as { code?: string } | null)?.code === "refresh_token_already_used" ||
-    (typeof sessionError?.message === "string" && sessionError.message.includes("Already Used"));
+    err?.code === "refresh_token_already_used" ||
+    (typeof err?.message === "string" && err.message.includes("Already Used"));
 
   if (!user && !isStaleRefreshToken) {
     const sbCookieNames = request.cookies.getAll().filter((c) => c.name.startsWith("sb-")).map((c) => c.name);
@@ -231,7 +232,7 @@ export async function middleware(request: NextRequest) {
       "| sdkSession: null",
       "| fallbackUserId:", fallbackUserId ?? "null",
       "| sbCookies:", sbCookieNames,
-      "| sdkError:", sessionError?.message ?? null
+      "| sdkError:", err?.message ?? null
     );
   }
 
