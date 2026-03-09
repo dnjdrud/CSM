@@ -200,19 +200,22 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Primary: try Supabase SDK getSession() — handles token refresh for near-expiry tokens.
-  // The SDK can THROW AuthApiError (e.g. refresh_token_already_used) instead of returning error;
-  // catch it so we can use cookie fallback and avoid unhandled exceptions in logs.
-  let sessionError: unknown = null;
-  let user: { id: string; email?: string | null } | null = null;
-  try {
-    const result = await supabase.auth.getSession();
-    user = result.data?.session?.user ?? null;
-    sessionError = result.error ?? null;
-  } catch (e) {
-    sessionError = e;
-    user = null;
-  }
+  // Wrap getSession so refresh_token_already_used never throws (avoids unhandled AuthApiError in logs).
+  const isStaleRefresh = (e: unknown) =>
+    (e as { code?: string; message?: string } | null)?.code === "refresh_token_already_used" ||
+    (typeof (e as { message?: string })?.message === "string" && (e as { message: string }).message.includes("Already Used"));
+  const originalGetSession = supabase.auth.getSession.bind(supabase.auth);
+  supabase.auth.getSession = async () => {
+    try {
+      return await originalGetSession();
+    } catch (e) {
+      if (isStaleRefresh(e)) return { data: { session: null }, error: e } as Awaited<ReturnType<typeof originalGetSession>>;
+      throw e;
+    }
+  };
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   // Fallback: if SDK failed (e.g. refresh_token_already_used) but auth cookies had valid JWT,
   // use the userId we read before getSession() so we don't redirect to login or apply cookie deletion.
