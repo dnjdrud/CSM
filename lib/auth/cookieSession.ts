@@ -74,13 +74,21 @@ export function getUserIdFromCookies(
     const session = JSON.parse(sessionStr) as {
       access_token?: string;
       expires_at?: number;
+      user?: { id?: string };
     };
-    if (!session.access_token || !session.expires_at) return null;
+    if (!session.expires_at) return null;
 
-    // Reject genuinely expired tokens (no EXPIRY_MARGIN — let RSC/middleware handle refresh)
-    if (session.expires_at * 1000 < Date.now()) return null;
+    // 유예: 만료 후 5분까지는 허용. 같은 요청에서 미들웨어가 이미 리프레시했을 수 있어,
+    // RSC가 SDK를 부르지 않고 쿠키만으로 세션을 쓰도록 함.
+    const now = Date.now();
+    const expiresMs = session.expires_at * 1000;
+    if (expiresMs < now - 5 * 60 * 1000) return null;
 
-    // Decode JWT payload (middle segment) to extract user ID ("sub")
+    // 1) 세션에 user.id가 있으면 사용 (Supabase 저장 형식)
+    if (session.user?.id) return session.user.id;
+
+    // 2) JWT payload의 sub 사용
+    if (!session.access_token) return null;
     const parts = session.access_token.split(".");
     if (parts.length !== 3) return null;
     const payloadStr = decodeBase64URL(parts[1]);
