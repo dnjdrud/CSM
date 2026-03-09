@@ -47,7 +47,7 @@ export function PostDetailHeader({ post, currentUser, authorFollowing = false }:
               initialFollowing={authorFollowing}
             />
           )}
-          <ReportMenu targetType="post" postId={post.id} onReported={() => {}} />
+          <ReportMenu targetType="post" postId={post.id} />
         </div>
       )}
     </header>
