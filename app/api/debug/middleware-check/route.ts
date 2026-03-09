@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { wrapSupabaseAuthSafe } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing Supabase env vars", sbCookies: sbCookies.map(c => c.name) });
   }
 
-  const supabase = createServerClient(url, anonKey, {
+  const supabase = wrapSupabaseAuthSafe(createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
         // no-op: read-only check
       },
     },
-  });
+  }));
 
   const { data: { session }, error } = await supabase.auth.getSession();
 
