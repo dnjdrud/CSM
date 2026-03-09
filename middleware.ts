@@ -175,6 +175,10 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
+  // Read userId from cookies BEFORE getSession(). If getSession() fails with refresh_token_already_used,
+  // the SDK may have queued cookie deletion in setAll; we still have the original valid session here.
+  const fallbackUserIdFromRequest = getUserIdFromCookies(request);
+
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, anonKey, {
@@ -202,43 +206,41 @@ export async function middleware(request: NextRequest) {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   let user = session?.user ?? null;
 
-  // Fallback: if SDK failed but auth cookies are present and JWT is still valid,
-  // parse the user ID directly from the cookie. This handles the race condition where
-  // the browser client's autoRefreshToken fires and consumes the refresh token just
-  // before middleware's _callRefreshToken attempt, causing SDK to return null and
-  // internally call _removeSession() (which would queue cookie-deletion in cookiesToSet).
+  // Fallback: if SDK failed (e.g. refresh_token_already_used) but auth cookies had valid JWT,
+  // use the userId we read before getSession() so we don't redirect to login or apply cookie deletion.
   let usedFallback = false;
-  let fallbackUserId: string | null = null;
+  const fallbackUserId = fallbackUserIdFromRequest;
+  if (!user && fallbackUserId) usedFallback = true;
+
   if (!user) {
-    fallbackUserId = getUserIdFromCookies(request);
-    if (fallbackUserId) {
-      usedFallback = true;
-    }
     const sbCookieNames = request.cookies.getAll().filter((c) => c.name.startsWith("sb-")).map((c) => c.name);
-    console.warn(
-      "[middleware]", pathname,
-      "| sdkSession: null",
-      "| fallbackUserId:", fallbackUserId ?? "null",
-      "| sbCookies:", sbCookieNames,
-      "| sdkError:", sessionError?.message ?? null
-    );
+    const isAlreadyUsed = (sessionError as { code?: string } | null)?.code === "refresh_token_already_used";
+    if (!isAlreadyUsed) {
+      console.warn(
+        "[middleware]", pathname,
+        "| sdkSession: null",
+        "| fallbackUserId:", fallbackUserId ?? "null",
+        "| sbCookies:", sbCookieNames,
+        "| sdkError:", sessionError?.message ?? null
+      );
+    }
   }
 
   // Determine effective user ID for route checks
   const effectiveUserId = user?.id ?? fallbackUserId ?? null;
 
   if (isOnboardingOrRequestAccessPath(pathname)) {
-    if (!effectiveUserId) return response;
+    if (!effectiveUserId) return usedFallback ? NextResponse.next({ request }) : response;
     // Only use DB check when SDK session is available (has auth for RLS queries).
     if (user) {
       const { data: roleRow } = await supabase.from("users").select("role").eq("id", user.id).single();
       // No profile row → user needs to complete onboarding; let them through.
       // Only redirect to /feed when we know they already have a completed profile.
-      if (!roleRow) return response;
-      if (roleRow.role === "ADMIN") return response;
+      if (!roleRow) return usedFallback ? NextResponse.next({ request }) : response;
+      if (roleRow.role === "ADMIN") return usedFallback ? NextResponse.next({ request }) : response;
     }
     const redirectResponse = NextResponse.redirect(new URL("/feed", request.url));
-    applyCookiesToResponse(redirectResponse, cookiesToSet);
+    if (!usedFallback) applyCookiesToResponse(redirectResponse, cookiesToSet);
     return redirectResponse;
   }
 
@@ -258,8 +260,7 @@ export async function middleware(request: NextRequest) {
     // In fallback mode we can't verify admin safely (Supabase client has no session for RLS).
     // Deny admin access in fallback; the RSC will re-check after the browser refreshes.
     if (usedFallback) {
-      const redirectResponse = NextResponse.redirect(new URL("/feed?message=admin_required", request.url));
-      return redirectResponse;
+      return NextResponse.redirect(new URL("/feed?message=admin_required", request.url));
     }
     if (user!.email && isAdminEmail(user!.email)) return response;
     const { data: row } = await supabase.from("users").select("role").eq("id", user!.id).single();
@@ -292,7 +293,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return response;
+  // When SDK failed with e.g. refresh_token_already_used we used cookie fallback; do not send
+  // the SDK's cookie-deletion headers (cookiesToSet) or the mutated response.
+  return usedFallback ? NextResponse.next({ request }) : response;
 }
 
 export const config = {
