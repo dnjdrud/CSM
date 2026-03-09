@@ -13,4 +13,8 @@ Sentry.init({
   environment: environment ?? "production",
   enabled: Boolean(dsn),
   tracesSampleRate: 0.1,
+  ignoreErrors: [
+    "Invalid Refresh Token: Already Used",
+    /refresh_token_already_used/,
+  ],
 });

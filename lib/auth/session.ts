@@ -23,7 +23,10 @@ export async function getSession(): Promise<Session | null> {
     const { data: { session: authSession }, error: authError } = await supabase.auth.getSession();
     const user = authSession?.user ?? null;
     if (authError) {
-      console.warn(LOG_PREFIX, "getSession null: auth.getSession error:", authError.message);
+      const isStaleRefresh = (authError as { code?: string }).code === "refresh_token_already_used";
+      if (!isStaleRefresh) {
+        console.warn(LOG_PREFIX, "getSession null: auth.getSession error:", authError.message);
+      }
       return null;
     }
     if (!user?.id) {
@@ -46,7 +49,12 @@ export async function getSession(): Promise<Session | null> {
     }
     return { userId: row.id, role: row.role as UserRole };
   } catch (e) {
-    console.warn(LOG_PREFIX, "getSession threw:", e instanceof Error ? e.message : String(e));
+    const isStaleRefresh =
+      (e as { code?: string })?.code === "refresh_token_already_used" ||
+      (e instanceof Error && e.message.includes("Already Used"));
+    if (!isStaleRefresh) {
+      console.warn(LOG_PREFIX, "getSession threw:", e instanceof Error ? e.message : String(e));
+    }
     return null;
   }
 }
