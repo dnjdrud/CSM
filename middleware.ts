@@ -229,12 +229,14 @@ export async function middleware(request: NextRequest) {
     (typeof err?.message === "string" && err.message.includes("Already Used"));
 
   if (!user && !isStaleRefreshToken) {
-    const sbCookieNames = request.cookies.getAll().filter((c) => c.name.startsWith("sb-")).map((c) => c.name);
+    const allCookies = request.cookies.getAll();
+    const sbCookieNames = allCookies.filter((c) => c.name.startsWith("sb-")).map((c) => c.name);
     console.warn(
       "[middleware]", pathname,
       "| sdkSession: null",
       "| fallbackUserId:", fallbackUserId ?? "null",
       "| sbCookies:", sbCookieNames,
+      "| allCookies:", allCookies.map(c => c.name),
       "| sdkError:", err?.message ?? null
     );
   }
