@@ -31,6 +31,7 @@ export async function GET(request: Request) {
   // Step 1: verify our custom magic link (DB token)
   const result = await consumeMagicLink(id, token);
   if (!result) {
+    console.log("verify-magic: consumeMagicLink failed for id:", id);
     return NextResponse.redirect(`${origin}/login?error=invalid_or_expired`);
   }
 
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
   });
 
   if (linkError || !linkData?.properties?.hashed_token) {
+    console.log("verify-magic: generateLink failed for email:", result.email, "error:", linkError);
     return NextResponse.redirect(`${origin}/login?error=link_failed`);
   }
 
@@ -75,16 +77,22 @@ export async function GET(request: Request) {
   });
 
   if (verifyError || !sessionData?.session) {
+    console.log("verify-magic: verifyOtp failed for email:", result.email, "error:", verifyError);
     return NextResponse.redirect(`${origin}/login?error=verify_failed`);
   }
 
   // Step 4: ensure a profile row exists (idempotent). Must complete before redirect
   // so the middleware's profile check in isAppPath passes on the very first /feed load.
-  const { ensureProfile } = await import("@/lib/auth/ensureProfile");
-  await ensureProfile({
-    userId: sessionData.session.user.id,
-    email: sessionData.session.user.email,
-  });
+  try {
+    const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+    await ensureProfile({
+      userId: sessionData.session.user.id,
+      email: sessionData.session.user.email,
+    });
+  } catch (e) {
+    console.log("verify-magic: ensureProfile failed for userId:", sessionData.session.user.id, "error:", e);
+    // Continue anyway, as profile creation might fail but auth should still work
+  }
 
   // Step 5: apply session cookies to the redirect response.
   // Keep Supabase's DEFAULT_COOKIE_OPTIONS (httpOnly:false, sameSite:lax) so the
