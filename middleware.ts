@@ -201,10 +201,18 @@ export async function middleware(request: NextRequest) {
   });
 
   // Primary: try Supabase SDK getSession() — handles token refresh for near-expiry tokens.
-  // getUser() makes a network round-trip to Supabase on EVERY request and triggers
-  // auto-signout on auth errors, so we always use getSession() here.
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  let user = session?.user ?? null;
+  // The SDK can THROW AuthApiError (e.g. refresh_token_already_used) instead of returning error;
+  // catch it so we can use cookie fallback and avoid unhandled exceptions in logs.
+  let sessionError: unknown = null;
+  let user: { id: string; email?: string | null } | null = null;
+  try {
+    const result = await supabase.auth.getSession();
+    user = result.data?.session?.user ?? null;
+    sessionError = result.error ?? null;
+  } catch (e) {
+    sessionError = e;
+    user = null;
+  }
 
   // Fallback: if SDK failed (e.g. refresh_token_already_used) but auth cookies had valid JWT,
   // use the userId we read before getSession() so we don't redirect to login or apply cookie deletion.
