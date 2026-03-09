@@ -108,47 +108,49 @@ export async function GET(request: NextRequest) {
     };
 
     const supabase = await supabaseServer();
-    const { data: { session: authSession }, error: authError } = await supabase.auth.getSession();
-    const authUser = authSession?.user ?? null;
-    if (authError) {
-      payload.authError = authError.message ?? String(authError);
-      payload.authErrorCode = (authError as { code?: string }).code ?? null;
-    } else {
-      payload.authError = null;
-    }
+    // Instead of calling getSession() which may consume refresh token, rely on cookie parsing only
+    // const { data: { session: authSession }, error: authError } = await supabase.auth.getSession();
+    // const authUser = authSession?.user ?? null;
+    // if (authError) {
+    //   payload.authError = authError.message ?? String(authError);
+    //   payload.authErrorCode = (authError as { code?: string }).code ?? null;
+    // } else {
+    //   payload.authError = null;
+    // }
+    // For debugging, simulate auth check without consuming tokens
+    const authUser = null; // We don't call getSession to avoid token consumption
+    const authError = null;
 
-    // 진단: 로그인이 풀리는 원인
+    // 진단: 로그인이 풀리는 원인 (쿠키 기반으로만 진단, SDK 호출하지 않음)
     if (!hasSupabaseAuth || sbCookieNames.length === 0) {
       payload.diagnosis = "NO_COOKIE";
       payload.recommendation = "쿠키 없음. 로그인하세요.";
-    } else if (authUser) {
-      payload.diagnosis = "SESSION_OK";
-      payload.recommendation = "세션 정상. 로그인 유지됨.";
-    } else if (payload.authErrorCode === "refresh_token_already_used" || (payload.authError && payload.authError.includes("Already Used"))) {
-      payload.diagnosis = "REFRESH_TOKEN_ALREADY_USED";
-      payload.recommendation = "리프레시 토큰이 이미 사용됨(다른 탭/요청에서 사용). 이 응답으로 쿠키가 삭제됩니다. 재로그인하세요.";
-    } else if (userIdFromCookie) {
-      payload.diagnosis = "COOKIE_VALID_SDK_FAILED";
-      payload.recommendation = "쿠키 내 access token은 유효하나 SDK getSession 실패. 새로고침하면 미들웨어 fallback으로 로그인 유지될 수 있음.";
-    } else if (cookieExpiresAt != null && cookieExpiresAt * 1000 < Date.now()) {
+    } else if (userIdFromCookie && cookieExpiresAt != null && cookieExpiresAt * 1000 > Date.now()) {
+      payload.diagnosis = "COOKIE_VALID";
+      payload.recommendation = "쿠키 유효. 세션 상태는 확인되지 않음 (토큰 소비 방지).";
+    } else if (userIdFromCookie && cookieExpiresAt != null && cookieExpiresAt * 1000 <= Date.now()) {
       payload.diagnosis = "COOKIE_EXPIRED";
-      payload.recommendation = "access token 만료. 리프레시도 실패한 상태. 재로그인하세요.";
+      payload.recommendation = "access token 만료. 리프레시 필요.";
+    } else if (userIdFromCookie) {
+      payload.diagnosis = "COOKIE_VALID_NO_EXPIRY";
+      payload.recommendation = "쿠키 유효하나 expiry 파싱 실패. 확인 필요.";
     } else {
       payload.diagnosis = "COOKIE_INVALID_OR_UNKNOWN";
       payload.recommendation = "쿠키 파싱 실패 또는 알 수 없는 오류. 재로그인하세요.";
     }
 
-    if (authUser) {
-      payload.authUser = { id: authUser.id, email: authUser.email ?? null };
-      const { data: profileRow } = await supabase
-        .from("users")
-        .select("id, role")
-        .eq("id", authUser.id)
-        .single();
-      if (profileRow) {
-        payload.profile = { id: profileRow.id, role: profileRow.role };
-      }
-    }
+    // authUser is null since we don't call getSession()
+    // if (authUser) {
+    //   payload.authUser = { id: authUser.id, email: authUser.email ?? null };
+    //   const { data: profileRow } = await supabase
+    //     .from("users")
+    //     .select("id, role")
+    //     .eq("id", authUser.id)
+    //     .single();
+    //   if (profileRow) {
+    //     payload.profile = { id: profileRow.id, role: profileRow.role };
+    //   }
+    // }
 
     try {
       const { data: rpcData } = await supabase.rpc("auth_uid" as "uid");
@@ -172,8 +174,7 @@ export async function GET(request: NextRequest) {
       newest_created_at: newestRow?.created_at ?? null,
     };
 
-    payload.cookiesWillBeCleared =
-      payload.diagnosis === "REFRESH_TOKEN_ALREADY_USED" && sbCookieNames.length > 0;
+    payload.cookiesWillBeCleared = false; // 디버그 API에서는 쿠키를 클리어하지 않음
 
     const response = NextResponse.json(payload);
     response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
