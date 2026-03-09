@@ -175,6 +175,8 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return NextResponse.next();
 
+  console.log("[middleware] url:", url, "anonKey exists:", !!anonKey);
+
   // Read userId from cookies BEFORE getSession(). If getSession() fails with refresh_token_already_used,
   // the SDK may have queued cookie deletion in setAll; we still have the original valid session here.
   const fallbackUserIdFromRequest = getUserIdFromCookies(request);

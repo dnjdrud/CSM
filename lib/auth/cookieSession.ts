@@ -45,6 +45,7 @@ export function getUserIdFromCookies(
   try {
     const projectRef = new URL(supabaseUrl).hostname.split(".")[0];
     const cookieName = `sb-${projectRef}-auth-token`;
+    console.log("getUserIdFromCookies: supabaseUrl:", supabaseUrl, "projectRef:", projectRef, "cookieName:", cookieName);
 
     // Find auth cookie (single) or chunked variants (.0, .1, …)
     let cookieValue = "";
