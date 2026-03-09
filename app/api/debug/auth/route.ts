@@ -61,8 +61,11 @@ export async function GET(request: NextRequest) {
     };
 
     const supabase = await supabaseServer();
-    const { data: { session: authSession } } = await supabase.auth.getSession();
+    const { data: { session: authSession }, error: authError } = await supabase.auth.getSession();
     const authUser = authSession?.user ?? null;
+    if (authError) {
+      payload.authError = authError.message ?? String(authError);
+    }
 
     if (authUser) {
       payload.authUser = { id: authUser.id, email: authUser.email ?? null };
