@@ -99,7 +99,8 @@ export function getUserIdFromCookies(
     const payload = JSON.parse(payloadStr) as { sub?: string };
     console.log("payload.sub:", payload.sub);
     return payload.sub ?? null;
-  } catch {
+  } catch (e) {
+    console.log("getUserIdFromCookies error:", e);
     return null;
   }
 }
