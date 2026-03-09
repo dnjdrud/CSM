@@ -6,7 +6,9 @@
  * getUser() triggers auto-signout on auth errors in writable-cookie contexts
  * (Server Actions, Route Handlers), which clears browser session cookies.
  */
+import { cookies } from "next/headers";
 import type { UserRole } from "@/lib/domain/types";
+import { getUserIdFromCookies } from "@/lib/auth/cookieSession";
 
 export interface Session {
   userId: string;
@@ -15,9 +17,27 @@ export interface Session {
 
 const LOG_PREFIX = "[session]";
 
-/** Read session from Supabase auth + public.users row. Returns null if not logged in or no profile. */
+/** 쿠키만으로 세션 반환 (SDK 미호출 → 리프레시 소비 없음). */
+async function getSessionFromCookieOnly(): Promise<Session | null> {
+  const serverUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!serverUrl) return null;
+  const cookieStore = await cookies();
+  const userId = getUserIdFromCookies(cookieStore.getAll(), serverUrl);
+  if (!userId) return null;
+  const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const { data: row } = await admin.from("users").select("id, role").eq("id", userId).single();
+  if (!row?.role) return null;
+  return { userId: row.id, role: row.role as UserRole };
+}
+
+/** Read session. 쿠키 우선(리프레시 없음) → 미들웨어와 이중 리프레시 방지. */
 export async function getSession(): Promise<Session | null> {
   try {
+    const fromCookie = await getSessionFromCookieOnly();
+    if (fromCookie) return fromCookie;
+
     const { supabaseServer } = await import("@/lib/supabase/server");
     const supabase = await supabaseServer();
     const { data: { session: authSession }, error: authError } = await supabase.auth.getSession();
@@ -73,25 +93,31 @@ export async function clearSession(): Promise<void> {
   }
 }
 
-/** Auth user id only (no profile check). For onboarding: show profile form when auth exists but no profile. */
+/** Auth user id only (no profile check). 쿠키 우선으로 SDK 리프레시 방지. */
 export async function getAuthUserId(): Promise<string | null> {
+  const serverUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (serverUrl) {
+    const cookieStore = await cookies();
+    const id = getUserIdFromCookies(cookieStore.getAll(), serverUrl);
+    if (id) return id;
+  }
   try {
-    const { supabaseServer } = await import("@/lib/supabase/server");
-    const supabase = await supabaseServer();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user?.id ?? null;
+    const session = await getSession();
+    return session?.userId ?? null;
   } catch {
     return null;
   }
 }
 
-/** Auth user email (for admin allowlist check). */
+/** Auth user email (for admin allowlist). getSession은 쿠키 우선이므로 리프레시 부담 적음. */
 export async function getAuthUserEmail(): Promise<string | null> {
   try {
-    const { supabaseServer } = await import("@/lib/supabase/server");
-    const supabase = await supabaseServer();
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user?.email ?? null;
+    const session = await getSession();
+    if (!session) return null;
+    const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+    const admin = getSupabaseAdmin();
+    const res = admin ? await admin.from("users").select("email").eq("id", session.userId).single() : { data: null };
+    return res.data?.email ?? null;
   } catch {
     return null;
   }
