@@ -109,8 +109,12 @@ export async function middleware(request: NextRequest) {
   // getSession() reads from cookies locally — no network call for valid tokens.
   // getUser() makes a network round-trip to Supabase on EVERY request, which can
   // fail transiently and cause spurious logouts on navigation.
-  const { data: { session } } = await supabase.auth.getSession();
+  const sbCookieNames = request.cookies.getAll().filter(c => c.name.startsWith("sb-")).map(c => c.name);
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   const user = session?.user ?? null;
+  if (!user || sessionError) {
+    console.warn("[middleware]", pathname, "| sbCookies:", sbCookieNames, "| session:", user?.id ?? null, "| error:", sessionError?.message ?? null);
+  }
 
   if (isOnboardingOrRequestAccessPath(pathname)) {
     if (!user) return response;

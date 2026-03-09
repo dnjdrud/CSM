@@ -18,11 +18,12 @@ export function useClientSession(): { user: User | null; userId: string | null }
     const supabase = supabaseBrowser();
 
     const load = async () => {
-      const { data: { user: u } } = await supabase.auth.getUser();
+      // Use getSession() NOT getUser(). getUser() makes a network call and if
+      // Supabase returns a 401, the browser client calls signOut() which clears
+      // all session cookies — breaking subsequent server-side auth checks.
+      const { data: { session } } = await supabase.auth.getSession();
+      const u = session?.user ?? null;
       setUser(u ?? null);
-      if (process.env.NODE_ENV !== "production" && u) {
-        console.log("[useClientSession] user.id:", u.id);
-      }
     };
 
     load();
