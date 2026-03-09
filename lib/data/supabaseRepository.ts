@@ -325,7 +325,7 @@ export async function getPostById(id: string): Promise<PostWithAuthor | null> {
     return null;
   }
   if (!row) return null;
-  const currentUserId = (await supabase.auth.getUser()).data.user?.id ?? null;
+  const currentUserId = (await supabase.auth.getSession()).data.session?.user?.id ?? null;
   const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
     getAuthorMap(supabase, [row.author_id]),
     getReactionCountsByPostIds(supabase, [id]),
@@ -734,8 +734,8 @@ export async function searchTags(q: string): Promise<string[]> {
 
 export async function listPostsByAuthorId(authorId: string): Promise<PostWithAuthor[]> {
   const supabase = await supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  const uid = user?.id ?? null;
+  const { data: { session: _listSess } } = await supabase.auth.getSession();
+  const uid = _listSess?.user?.id ?? null;
   const { data: rows } = await supabase
     .from("posts")
     .select(POSTS_FEED_SELECT)

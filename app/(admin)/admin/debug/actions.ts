@@ -26,12 +26,11 @@ export async function runDiagnostics(): Promise<DiagnosticsResult> {
   };
 
   const supabase = await supabaseServer();
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError) {
-    result.auth.error = authError.message;
-  } else if (authData?.user) {
-    result.auth.userId = authData.user.id;
-    result.auth.email = authData.user.email ?? null;
+  const { data: { session: authSession } } = await supabase.auth.getSession();
+  const authUser = authSession?.user ?? null;
+  if (authUser) {
+    result.auth.userId = authUser.id;
+    result.auth.email = authUser.email ?? null;
   }
 
   if (result.auth.userId) {

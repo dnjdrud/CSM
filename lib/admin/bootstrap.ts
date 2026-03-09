@@ -39,10 +39,16 @@ export async function ensureAdminRoleIfAllowed(): Promise<void> {
   try {
     const { supabaseServer } = await import("@/lib/supabase/server");
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    // Use getSession() (local JWT read) NOT getUser() (network call).
+    // getUser() can trigger auto-signout on auth errors, clearing session cookies.
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
     if (!user?.id || !user?.email) return;
     if (!isAdminEmail(user.email)) return;
-    await supabase.from("users").update({ role: "ADMIN" }).eq("id", user.id);
+    const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+    const admin = getSupabaseAdmin();
+    const client = admin ?? supabase;
+    await client.from("users").update({ role: "ADMIN" }).eq("id", user.id);
   } catch (e) {
     console.warn("[admin bootstrap] ensureAdminRoleIfAllowed failed:", e);
   }

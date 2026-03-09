@@ -14,13 +14,14 @@ export async function GET() {
 
   try {
     const supabase = await supabaseServer();
-    const { data: authData } = await supabase.auth.getUser();
-    if (authData?.user) {
-      authUserId = authData.user.id;
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    const authUser = authSession?.user ?? null;
+    if (authUser) {
+      authUserId = authUser.id;
       const { data: profileRow } = await supabase
         .from("users")
         .select("role")
-        .eq("id", authData.user.id)
+        .eq("id", authUser.id)
         .single();
       profileRole = profileRow?.role ?? null;
     }
