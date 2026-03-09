@@ -76,6 +76,7 @@ export function getUserIdFromCookies(
       expires_at?: number;
       user?: { id?: string };
     };
+    console.log("Parsed session keys:", Object.keys(session), "has access_token:", !!session.access_token, "has user.id:", !!session.user?.id);
     if (!session.expires_at) return null;
 
     // 유예: 만료 후 5분까지는 허용. 같은 요청에서 미들웨어가 이미 리프레시했을 수 있어,
@@ -90,10 +91,13 @@ export function getUserIdFromCookies(
     // 2) JWT payload의 sub 사용
     if (!session.access_token) return null;
     const parts = session.access_token.split(".");
+    console.log("JWT parts length:", parts.length);
     if (parts.length !== 3) return null;
     const payloadStr = decodeBase64URL(parts[1]);
+    console.log("payloadStr:", payloadStr ? "parsed" : "null");
     if (!payloadStr) return null;
     const payload = JSON.parse(payloadStr) as { sub?: string };
+    console.log("payload.sub:", payload.sub);
     return payload.sub ?? null;
   } catch {
     return null;

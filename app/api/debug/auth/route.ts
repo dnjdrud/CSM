@@ -78,8 +78,17 @@ export async function GET(request: NextRequest) {
       .map((c) => c.name);
     const hasSupabaseAuth = sbCookieNames.length > 0;
 
+    // Debug cookie parsing
+    console.log("Debug auth cookies:", sbCookieNames.map(name => {
+      const cookie = cookieList.find(c => c.name === name);
+      return { name, hasValue: !!cookie?.value, valueLength: cookie?.value?.length || 0 };
+    }));
+
     const userIdFromCookie = serverUrl ? getUserIdFromCookies(cookieList, serverUrl) : null;
     const cookieExpiresAt = serverUrl ? getCookieExpiresAt(cookieList, serverUrl) : null;
+
+    // Debug userIdFromCookie
+    console.log("userIdFromCookie:", userIdFromCookie, "cookieExpiresAt:", cookieExpiresAt);
 
     const payload: JsonResponse = {
       request: {
