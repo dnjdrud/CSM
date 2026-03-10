@@ -14,17 +14,20 @@ alter table public.cells enable row level security;
 
 -- policies for cells are declared after related tables exist (see below)
 
+drop policy if exists "Creator may update own cell" on public.cells;
 create policy "Creator may update own cell"
   on public.cells for update
   to authenticated
   using (auth.uid() = creator_id)
   with check (auth.uid() = creator_id);
 
+drop policy if exists "Creator may delete own cell" on public.cells;
 create policy "Creator may delete own cell"
   on public.cells for delete
   to authenticated
   using (auth.uid() = creator_id);
 
+drop policy if exists "Authenticated may insert cell (creator must be current user)" on public.cells;
 create policy "Authenticated may insert cell (creator must be current user)"
   on public.cells for insert
   to authenticated
@@ -42,22 +45,26 @@ create table if not exists public.cell_memberships (
 
 alter table public.cell_memberships enable row level security;
 
+drop policy if exists "Members can select own membership" on public.cell_memberships;
 create policy "Members can select own membership" 
   on public.cell_memberships for select 
   to authenticated
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert their own membership" on public.cell_memberships;
 create policy "Users can insert their own membership" 
   on public.cell_memberships for insert
   to authenticated
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own membership" on public.cell_memberships;
 create policy "Users can delete their own membership" 
   on public.cell_memberships for delete
   to authenticated
   using (auth.uid() = user_id);
 
 -- now that memberships table exists, add selection policy for cells
+drop policy if exists "Authenticated may select open cells or those they belong to" on public.cells;
 create policy "Authenticated may select open cells or those they belong to"
   on public.cells for select
   to authenticated
@@ -83,6 +90,7 @@ create table if not exists public.cell_messages (
 
 alter table public.cell_messages enable row level security;
 
+drop policy if exists "Can select message when cell open or user member" on public.cell_messages;
 create policy "Can select message when cell open or user member" 
   on public.cell_messages for select
   to authenticated
@@ -100,6 +108,7 @@ create policy "Can select message when cell open or user member"
     )
   );
 
+drop policy if exists "Authors may insert their own messages" on public.cell_messages;
 create policy "Authors may insert their own messages" 
   on public.cell_messages for insert
   to authenticated
