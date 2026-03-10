@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { wrapSupabaseAuthSafe } from "@/lib/supabase/server";
 
 const LOG_PREFIX = "[auth/callback]";
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
   const redirectTarget = new URL(next.startsWith("/") ? next : "/feed", request.url);
   const response = NextResponse.redirect(redirectTarget);
 
-  const supabase = createServerClient(url, anonKey, {
+  const supabase = wrapSupabaseAuthSafe(createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
         });
       },
     },
-  });
+  }));
 
   try {
     if (code) {

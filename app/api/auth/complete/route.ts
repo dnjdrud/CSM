@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { wrapSupabaseAuthSafe } from "@/lib/supabase/server";
 import { consumeApprovalTokenAndCreateUser } from "@/lib/data/signupRepository";
 import type { UserRole } from "@/lib/domain/types";
 
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     sameSite: "lax",
   };
 
-  const supabase = createServerClient(url, anonKey, {
+  const supabase = wrapSupabaseAuthSafe(createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
         );
       },
     },
-  });
+  }));
 
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: result.email,

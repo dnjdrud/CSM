@@ -19,6 +19,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { wrapSupabaseAuthSafe } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/bootstrap";
 
 const PUBLIC_PATHS = [
@@ -183,7 +184,7 @@ export async function middleware(request: NextRequest) {
 
   const cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
   let response = NextResponse.next({ request });
-  const supabase = createServerClient(url, anonKey, {
+  const supabase = wrapSupabaseAuthSafe(createServerClient(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -200,7 +201,7 @@ export async function middleware(request: NextRequest) {
         });
       },
     },
-  });
+  }));
 
   // Wrap getSession so refresh_token_already_used never throws (avoids unhandled AuthApiError in logs).
   const isStaleRefresh = (e: unknown) =>

@@ -15,6 +15,7 @@
  */
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { wrapSupabaseAuthSafe } from "@/lib/supabase/server";
 import { consumeMagicLink } from "@/lib/auth/magicLink";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
   // createServerClient buffers cookie writes via setAll(); no existing cookies needed.
   const pendingCookies: Array<{ name: string; value: string; options: Record<string, unknown> }> = [];
 
-  const supabase = createServerClient(supabaseUrl, anonKey, {
+  const supabase = wrapSupabaseAuthSafe(createServerClient(supabaseUrl, anonKey, {
     cookies: {
       getAll() {
         return [];
@@ -69,7 +70,7 @@ export async function GET(request: Request) {
         });
       },
     },
-  });
+  }));
 
   const { data: sessionData, error: verifyError } = await supabase.auth.verifyOtp({
     token_hash: linkData.properties.hashed_token,
