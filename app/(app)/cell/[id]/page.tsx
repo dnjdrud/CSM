@@ -3,6 +3,7 @@ import { TimelineContainer } from "@/components/TimelineContainer";
 import { getCurrentUser, getCellById, isMember, joinCell, leaveCell } from "@/lib/data/repository";
 import { revalidatePath } from "next/cache";
 import { CellChat } from "./CellChat";
+import { CellInviteButton } from "./CellInviteButton";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,8 @@ export default async function CellPage({ params }: { params: Promise<{ id: strin
                 {cell.type === "OPEN" ? "🌐 오픈 셀" : "🔒 프라이빗 셀"}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+              {isCreator && <CellInviteButton cellId={id} />}
               {!member && user && (
                 <form action={joinCellAction}>
                   <input type="hidden" name="cellId" value={id} />

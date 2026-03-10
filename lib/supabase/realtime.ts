@@ -4,6 +4,7 @@
  */
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { logWarnClient } from "@/lib/logging/clientLogger";
+import { getClientAccessToken } from "@/lib/auth/parseClientCookie";
 
 export type RealtimePayload<T = Record<string, unknown>> = {
   new: T;
@@ -34,6 +35,14 @@ export function subscribeToTable<T = Record<string, unknown>>(
   try {
     const supabase = supabaseBrowser();
     const { table, filter, schema = "public", onInsert, onUpdate, onDelete } = options;
+
+    // Authenticate realtime WebSocket with the user's JWT.
+    // The browser client has persistSession:false so getSession() returns null;
+    // we must set the token manually so RLS policies allow event delivery.
+    const token = getClientAccessToken();
+    if (token) {
+      supabase.realtime.setAuth(token);
+    }
 
     const channelName = `realtime:${schema}:${table}:${filter ?? "all"}`;
     channel = supabase.channel(channelName);
