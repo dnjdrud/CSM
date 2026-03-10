@@ -22,23 +22,37 @@ export function supabaseBrowser() {
   }
   if (!browserClient) {
     const { url: u, anonKey: k } = getEnv();
-    // when running in a Next.js web app we _do not_ want the browser client to
-    // manage its own copy of the session or automatically refresh tokens.  The
-    // server (middleware/RSC) already sets and refreshes a secure cookie and
-    // the browser component only needs to read that state for UI updates.  The
-    // default behavior of `createBrowserClient` is to persist the session in
-    // localStorage and to auto‑refresh/auto‑sign‑out on errors; those actions
-    // are what cause the web UI to bounce users out when a short network glitch
-    // or a stale refresh token error occurs.  Mobile clients use the RN SDK
-    // which never clears cookies and handles refresh more gracefully, so we
-    // match that behaviour by turning off persistence and auto‑refresh here.
+    // browser client should be as dumb as possible.  Cookie management is
+    // handled entirely on the server/middleware side; we don't want the SDK to
+    // write to localStorage, refresh tokens, or clear cookies under any
+    // circumstance.  To that end we:
+    //   * disable all persistence and auto‑refresh behavior
+    //   * supply a no‑op storage object so nothing is ever stored locally
+    //   * stub out `signOut()`/`removeSession()` to prevent accidental cookie
+    //     deletion when the library encounters a 401
     browserClient = createBrowserClient(u, k, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false,
+        storage: {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        } as unknown,
       },
     });
+
+    // patch out signOut/removeSession so the client can never wipe the cookie
+    const supabaseAuth = browserClient.auth as any;
+    const noop = async () => ({ data: null, error: null });
+    supabaseAuth.signOut = noop;
+    // some internal code uses _removeSession; stub that too just in case
+    if (typeof supabaseAuth._removeSession === "function") {
+      supabaseAuth._removeSession = (): void => {
+        // do nothing, cookies are server‑owned
+      };
+    }
   }
   return browserClient;
 }

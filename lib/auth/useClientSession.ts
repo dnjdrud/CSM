@@ -2,49 +2,56 @@
 
 import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { Session, User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
+import { getUserIdFromCookies } from "@/lib/auth/cookieSession";
+
+// convert document.cookie string into [{name,value}] array that cookieSession
+// utilities expect.  we only need this in the browser so it's safe to read DOM.
+function parseDocumentCookies(): Array<{ name: string; value: string }> {
+  const pairs: Array<{ name: string; value: string }> = [];
+  if (typeof document === "undefined") return pairs;
+  document.cookie.split(";").forEach((cookie) => {
+    const [rawName, ...rest] = cookie.split("=");
+    if (!rawName) return;
+    const name = rawName.trim();
+    const value = rest.join("=").trim();
+    pairs.push({ name, value });
+  });
+  return pairs;
+}
 
 /**
- * Client-side auth session from createBrowserClient.
- * Use in Client Components so comment/reaction UI sees session even when SSR passed null.
- * Initial: getUser(); updates: onAuthStateChange.
+ * Lightweight client session hook that never touches the Supabase auth API.
+ *
+ * We track only the user ID by parsing the JWT from the auth cookie.  This
+ * avoids any network requests (which can trigger the SDK to clear cookies)
+ * and mirrors the behaviour of the mobile client, which never manages its
+ * own session at all.  The hook still listens for onAuthStateChange events
+ * so UI can react when other parts of the app intentionally sign out.
  */
 export function useClientSession(): { user: User | null; userId: string | null } {
   const [user, setUser] = useState<User | null>(null);
 
+  const refreshFromCookie = () => {
+    const cookies = parseDocumentCookies();
+    const id = getUserIdFromCookies(cookies, process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    if (id) {
+      setUser({ id } as User);
+    } else {
+      setUser(null);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    refreshFromCookie();
+
     const supabase = supabaseBrowser();
-
-    const load = async () => {
-      // Use getSession() NOT getUser(). getUser() makes a network call and if
-      // Supabase returns a 401, the browser client calls signOut() which clears
-      // all session cookies — breaking subsequent server-side auth checks.
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
-      } catch {
-        setUser(null);
-      }
-    };
-
-    load();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
-      // The browser SDK will emit a `SIGNED_OUT` event when it attempts a
-      // refresh and the refresh token is invalid.  That action also clears
-      // all session cookies, which is problematic because our server logic has
-      // more robust handling (see `middleware.ts` and `session.ts`).  On mobile
-      // the client never forces a sign‑out when the refresh fails, so the UI
-      // stays stable until the next network request.  We mirror that behaviour
-      // by ignoring the `SIGNED_OUT` event here; the server will still redirect
-      // unauthenticated requests properly, but the user won't see an
-      // unnecessary flash of the logged‑out state.
-      if (event === "SIGNED_OUT") {
-        return;
-      }
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+      // ignore internal sign‑out events; we only care about the presence of a
+      // valid cookie, which we reparse on every event.
+      refreshFromCookie();
     });
 
     return () => subscription.unsubscribe();

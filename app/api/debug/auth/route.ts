@@ -90,6 +90,16 @@ export async function GET(request: NextRequest) {
     // Debug userIdFromCookie
     console.log("userIdFromCookie:", userIdFromCookie, "cookieExpiresAt:", cookieExpiresAt);
 
+    // if the cookie is present but parsing failed, log its raw value(s) to aid
+    // diagnosis; the developer can inspect this in Vercel logs later.
+    if (sbCookieNames.length && !userIdFromCookie) {
+      const rawVals = sbCookieNames.map((n) => {
+        const c = cookieList.find((c) => c.name === n);
+        return { name: n, value: c?.value?.substring(0, 100) ?? "" };
+      });
+      console.log("cookie parse failure, raw cookie prefixes:", rawVals);
+    }
+
     const payload: JsonResponse = {
       request: {
         host: requestUrl.host,
