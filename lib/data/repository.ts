@@ -636,6 +636,11 @@ export async function listFollowerIds(userId: string): Promise<string[]> {
   return follows.filter((f) => f.followingId === userId).map((f) => f.followerId);
 }
 
+export async function listFollowingWithNames(userId: string): Promise<{ id: string; name: string }[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listFollowingWithNames(userId);
+  return [];
+}
+
 /** Toggle follow; in-memory only. Creates FOLLOWED_YOU notification when now following. */
 export async function toggleFollow(followerId: string, followingId: string): Promise<boolean> {
   if (DATA_MODE === "supabase") return supabaseRepo.toggleFollow(followerId, followingId);

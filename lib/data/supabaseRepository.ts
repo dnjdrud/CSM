@@ -709,6 +709,19 @@ export async function listFollowingIds(userId: string): Promise<string[]> {
   return (data ?? []).map((r) => r.following_id);
 }
 
+export async function listFollowingWithNames(
+  userId: string
+): Promise<{ id: string; name: string }[]> {
+  const supabase = await supabaseServer();
+  const { data } = await supabase
+    .from("follows")
+    .select("users!follows_following_id_fkey(id, name)")
+    .eq("follower_id", userId);
+  return (data ?? [])
+    .map((r: any) => r.users)
+    .filter(Boolean) as { id: string; name: string }[];
+}
+
 export async function listFollowerIds(userId: string): Promise<string[]> {
   const supabase = await supabaseServer();
   const { data } = await supabase.from("follows").select("follower_id").eq("following_id", userId);

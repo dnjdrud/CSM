@@ -3,7 +3,7 @@ import { TimelineContainer } from "@/components/TimelineContainer";
 import { getCurrentUser, getCellById, isMember, joinCell, leaveCell } from "@/lib/data/repository";
 import { revalidatePath } from "next/cache";
 import { CellChat } from "./CellChat";
-import { CellInviteButton } from "./CellInviteButton";
+import { CellInvitePanel } from "./CellInvitePanel";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +35,7 @@ export default async function CellPage({ params }: { params: Promise<{ id: strin
 
   const member = user ? await isMember(id, user.id) : false;
   const isCreator = user?.id === cell.creatorId;
+  const isPrivate = cell.type === "PRIVATE";
 
   return (
     <TimelineContainer>
@@ -45,11 +46,15 @@ export default async function CellPage({ params }: { params: Promise<{ id: strin
             <div className="min-w-0">
               <h1 className="text-lg font-semibold text-theme-text truncate">{cell.title}</h1>
               <p className="text-xs text-theme-muted mt-0.5">
-                {cell.type === "OPEN" ? "🌐 오픈 셀" : "🔒 프라이빗 셀"}
+                {isPrivate ? "🔒 프라이빗 셀" : "🌐 오픈 셀"}
               </p>
             </div>
+
             <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-              {isCreator && <CellInviteButton cellId={id} />}
+              {/* 멤버 초대: 셀 멤버라면 누구나 */}
+              {member && user && <CellInvitePanel cellId={id} />}
+
+              {/* 오픈 셀: 비멤버에게 참여 버튼 */}
               {!member && user && (
                 <form action={joinCellAction}>
                   <input type="hidden" name="cellId" value={id} />
@@ -58,11 +63,13 @@ export default async function CellPage({ params }: { params: Promise<{ id: strin
                   </button>
                 </form>
               )}
-              {member && !isCreator && (
+
+              {/* 나가기: Private 셀 + 비크리에이터 멤버만 */}
+              {isPrivate && member && !isCreator && (
                 <form action={leaveCellAction}>
                   <input type="hidden" name="cellId" value={id} />
                   <button className="px-3 py-1.5 text-sm text-theme-muted border border-theme-border rounded-lg hover:bg-theme-surface transition-colors">
-                    퇴장
+                    나가기
                   </button>
                 </form>
               )}
@@ -84,7 +91,7 @@ export default async function CellPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Chat */}
-        <CellChat cellId={id} userId={user?.id ?? ""} isMember={member} />
+        <CellChat cellId={id} userId={user?.id ?? ""} userName={user?.name ?? ""} isMember={member} />
       </div>
     </TimelineContainer>
   );

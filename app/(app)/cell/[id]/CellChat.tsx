@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { subscribeToTable } from "@/lib/supabase/realtime";
 import type { CellMessage } from "@/lib/domain/types";
 
 interface CellChatProps {
   cellId: string;
   userId: string;
+  userName: string;
   isMember: boolean;
 }
 
@@ -15,7 +16,7 @@ function formatTime(iso: string) {
   return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 }
 
-export function CellChat({ cellId, userId, isMember }: CellChatProps) {
+export function CellChat({ cellId, userId, userName, isMember }: CellChatProps) {
   const [messages, setMessages] = useState<CellMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState("");
@@ -23,31 +24,77 @@ export function CellChat({ cellId, userId, isMember }: CellChatProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    bottomRef.current?.scrollIntoView({ behavior });
-  }, []);
+  // authorId → name 캐시: 초기 로드 메시지에서 구축, 리얼타임 메시지에도 활용
+  const nameCacheRef = useRef<Map<string, string>>(new Map());
 
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior });
+  };
+
+  // 초기 메시지 로드 + 리얼타임 구독
   useEffect(() => {
     fetch(`/api/cell/${cellId}/messages`)
       .then((res) => res.json())
-      .then((msgs) => {
-        setMessages(Array.isArray(msgs) ? msgs : []);
+      .then((msgs: CellMessage[]) => {
+        if (Array.isArray(msgs)) {
+          // 이름 캐시 구축
+          msgs.forEach((m) => {
+            if (m.authorId && m.authorName) {
+              nameCacheRef.current.set(m.authorId, m.authorName);
+            }
+          });
+          setMessages(msgs);
+        }
         setLoading(false);
-        setTimeout(() => scrollToBottom("instant"), 0);
       })
       .catch(() => setLoading(false));
 
-    const unsubscribe = subscribeToTable<CellMessage>({
+    const unsubscribe = subscribeToTable({
       table: "cell_messages",
       filter: `cell_id=eq.${cellId}`,
       onInsert: (payload) => {
-        setMessages((prev) => [...prev, payload.new]);
-        setTimeout(() => scrollToBottom("smooth"), 50);
+        // Supabase postgres_changes는 snake_case DB 컬럼으로 payload를 보냄
+        const raw = payload.new as Record<string, unknown>;
+        const authorId = (raw.author_id ?? raw.authorId) as string;
+
+        // 이름 결정: 본인 → userName prop, 캐시에 있으면 캐시값, 없으면 "멤버"
+        const authorName =
+          authorId === userId
+            ? userName
+            : (nameCacheRef.current.get(authorId) ?? "멤버");
+
+        const msg: CellMessage = {
+          id: raw.id as string,
+          cellId: (raw.cell_id ?? raw.cellId) as string,
+          authorId,
+          authorName,
+          content: raw.content as string,
+          createdAt: (raw.created_at ?? raw.createdAt) as string,
+        };
+        setMessages((prev) => [...prev, msg]);
       },
     });
 
     return unsubscribe;
-  }, [cellId, scrollToBottom]);
+  }, [cellId, userId, userName]);
+
+  // 초기 로드 완료 후 맨 아래로 스크롤 (React 렌더 완료 이후 실행)
+  useEffect(() => {
+    if (!loading) {
+      scrollToBottom("instant");
+    }
+    // loading이 false로 바뀔 때만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  // 새 메시지 수신 시 맨 아래로
+  const prevLengthRef = useRef(0);
+  useEffect(() => {
+    if (messages.length > prevLengthRef.current) {
+      prevLengthRef.current = messages.length;
+      if (!loading) scrollToBottom("smooth");
+    }
+  }, [messages.length, loading]);
 
   const handleSubmit = async () => {
     const trimmed = content.trim();
@@ -65,7 +112,7 @@ export function CellChat({ cellId, userId, isMember }: CellChatProps) {
         textareaRef.current?.focus();
       }
     } catch {
-      // silent – realtime will not fire, user can retry
+      // 리얼타임이 오지 않으면 사용자가 재시도
     } finally {
       setSending(false);
     }
@@ -88,7 +135,7 @@ export function CellChat({ cellId, userId, isMember }: CellChatProps) {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100dvh - 220px)", minHeight: 300 }}>
-      {/* Message list */}
+      {/* 메시지 목록 */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {messages.length === 0 && (
           <p className="text-center text-theme-muted text-sm py-8">
@@ -137,7 +184,7 @@ export function CellChat({ cellId, userId, isMember }: CellChatProps) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input area */}
+      {/* 입력 영역 */}
       {isMember ? (
         <div className="shrink-0 border-t border-theme-border bg-theme-bg px-4 py-3">
           <div className="flex items-end gap-2">
