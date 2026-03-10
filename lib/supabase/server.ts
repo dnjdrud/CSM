@@ -39,8 +39,8 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
     try {
       return await originalGetSession();
     } catch (e) {
-      if (isRefreshTokenAlreadyUsed(e)) return { data: { session: null }, error: null };
-      throw e;
+      // On any auth error, return null session to avoid throwing
+      return { data: { session: null }, error: null };
     }
   };
 
@@ -48,8 +48,8 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
     try {
       return await originalGetUser();
     } catch (e) {
-      if (isRefreshTokenAlreadyUsed(e)) return { data: { user: null }, error: null };
-      throw e;
+      // On any auth error, return null user to avoid throwing
+      return { data: { user: null }, error: null };
     }
   };
 
@@ -58,8 +58,8 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
       try {
         return await originalRefreshSession();
       } catch (e) {
-        if (isRefreshTokenAlreadyUsed(e)) return { data: { session: null, user: null }, error: null };
-        throw e;
+        // On any auth error, return null session to avoid throwing
+        return { data: { session: null, user: null }, error: null };
       }
     };
   }
@@ -69,8 +69,8 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
       try {
         return await originalSetSession(tokens);
       } catch (e) {
-        if (isRefreshTokenAlreadyUsed(e)) return { data: { session: null, user: null }, error: null };
-        throw e;
+        // On any auth error, return null session to avoid throwing
+        return { data: { session: null, user: null }, error: null };
       }
     };
   }
