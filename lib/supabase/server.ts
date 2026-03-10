@@ -25,31 +25,56 @@ function isRefreshTokenAlreadyUsed(e: unknown): boolean {
 }
 
 /**
- * Wrap a Supabase client's auth.getSession and auth.getUser so refresh_token_already_used
- * never throws (returns { data: { session/user: null }, error } instead). Use for any
- * client created with createServerClient outside supabaseServer() (e.g. route handlers).
+ * Wrap a Supabase client's auth methods so refresh_token_already_used never throws.
+ * Returns safe responses without error to prevent throwing.
  */
-export function wrapSupabaseAuthSafe<T extends { auth: { getSession: () => Promise<unknown>; getUser: () => Promise<unknown> } }>(client: T): T {
-  type SessionResponse = Awaited<ReturnType<typeof client.auth.getSession>>;
-  type UserResponse = Awaited<ReturnType<typeof client.auth.getUser>>;
-  const originalGetSession = client.auth.getSession.bind(client.auth);
-  const originalGetUser = client.auth.getUser.bind(client.auth);
-  client.auth.getSession = async function getSessionSafe(): Promise<SessionResponse> {
+export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
+  const auth = client.auth;
+  const originalGetSession = auth.getSession.bind(auth);
+  const originalGetUser = auth.getUser.bind(auth);
+  const originalRefreshSession = auth.refreshSession?.bind(auth);
+  const originalSetSession = auth.setSession?.bind(auth);
+
+  auth.getSession = async function getSessionSafe() {
     try {
       return await originalGetSession();
     } catch (e) {
-      if (isRefreshTokenAlreadyUsed(e)) return { data: { session: null }, error: e } as SessionResponse;
+      if (isRefreshTokenAlreadyUsed(e)) return { data: { session: null }, error: null };
       throw e;
     }
   };
-  client.auth.getUser = async function getUserSafe(): Promise<UserResponse> {
+
+  auth.getUser = async function getUserSafe() {
     try {
       return await originalGetUser();
     } catch (e) {
-      if (isRefreshTokenAlreadyUsed(e)) return { data: { user: null }, error: e } as UserResponse;
+      if (isRefreshTokenAlreadyUsed(e)) return { data: { user: null }, error: null };
       throw e;
     }
   };
+
+  if (originalRefreshSession) {
+    auth.refreshSession = async function refreshSessionSafe() {
+      try {
+        return await originalRefreshSession();
+      } catch (e) {
+        if (isRefreshTokenAlreadyUsed(e)) return { data: { session: null, user: null }, error: null };
+        throw e;
+      }
+    };
+  }
+
+  if (originalSetSession) {
+    auth.setSession = async function setSessionSafe(tokens: any) {
+      try {
+        return await originalSetSession(tokens);
+      } catch (e) {
+        if (isRefreshTokenAlreadyUsed(e)) return { data: { session: null, user: null }, error: null };
+        throw e;
+      }
+    };
+  }
+
   return client;
 }
 
