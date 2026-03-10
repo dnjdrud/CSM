@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, getCellMessages, postCellMessage } from "@/lib/data/repository";
+import { getCellMessages, postCellMessage } from "@/lib/data/repository";
+import { getAuthUserId } from "@/lib/auth/session";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   try {
-    const user = await getCurrentUser();
-    if (!user) {
+    const userId = await getAuthUserId();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,8 +27,8 @@ export async function POST(
 ) {
   const { id } = await params;
   try {
-    const user = await getCurrentUser();
-    if (!user) {
+    const userId = await getAuthUserId();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -36,7 +37,7 @@ export async function POST(
       return NextResponse.json({ error: "Content is required" }, { status: 400 });
     }
 
-    await postCellMessage(id, user.id, content.trim());
+    await postCellMessage(id, userId, content.trim());
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error posting cell message:", error);

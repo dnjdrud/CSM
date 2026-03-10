@@ -81,6 +81,7 @@ export interface Cell {
   creatorId: string;
   topicTags: string[];
   createdAt: string;
+  memberCount?: number;
 }
 
 export interface CellMembership {
@@ -94,6 +95,7 @@ export interface CellMessage {
   id: string;
   cellId: string;
   authorId: string;
+  authorName: string;
   content: string;
   createdAt: string;
 }

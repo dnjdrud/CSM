@@ -94,6 +94,7 @@ function rowToCell(r: {
   creator_id: string;
   topic_tags: string[] | null;
   created_at: string | null;
+  cell_memberships?: { count: number }[] | null;
 }): Cell {
   return {
     id: r.id,
@@ -102,6 +103,7 @@ function rowToCell(r: {
     creatorId: r.creator_id,
     topicTags: r.topic_tags ?? [],
     createdAt: r.created_at ?? new Date().toISOString(),
+    memberCount: r.cell_memberships?.[0]?.count,
   };
 }
 
@@ -111,11 +113,13 @@ function rowToCellMessage(r: {
   author_id: string;
   content: string;
   created_at: string | null;
+  users?: { name: string } | null;
 }): CellMessage {
   return {
     id: r.id,
     cellId: r.cell_id,
     authorId: r.author_id,
+    authorName: r.users?.name ?? "Unknown",
     content: r.content,
     createdAt: r.created_at ?? new Date().toISOString(),
   };
@@ -126,7 +130,7 @@ export async function listOpenCells(): Promise<Cell[]> {
     const supabase = await supabaseServer();
     const { data, error } = await supabase
       .from("cells")
-      .select("*")
+      .select("*, cell_memberships(count)")
       .eq("type", "OPEN")
       .order("created_at", { ascending: false });
     if (error) {
@@ -189,7 +193,7 @@ export async function getCellMessages(cellId: string, limit = 50): Promise<CellM
     const supabase = await supabaseServer();
     const { data, error } = await supabase
       .from("cell_messages")
-      .select("*")
+      .select("*, users(name)")
       .eq("cell_id", cellId)
       .order("created_at", { ascending: false })
       .limit(limit);
