@@ -35,11 +35,15 @@ export function supabaseBrowser() {
         persistSession: false,
         autoRefreshToken: false,
         detectSessionInUrl: false,
-        storage: {
+        // storage adapter is intentionally a no‑op.  supabase-js exports a
+        // SupportedStorage type but importing it here creates a circular
+        // dependency; casting to `any` is simpler and safe since we control the
+        // implementation.
+        storage: ( {
           getItem: () => null,
           setItem: () => {},
           removeItem: () => {},
-        } as unknown,
+        } as any ),
       },
     });
 
