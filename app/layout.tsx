@@ -4,7 +4,7 @@ import { HeaderWrapper } from "@/common";
 import { RightContextPanel } from "@/components/RightContextPanel";
 import { ToastProvider } from "@/components/ui/Toast";
 import Link from "next/link";
-import { BottomNav } from "@/components/layout/BottomNav";
+import { BottomNavWrapper } from "@/components/layout/BottomNavWrapper";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -37,7 +37,7 @@ export default function RootLayout({
             </main>
             <RightContextPanel />
           </div>
-          <BottomNav />
+          <BottomNavWrapper />
           <footer className="shrink-0 border-t border-theme-border py-4 px-4 text-center text-sm text-theme-muted">
             <Link href="/privacy" className="hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">Privacy</Link>
             {" · "}

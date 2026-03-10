@@ -61,12 +61,31 @@ export interface Follow {
   createdAt: string;
 }
 
-/** In-flight support intent (no payment yet). */
+export type SupportPurpose = "ONGOING" | "PROJECT" | "URGENT";
+export type SupportStatus = "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED";
+
+/** Support intent stored in DB. */
 export interface SupportIntent {
-  recipientId: string;
-  purpose: "ONGOING" | "PROJECT" | "URGENT";
-  amountCents: number;
-  message?: string;
+  id: string;
+  ministryId: string;
+  donorId: string | null;
+  purpose: SupportPurpose;
+  amountKrw: number;
+  status: SupportStatus;
+  message?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Payment transaction linked to an intent. */
+export interface SupportTransaction {
+  id: string;
+  intentId: string;
+  provider: "TOSS";
+  providerPaymentId: string | null;
+  providerOrderId: string;
+  amountKrw: number;
+  status: string; // DONE | CANCELLED
   createdAt: string;
 }
 
@@ -101,9 +120,12 @@ export interface CellMessage {
 }
 
 
-/** Draft saved locally before submit. */
-export interface SupportDraft extends SupportIntent {
+/** Legacy draft type (unused). */
+export interface SupportDraft {
   id: string;
+  ministryId: string;
+  purpose: SupportPurpose;
+  amountKrw: number;
 }
 
 /** Aggregated reaction counts per post (PRAYED / WITH_YOU). */

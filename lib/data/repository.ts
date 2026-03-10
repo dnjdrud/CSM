@@ -1016,10 +1016,45 @@ export function toggleMute(viewerId: string, targetUserId: string): void {
   persistAll();
 }
 
-export function getMinistries(): Ministry[] {
+export async function getMinistries(): Promise<Ministry[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listMinistries();
   return ministries;
 }
 
-export function getMinistryById(id: string): Ministry | null {
+export async function getMinistryById(id: string): Promise<Ministry | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getMinistryById(id);
   return ministries.find((m) => m.id === id) ?? null;
+}
+
+export async function createSupportIntent(input: {
+  ministryId: string;
+  donorId: string | null;
+  purpose: import("@/lib/domain/types").SupportPurpose;
+  amountKrw: number;
+  message?: string;
+}): Promise<import("@/lib/domain/types").SupportIntent> {
+  if (DATA_MODE === "supabase") return supabaseRepo.createSupportIntent(input);
+  throw new Error("createSupportIntent not available in memory mode");
+}
+
+export async function getSupportIntent(id: string): Promise<import("@/lib/domain/types").SupportIntent | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getSupportIntent(id);
+  return null;
+}
+
+export async function completeSupportIntent(
+  intentId: string,
+  tx: {
+    providerPaymentId: string;
+    providerOrderId: string;
+    amountKrw: number;
+    status: string;
+    rawResponse: Record<string, unknown>;
+  }
+): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.completeSupportIntent(intentId, tx);
+}
+
+export async function failSupportIntent(intentId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.failSupportIntent(intentId);
 }

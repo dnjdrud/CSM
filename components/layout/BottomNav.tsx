@@ -12,7 +12,7 @@ type Tab = {
   icon: string;
 };
 
-const TABS: Tab[] = [
+const BASE_TABS: Tab[] = [
   {
     key: "home",
     href: "/feed?scope=FOLLOWING",
@@ -57,10 +57,14 @@ function isActive(tab: Tab, pathname: string, search: URLSearchParams): boolean 
   return false;
 }
 
-export function BottomNav() {
+export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
   const pathname = usePathname() || "/";
   const searchParams = useSearchParams();
   const search = searchParams ?? new URLSearchParams();
+
+  const TABS = BASE_TABS.map((tab) =>
+    tab.key === "profile" ? { ...tab, href: profileHref } : tab
+  );
 
   return (
     <nav
