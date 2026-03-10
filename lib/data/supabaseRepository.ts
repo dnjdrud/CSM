@@ -122,17 +122,22 @@ function rowToCellMessage(r: {
 }
 
 export async function listOpenCells(): Promise<Cell[]> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from("cells")
-    .select("*")
-    .eq("type", "OPEN")
-    .order("created_at", { ascending: false });
-  if (error) {
-    console.error("[listOpenCells]", error.message);
+  try {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase
+      .from("cells")
+      .select("*")
+      .eq("type", "OPEN")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("[listOpenCells]", error.message);
+      return [];
+    }
+    return (data ?? []).map(rowToCell);
+  } catch (e) {
+    console.error("[listOpenCells] caught error:", e);
     return [];
   }
-  return (data ?? []).map(rowToCell);
 }
 
 export async function createCell(input: {
@@ -180,18 +185,23 @@ export async function leaveCell(cellId: string, userId: string): Promise<void> {
 }
 
 export async function getCellMessages(cellId: string, limit = 50): Promise<CellMessage[]> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from("cell_messages")
-    .select("*")
-    .eq("cell_id", cellId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) {
-    console.error("[getCellMessages]", error.message);
+  try {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase
+      .from("cell_messages")
+      .select("*")
+      .eq("cell_id", cellId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) {
+      console.error("[getCellMessages]", error.message);
+      return [];
+    }
+    return (data ?? []).map(rowToCellMessage).reverse();
+  } catch (e) {
+    console.error("[getCellMessages] caught error:", e);
     return [];
   }
-  return (data ?? []).map(rowToCellMessage).reverse();
 }
 
 export async function postCellMessage(cellId: string, authorId: string, content: string): Promise<CellMessage> {
@@ -210,31 +220,41 @@ export async function postCellMessage(cellId: string, authorId: string, content:
 }
 
 export async function getCellById(cellId: string): Promise<Cell | null> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.from("cells").select("*").eq("id", cellId).single();
-  if (error || !data) {
-    if (error) console.error("[getCellById]", error.message);
+  try {
+    const supabase = await supabaseServer();
+    const { data, error } = await supabase.from("cells").select("*").eq("id", cellId).single();
+    if (error || !data) {
+      if (error) console.error("[getCellById]", error.message);
+      return null;
+    }
+    return rowToCell(data as any);
+  } catch (e) {
+    console.error("[getCellById] caught error:", e);
     return null;
   }
-  return rowToCell(data as any);
 }
 
 export async function isMember(cellId: string, userId: string): Promise<boolean> {
-  const supabase = await supabaseServer();
-  // open cells are effectively public
-  const { data: cell } = await supabase.from("cells").select("type").eq("id", cellId).single();
-  if (cell?.type === "OPEN") return true;
-  const { data: rows, error } = await supabase
-    .from("cell_memberships")
-    .select("user_id")
-    .eq("cell_id", cellId)
-    .eq("user_id", userId)
-    .limit(1);
-  if (error) {
-    console.error("[isMember]", error.message);
+  try {
+    const supabase = await supabaseServer();
+    // open cells are effectively public
+    const { data: cell } = await supabase.from("cells").select("type").eq("id", cellId).single();
+    if (cell?.type === "OPEN") return true;
+    const { data: rows, error } = await supabase
+      .from("cell_memberships")
+      .select("user_id")
+      .eq("cell_id", cellId)
+      .eq("user_id", userId)
+      .limit(1);
+    if (error) {
+      console.error("[isMember]", error.message);
+      return false;
+    }
+    return (rows?.length ?? 0) > 0;
+  } catch (e) {
+    console.error("[isMember] caught error:", e);
     return false;
   }
-  return (rows?.length ?? 0) > 0;
 }
 
 /** Placeholder user when users table select fails (e.g. RLS) so feed still returns posts. */
