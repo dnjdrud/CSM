@@ -54,6 +54,13 @@ export function supabaseBrowser() {
     // prevent any client-side call from clearing the cookie or refreshing
     supabaseAuth.signOut = noop;
     supabaseAuth.refreshSession = noop;            // don't issue refresh requests
+    // internal helpers sometimes call _callRefreshToken directly when a 401 is
+    // received; stub it so the library never attempts to hit the network.
+    if (typeof supabaseAuth._callRefreshToken === "function") {
+      supabaseAuth._callRefreshToken = async (): Promise<{ data: any; error: any }> => {
+        return { data: null, error: null };
+      };
+    }
     // some internal code uses _removeSession; stub that too just in case
     if (typeof supabaseAuth._removeSession === "function") {
       supabaseAuth._removeSession = (): void => {
