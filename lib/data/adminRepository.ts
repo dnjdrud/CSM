@@ -140,7 +140,11 @@ export async function unmuteUser(adminId: string, userId: string): Promise<void>
 export async function changeUserRole(adminId: string, userId: string, role: UserRole): Promise<void> {
   const supabase = await supabaseServer();
   const { data: prev } = await supabase.from("users").select("role").eq("id", userId).single();
-  await supabase.from("users").update({ role }).eq("id", userId);
+  const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+  const admin = getSupabaseAdmin();
+  const updateClient = admin ?? supabase;
+  const { error } = await updateClient.from("users").update({ role }).eq("id", userId);
+  if (error) throw new Error(error.message);
   await logAdminAction({
     actorId: adminId,
     action: ADMIN_ACTION.CHANGE_ROLE,

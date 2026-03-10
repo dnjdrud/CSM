@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 
-export type ProfileTab = "posts" | "notes" | "testimonies";
+export type ProfileTab = "posts" | "testimonies";
 
 const TABS: { value: ProfileTab; label: string; href: (id: string) => string }[] = [
   { value: "posts", label: "Posts", href: (id) => `/profile/${id}` },
-  { value: "notes", label: "Notes", href: (id) => `/profile/${id}/notes` },
   { value: "testimonies", label: "Testimonies", href: (id) => `/profile/${id}/testimonies` },
 ];
 

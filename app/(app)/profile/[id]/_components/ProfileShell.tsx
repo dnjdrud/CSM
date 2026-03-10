@@ -9,10 +9,9 @@ import { ProfileTabs } from "./ProfileTabs";
 import { ProfileFollowButton } from "./ProfileFollowButton";
 import { UserActionsMenu } from "./UserActionsMenu";
 
-type ProfileTab = "posts" | "notes" | "testimonies";
+type ProfileTab = "posts" | "testimonies";
 
 function getActiveTab(pathname: string): ProfileTab {
-  if (pathname.endsWith("/notes")) return "notes";
   if (pathname.endsWith("/testimonies")) return "testimonies";
   return "posts";
 }

@@ -155,7 +155,6 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                 Sign in
               </Link>
             )}
-            <Link href="/feed" className="text-[15px] text-theme-primary hover:opacity-80">Feed</Link>
             <Link href="/write" className="text-[15px] font-medium text-theme-primary hover:text-theme-accent">Write</Link>
           </nav>
         </div>

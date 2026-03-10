@@ -2,13 +2,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { TimelineContainer } from "@/components/TimelineContainer";
 import { Section, SectionHeader, SectionBody } from "@/components/ui/Section";
-import { getCurrentUser, listNotesByType, getMySpaceOverview, hasNoteOfTypeToday } from "@/lib/data/repository";
+import { getCurrentUser, listNotesByType, hasNoteOfTypeToday } from "@/lib/data/repository";
 import type { NoteType } from "@/lib/domain/types";
 import { NotesTabs } from "./_components/NotesTabs";
 import { NoteComposer } from "./_components/NoteComposer";
 import { MeditationComposer } from "./_components/MeditationComposer";
 import { NotesList } from "./_components/NotesList";
-import { MySpaceOverviewCards } from "./_components/MySpaceOverviewCards";
 import { DailyPromptCards } from "./_components/DailyPromptCards";
 
 const DEFAULT_TAB: NoteType = "PRAYER";
@@ -32,7 +31,7 @@ export default async function MySpacePage({
   const activeTab = parseTab(params.tab);
   const isDailyPrompt = params.prompt === "daily";
 
-  const [notes, overview, prayerDoneToday, gratitudeDoneToday] = await Promise.all([
+  const [notes, prayerDoneToday, gratitudeDoneToday] = await Promise.all([
     activeTab === "PRAYER"
       ? listNotesByType({ userId: currentUser.id, type: "PRAYER", limit: 100 })
       : activeTab === "GRATITUDE"
@@ -40,7 +39,6 @@ export default async function MySpacePage({
         : activeTab === "MEDITATION"
           ? listNotesByType({ userId: currentUser.id, type: "MEDITATION", limit: 100 })
           : [],
-    getMySpaceOverview(currentUser.id),
     hasNoteOfTypeToday({ userId: currentUser.id, type: "PRAYER" }),
     hasNoteOfTypeToday({ userId: currentUser.id, type: "GRATITUDE" }),
   ]);
@@ -54,7 +52,7 @@ export default async function MySpacePage({
 
   return (
     <TimelineContainer>
-      <div className="pt-4 pb-2 flex items-center justify-between">
+      <div className="pt-4 pb-2">
         <Link
           href={`/profile/${currentUser.id}`}
           className="text-[14px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
@@ -62,16 +60,11 @@ export default async function MySpacePage({
           ← Profile
         </Link>
       </div>
-      <header className="pb-2">
-        <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
-          My Space
-        </h1>
-        <p className="mt-1 text-[14px] text-gray-500">
-          A quiet place for your personal notes.
-        </p>
+      <header className="pb-4">
+        <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">My Life</h1>
+        <p className="mt-1 text-[14px] text-gray-500">A quiet place for your personal notes.</p>
       </header>
       <DailyPromptCards prayerDoneToday={prayerDoneToday} gratitudeDoneToday={gratitudeDoneToday} />
-      <MySpaceOverviewCards overview={overview} />
       <Section className="pt-6" aria-labelledby="notes-heading">
         <SectionHeader
           id="notes-heading"

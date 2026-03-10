@@ -29,7 +29,7 @@ export function DailyPromptCards({ prayerDoneToday, gratitudeDoneToday }: Props)
               <>
                 <p className="mt-2 text-[15px] leading-7 text-gray-800">{PRAYER_PROMPT}</p>
                 <Link
-                  href="/me?tab=prayer&prompt=daily"
+                  href="/me?tab=prayer&prompt=daily#notes-heading"
                   className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-md border border-gray-300 bg-transparent px-3 py-2.5 text-[13px] font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:opacity-80"
                 >
                   Add a prayer note
@@ -45,7 +45,7 @@ export function DailyPromptCards({ prayerDoneToday, gratitudeDoneToday }: Props)
               <>
                 <p className="mt-2 text-[15px] leading-7 text-gray-800">{GRATITUDE_PROMPT}</p>
                 <Link
-                  href="/me?tab=gratitude&prompt=daily"
+                  href="/me?tab=gratitude&prompt=daily#notes-heading"
                   className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-md border border-gray-300 bg-transparent px-3 py-2.5 text-[13px] font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:opacity-80"
                 >
                   Add a gratitude note
