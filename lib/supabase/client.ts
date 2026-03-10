@@ -47,16 +47,39 @@ export function supabaseBrowser() {
       },
     });
 
-    // patch out signOut/removeSession so the client can never wipe the cookie
+    // patch the auth object so the SDK behaves strictly passive
     const supabaseAuth = browserClient.auth as any;
     const noop = async () => ({ data: null, error: null });
+
+    // prevent any client-side call from clearing the cookie or refreshing
     supabaseAuth.signOut = noop;
+    supabaseAuth.refreshSession = noop;            // don't issue refresh requests
     // some internal code uses _removeSession; stub that too just in case
     if (typeof supabaseAuth._removeSession === "function") {
       supabaseAuth._removeSession = (): void => {
         // do nothing, cookies are server‑owned
       };
     }
+
+    // suppress the noisy "Invalid Refresh Token: Already Used" warning
+    const origWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      if (typeof args[0] === "string" &&
+          args[0].includes("Invalid Refresh Token: Already Used")) {
+        return;
+      }
+      origWarn.apply(console, args);
+    };
+
+    // drop TOKEN_REFRESHED events since they arrive after the server already
+    // rotated cookies and would otherwise trigger the client to re‑read them
+    const realOn = supabaseAuth.onAuthStateChange.bind(supabaseAuth);
+    supabaseAuth.onAuthStateChange = (handler: any) => {
+      return realOn((event: string, session: any) => {
+        if (event === "TOKEN_REFRESHED") return;
+        handler(event, session);
+      });
+    };
   }
   return browserClient;
 }
