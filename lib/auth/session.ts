@@ -69,12 +69,7 @@ export async function getSession(): Promise<Session | null> {
     }
     return { userId: row.id, role: row.role as UserRole };
   } catch (e) {
-    const isStaleRefresh =
-      (e as { code?: string })?.code === "refresh_token_already_used" ||
-      (e instanceof Error && e.message.includes("Already Used"));
-    if (!isStaleRefresh) {
-      console.warn(LOG_PREFIX, "getSession threw:", e instanceof Error ? e.message : String(e));
-    }
+    console.warn(LOG_PREFIX, "getSession threw:", e instanceof Error ? e.message : String(e));
     return null;
   }
 }

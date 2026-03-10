@@ -73,6 +73,25 @@ export function supabaseBrowser() {
         // do nothing, cookies are server‑owned
       };
     }
+    // stub all other auth methods to prevent any network calls or errors
+    supabaseAuth.signIn = noop;
+    supabaseAuth.signUp = noop;
+    supabaseAuth.signInWithPassword = noop;
+    supabaseAuth.signInWithOAuth = noop;
+    supabaseAuth.signInWithIdToken = noop;
+    supabaseAuth.signInWithOtp = noop;
+    supabaseAuth.signInAnonymously = noop;
+    supabaseAuth.linkIdentity = noop;
+    supabaseAuth.unlinkIdentity = noop;
+    supabaseAuth.updateUser = noop;
+    supabaseAuth.setSession = noop;
+    supabaseAuth.verifyOtp = noop;
+    supabaseAuth.resend = noop;
+    supabaseAuth.resetPasswordForEmail = noop;
+    supabaseAuth.getSession = async () => ({ data: { session: null }, error: null });
+    supabaseAuth.getUser = async () => ({ data: { user: null }, error: null });
+    // prevent any auth state change listeners from firing
+    supabaseAuth.onAuthStateChange = () => ({ data: { subscription: { unsubscribe: () => {} } } });
 
     // suppress the noisy "Invalid Refresh Token: Already Used" warning
     const origWarn = console.warn;

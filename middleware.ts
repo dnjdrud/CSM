@@ -205,17 +205,14 @@ export async function middleware(request: NextRequest) {
     },
   }));
 
-  // Wrap getSession so refresh_token_already_used never throws (avoids unhandled AuthApiError in logs).
-  const isStaleRefresh = (e: unknown) =>
-    (e as { code?: string; message?: string } | null)?.code === "refresh_token_already_used" ||
-    (typeof (e as { message?: string })?.message === "string" && (e as { message: string }).message.includes("Already Used"));
+  // Wrap getSession so ANY auth error never throws (avoids unhandled AuthApiError in logs).
   const originalGetSession = supabase.auth.getSession.bind(supabase.auth);
   supabase.auth.getSession = async () => {
     try {
       return await originalGetSession();
     } catch (e) {
-      if (isStaleRefresh(e)) return { data: { session: null }, error: e } as Awaited<ReturnType<typeof originalGetSession>>;
-      throw e;
+      console.warn("[middleware] getSession caught error:", e);
+      return { data: { session: null }, error: e } as Awaited<ReturnType<typeof originalGetSession>>;
     }
   };
 

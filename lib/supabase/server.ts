@@ -25,7 +25,7 @@ function isRefreshTokenAlreadyUsed(e: unknown): boolean {
 }
 
 /**
- * Wrap a Supabase client's auth methods so refresh_token_already_used never throws.
+ * Wrap a Supabase client's auth methods so ANY auth error never throws.
  * Returns safe responses without error to prevent throwing.
  */
 export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
@@ -40,6 +40,7 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
       return await originalGetSession();
     } catch (e) {
       // On any auth error, return null session to avoid throwing
+      console.warn("[wrapSupabaseAuthSafe] getSession caught error:", e);
       return { data: { session: null }, error: null };
     }
   };
@@ -49,6 +50,7 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
       return await originalGetUser();
     } catch (e) {
       // On any auth error, return null user to avoid throwing
+      console.warn("[wrapSupabaseAuthSafe] getUser caught error:", e);
       return { data: { user: null }, error: null };
     }
   };
@@ -59,6 +61,7 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
         return await originalRefreshSession();
       } catch (e) {
         // On any auth error, return null session to avoid throwing
+        console.warn("[wrapSupabaseAuthSafe] refreshSession caught error:", e);
         return { data: { session: null, user: null }, error: null };
       }
     };
@@ -70,6 +73,7 @@ export function wrapSupabaseAuthSafe<T extends { auth: any }>(client: T): T {
         return await originalSetSession(tokens);
       } catch (e) {
         // On any auth error, return null session to avoid throwing
+        console.warn("[wrapSupabaseAuthSafe] setSession caught error:", e);
         return { data: { session: null, user: null }, error: null };
       }
     };
