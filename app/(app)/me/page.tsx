@@ -59,7 +59,7 @@ export default async function MySpacePage({
           href={`/profile/${currentUser.id}`}
           className="text-[14px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
         >
-          ← 내 프로필
+          ← Profile
         </Link>
       </div>
       <header className="pb-2">

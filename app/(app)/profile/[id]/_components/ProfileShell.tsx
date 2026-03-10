@@ -74,7 +74,7 @@ export function ProfileShell({
                 href="/me"
                 className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
               >
-                내 노트
+                My Life
               </Link>
             )}
           </div>
