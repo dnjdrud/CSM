@@ -113,3 +113,6 @@ create policy "Authors may insert their own messages"
   on public.cell_messages for insert
   to authenticated
   with check (auth.uid() = author_id);
+
+-- Enable realtime for cell_messages
+alter publication supabase_realtime add table public.cell_messages;
