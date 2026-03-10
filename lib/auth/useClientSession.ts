@@ -31,7 +31,19 @@ export function useClientSession(): { user: User | null; userId: string | null }
 
     load();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
+      // The browser SDK will emit a `SIGNED_OUT` event when it attempts a
+      // refresh and the refresh token is invalid.  That action also clears
+      // all session cookies, which is problematic because our server logic has
+      // more robust handling (see `middleware.ts` and `session.ts`).  On mobile
+      // the client never forces a sign‑out when the refresh fails, so the UI
+      // stays stable until the next network request.  We mirror that behaviour
+      // by ignoring the `SIGNED_OUT` event here; the server will still redirect
+      // unauthenticated requests properly, but the user won't see an
+      // unnecessary flash of the logged‑out state.
+      if (event === "SIGNED_OUT") {
+        return;
+      }
       setUser(session?.user ?? null);
     });
 
