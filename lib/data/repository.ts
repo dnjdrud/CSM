@@ -16,6 +16,9 @@ import type {
   ModerationActionType,
   Note,
   NoteType,
+  Cell,
+  CellMessage,
+  CellType,
 } from "@/lib/domain/types";
 import { getSeedData, ministries } from "@/lib/data/mock";
 import { getSession } from "@/lib/auth/session";
@@ -377,6 +380,57 @@ export async function deletePost(postId: string, actorId: string): Promise<boole
   posts.splice(i, 1);
   persistAll();
   return true;
+}
+
+// --------------------------------
+// Cell chat system functions
+// --------------------------------
+
+export async function listOpenCells(): Promise<Cell[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listOpenCells();
+  return [];
+}
+
+export async function createCell(input: {
+  creatorId: string;
+  type: CellType;
+  title: string;
+  topicTags?: string[];
+}): Promise<Cell> {
+  if (DATA_MODE === "supabase") return supabaseRepo.createCell(input);
+  throw new Error("createCell not available in memory mode");
+}
+
+export async function joinCell(cellId: string, userId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.joinCell(cellId, userId);
+  throw new Error("joinCell not available in memory mode");
+}
+
+export async function leaveCell(cellId: string, userId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.leaveCell(cellId, userId);
+  throw new Error("leaveCell not available in memory mode");
+}
+
+export async function getCellMessages(cellId: string, limit = 50): Promise<CellMessage[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getCellMessages(cellId, limit);
+  return [];
+}
+
+export async function postCellMessage(cellId: string, authorId: string, content: string): Promise<CellMessage> {
+  if (DATA_MODE === "supabase") return supabaseRepo.postCellMessage(cellId, authorId, content);
+  throw new Error("postCellMessage not available in memory mode");
+}
+
+/** Fetch a single cell by id. */
+export async function getCellById(cellId: string): Promise<Cell | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getCellById(cellId);
+  return null;
+}
+
+/** Check whether a user is a member of a cell (or if the cell is open). */
+export async function isMember(cellId: string, userId: string): Promise<boolean> {
+  if (DATA_MODE === "supabase") return supabaseRepo.isMember(cellId, userId);
+  return false;
 }
 
 /** Build PostWithAuthor from domain Post and current user's reactions + counts. */

@@ -70,6 +70,35 @@ export interface SupportIntent {
   createdAt: string;
 }
 
+// ------------ Cell chat system ------------
+
+export type CellType = "OPEN" | "PRIVATE";
+
+export interface Cell {
+  id: string;
+  type: CellType;
+  title: string;
+  creatorId: string;
+  topicTags: string[];
+  createdAt: string;
+}
+
+export interface CellMembership {
+  cellId: string;
+  userId: string;
+  role: "MEMBER" | "MODERATOR";
+  createdAt: string;
+}
+
+export interface CellMessage {
+  id: string;
+  cellId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+}
+
+
 /** Draft saved locally before submit. */
 export interface SupportDraft extends SupportIntent {
   id: string;
