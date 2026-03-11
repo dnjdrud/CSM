@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted } from "@/lib/data/repository";
 import { getSession } from "@/lib/auth/session";
 import { canViewPost } from "@/lib/domain/guards";
@@ -11,6 +12,7 @@ import { scopeFromSearchParams } from "./_lib/scope";
 import { FeedHeader } from "./_components/FeedHeader";
 import { FeedComposer } from "./_components/FeedComposer";
 import { FeedList } from "./_components/FeedList";
+import { SuggestedPeople } from "./_components/SuggestedPeople";
 
 export const dynamic = "force-dynamic";
 const FEED_PAGE_SIZE = 20;
@@ -82,6 +84,11 @@ export default async function FeedPage({
         isAdmin={isAdmin}
       />
       {currentUser && <FeedComposer />}
+      {currentUser && followingIds.length === 0 && (
+        <Suspense fallback={null}>
+          <SuggestedPeople currentUserId={currentUser.id} role={currentUser.role} />
+        </Suspense>
+      )}
       <div className="space-y-6 sm:space-y-5 py-4">
         {firstPage.error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
@@ -11,7 +11,7 @@ import { getTokensFromHash, parseHashParams } from "@/lib/auth/parseHashParams";
  * Use redirect URL https://yoursite.com/auth/callback/session for Supabase magic link / implicit flow.
  * Supports ?next=/path for post-login redirect (default /feed).
  */
-export default function AuthCallbackSessionPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/feed";
@@ -92,5 +92,13 @@ export default function AuthCallbackSessionPage() {
         </p>
       )}
     </div>
+  );
+}
+
+export default function AuthCallbackSessionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[calc(100vh-4rem)] flex items-center justify-center"><p className="text-gray-600 text-sm">Completing sign-in…</p></div>}>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }

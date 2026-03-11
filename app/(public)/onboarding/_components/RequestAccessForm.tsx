@@ -7,11 +7,18 @@ import { ROLE_DISPLAY, type UserRole } from "@/lib/domain/types";
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const ROLE_OPTIONS = ROLES.map((value) => ({ value, label: ROLE_DISPLAY[value] }));
 
+const DENOMINATIONS = [
+  "장로교 (통합)", "장로교 (합동)", "장로교 (기타)",
+  "감리교", "침례교", "성결교", "순복음 / 오순절",
+  "구세군", "루터교", "기타",
+];
+
 export function RequestAccessForm() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("LAY");
   const [church, setChurch] = useState("");
+  const [denomination, setDenomination] = useState("");
   const [bio, setBio] = useState("");
   const [affiliation, setAffiliation] = useState("");
   const [pending, setPending] = useState(false);
@@ -30,6 +37,7 @@ export function RequestAccessForm() {
       church: church.trim() || undefined,
       bio: bio.trim() || undefined,
       affiliation: affiliation.trim() || undefined,
+      denomination: denomination.trim() || undefined,
     });
     setPending(false);
     if ("ok" in result && result.ok) {
@@ -115,6 +123,22 @@ export function RequestAccessForm() {
           placeholder="Your church or ministry"
           className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
         />
+      </div>
+      <div>
+        <label htmlFor="request-denomination" className="block text-sm font-medium text-gray-800">
+          교단 <span className="text-gray-500 font-normal">(선택)</span>
+        </label>
+        <select
+          id="request-denomination"
+          value={denomination}
+          onChange={(e) => setDenomination(e.target.value)}
+          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+        >
+          <option value="">선택 안 함</option>
+          {DENOMINATIONS.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
       </div>
       <div>
         <label htmlFor="request-bio" className="block text-sm font-medium text-gray-800">

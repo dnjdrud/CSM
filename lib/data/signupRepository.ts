@@ -21,6 +21,8 @@ function rowToRequest(r: {
   church: string | null;
   bio: string | null;
   affiliation: string | null;
+  denomination?: string | null;
+  faith_years?: number | null;
   status: string;
   created_at: string | null;
   reviewed_at: string | null;
@@ -35,6 +37,8 @@ function rowToRequest(r: {
     church: r.church ?? null,
     bio: r.bio ?? null,
     affiliation: r.affiliation ?? null,
+    denomination: r.denomination ?? null,
+    faithYears: r.faith_years ?? null,
     status: r.status as SignupRequestStatus,
     createdAt: r.created_at ?? new Date().toISOString(),
     reviewedAt: r.reviewed_at ?? null,
@@ -55,6 +59,8 @@ export async function createSignupRequest(input: {
   church?: string | null;
   bio?: string | null;
   affiliation?: string | null;
+  denomination?: string | null;
+  faithYears?: number | null;
 }): Promise<{ id: string } | { error: "ALREADY_MEMBER" }> {
   const admin = getSupabaseAdmin();
   if (!admin) throw new Error("Server not configured for signup");
@@ -65,6 +71,8 @@ export async function createSignupRequest(input: {
   const church = input.church?.trim() || null;
   const bio = input.bio?.trim() || null;
   const affiliation = input.affiliation?.trim() || null;
+  const denomination = input.denomination?.trim() || null;
+  const faith_years = input.faithYears ?? null;
 
   const { data: existing } = await admin
     .from("signup_requests")
@@ -78,15 +86,8 @@ export async function createSignupRequest(input: {
       const { error } = await admin
         .from("signup_requests")
         .update({
-          name,
-          role,
-          church,
-          bio,
-          affiliation,
-          status: "PENDING",
-          reviewed_at: null,
-          reviewed_by: null,
-          review_note: null,
+          name, role, church, bio, affiliation, denomination, faith_years,
+          status: "PENDING", reviewed_at: null, reviewed_by: null, review_note: null,
         })
         .eq("id", existing.id);
       if (error) throw new Error(error.message);
@@ -96,15 +97,8 @@ export async function createSignupRequest(input: {
       const { data: updated, error } = await admin
         .from("signup_requests")
         .update({
-          name,
-          role,
-          church,
-          bio,
-          affiliation,
-          status: "PENDING",
-          reviewed_at: null,
-          reviewed_by: null,
-          review_note: null,
+          name, role, church, bio, affiliation, denomination, faith_years,
+          status: "PENDING", reviewed_at: null, reviewed_by: null, review_note: null,
         })
         .eq("id", existing.id)
         .select("id")
@@ -117,12 +111,7 @@ export async function createSignupRequest(input: {
   const { data: inserted, error } = await admin
     .from("signup_requests")
     .insert({
-      email,
-      name,
-      role,
-      church,
-      bio,
-      affiliation,
+      email, name, role, church, bio, affiliation, denomination, faith_years,
       status: "PENDING",
     })
     .select("id")
@@ -143,7 +132,7 @@ export async function listSignupRequests(
 
   let query = client
     .from("signup_requests")
-    .select("id, email, name, role, church, bio, affiliation, status, created_at, reviewed_at, reviewed_by, review_note")
+    .select("id, email, name, role, church, bio, affiliation, denomination, faith_years, status, created_at, reviewed_at, reviewed_by, review_note")
     .order("created_at", { ascending: false });
 
   if (status) query = query.eq("status", status);
@@ -257,7 +246,7 @@ export async function getCompletionLinkStatus(
 
   const { data: reqRow } = await admin
     .from("signup_requests")
-    .select("id, email, name, role, church, bio, affiliation, status, created_at, reviewed_at, reviewed_by, review_note")
+    .select("id, email, name, role, church, bio, affiliation, denomination, faith_years, status, created_at, reviewed_at, reviewed_by, review_note")
     .eq("id", tokenRow.request_id)
     .eq("status", "APPROVED")
     .single();
@@ -350,7 +339,7 @@ async function reserveApprovalToken(
 
   const { data: reqRow } = await admin
     .from("signup_requests")
-    .select("id, email, name, role, church, bio, affiliation, status, created_at, reviewed_at, reviewed_by, review_note")
+    .select("id, email, name, role, church, bio, affiliation, denomination, faith_years, status, created_at, reviewed_at, reviewed_by, review_note")
     .eq("id", updated.request_id)
     .eq("status", "APPROVED")
     .single();
@@ -380,6 +369,8 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   church?: string | null;
   bio?: string | null;
   affiliation?: string | null;
+  denomination?: string | null;
+  faithYears?: number | null;
 }): Promise<{ ok: true; email: string } | { error: string }> {
   const admin = getSupabaseAdmin();
   if (!admin) return { error: "Server not configured" };
@@ -397,6 +388,8 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   const church = (params.church?.trim() || request.church) ?? null;
   const bio = (params.bio?.trim() || request.bio) ?? null;
   const affiliation = (params.affiliation?.trim() || request.affiliation) ?? null;
+  const denomination = (params.denomination?.trim() || request.denomination) ?? null;
+  const faith_years = params.faithYears ?? request.faithYears ?? null;
   const username = params.username?.trim() || null;
 
   const { data: authUser, error: createError } = await admin.auth.admin.createUser({
@@ -423,6 +416,8 @@ export async function consumeApprovalTokenAndCreateUser(params: {
     church,
     bio,
     affiliation,
+    denomination,
+    faith_years,
     username: username || null,
   };
 

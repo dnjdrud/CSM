@@ -40,3 +40,13 @@ export function decodeCursor(str: string | null | undefined): FeedCursor | null 
   }
   return null;
 }
+
+/** Compute next cursor from last item in a page. */
+export function getNextCursorFromItems<T extends { createdAt: string; id: string }>(
+  items: T[]
+): FeedCursor | null {
+  if (!items.length) return null;
+  const last = items[items.length - 1];
+  if (!last?.createdAt || !last?.id) return null;
+  return { createdAt: last.createdAt, id: last.id };
+}

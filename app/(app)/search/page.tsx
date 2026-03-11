@@ -64,7 +64,9 @@ export default async function SearchPage({
       </Suspense>
 
       <div className="mt-6">
-        <SearchTabs currentTab={tab} />
+        <Suspense fallback={<div className="flex gap-6 border-b border-gray-200 pb-3"><div className="h-4 w-12 rounded bg-gray-100 animate-pulse" /><div className="h-4 w-14 rounded bg-gray-100 animate-pulse" /><div className="h-4 w-10 rounded bg-gray-100 animate-pulse" /></div>}>
+          <SearchTabs currentTab={tab} />
+        </Suspense>
         <SearchResults tab={tab} q={q} posts={posts} people={people} tags={tags} />
       </div>
     </div>

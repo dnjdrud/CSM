@@ -20,6 +20,8 @@ export interface User {
   createdAt: string; // ISO
   /** Set when user deactivates account; reversible within 7 days. */
   deactivatedAt?: string | null; // ISO
+  denomination?: string | null;
+  faithYears?: number | null;
 }
 
 export interface Post {
@@ -234,6 +236,8 @@ export interface SignupRequest {
   church: string | null;
   bio: string | null;
   affiliation: string | null;
+  denomination: string | null;
+  faithYears: number | null;
   status: SignupRequestStatus;
   createdAt: string; // ISO
   reviewedAt: string | null; // ISO

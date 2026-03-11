@@ -17,6 +17,8 @@ export async function completeSignupAction(params: {
   church?: string | null;
   bio?: string | null;
   affiliation?: string | null;
+  denomination?: string | null;
+  faithYears?: number | null;
 }): Promise<CompleteSignupResult> {
   const name = params.name?.trim();
   if (!name) return { error: "Name is required." };
@@ -31,10 +33,12 @@ export async function completeSignupAction(params: {
     church: params.church?.trim() || null,
     bio: params.bio?.trim() || null,
     affiliation: params.affiliation?.trim() || null,
+    denomination: params.denomination?.trim() || null,
+    faithYears: params.faithYears ?? null,
   });
 
   if ("ok" in result && result.ok) {
-    redirect("/login?message=account_created");
+    redirect("/onboarding/welcome");
   }
   return { error: "error" in result ? result.error : "Something went wrong." };
 }

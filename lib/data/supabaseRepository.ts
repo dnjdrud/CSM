@@ -57,7 +57,7 @@ function normalizeTag(tag: string): string {
   return tag.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null }): User {
+function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null; denomination?: string | null; faith_years?: number | null }): User {
   return {
     id: r.id,
     name: r.name ?? "",
@@ -66,6 +66,8 @@ function rowToUser(r: { id: string; name: string | null; role: string | null; bi
     affiliation: r.affiliation ?? undefined,
     createdAt: r.created_at ?? new Date().toISOString(),
     deactivatedAt: r.deactivated_at ?? undefined,
+    denomination: r.denomination ?? undefined,
+    faithYears: r.faith_years ?? undefined,
   };
 }
 
@@ -962,7 +964,7 @@ export async function getUserById(id: string): Promise<User | null> {
   return r.user;
 }
 
-const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at";
+const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years";
 const USERS_SELECT_MINIMAL = "id, name, role, bio, affiliation, created_at";
 
 function isColumnError(msg: string): boolean {
@@ -1008,6 +1010,42 @@ export async function restoreUser(userId: string): Promise<{ ok: boolean; error?
   if (userError) return { ok: false, error: userError.message };
   await supabase.from("posts").update({ hidden_at: null, hidden_by: null }).eq("author_id", userId);
   return { ok: true };
+}
+
+/**
+ * Suggest people the user might want to follow.
+ * Returns up to `limit` users with the same role, excluding those already followed.
+ */
+export async function suggestPeopleToFollow(params: {
+  currentUserId: string;
+  role: UserRole;
+  limit?: number;
+}): Promise<User[]> {
+  const supabase = await supabaseServer();
+  const limit = params.limit ?? 5;
+
+  const { data: alreadyFollowing } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", params.currentUserId);
+
+  const excludeIds = new Set<string>(
+    (alreadyFollowing ?? []).map((f: { following_id: string }) => f.following_id)
+  );
+  excludeIds.add(params.currentUserId);
+
+  const { data: rows } = await supabase
+    .from("users")
+    .select(USERS_SELECT_FULL)
+    .eq("role", params.role)
+    .is("deactivated_at", null)
+    .limit(limit + excludeIds.size + 5);
+
+  if (!rows?.length) return [];
+  return rows
+    .map((r) => rowToUser(r))
+    .filter((u) => !excludeIds.has(u.id))
+    .slice(0, limit);
 }
 
 export async function createReport(params: {

@@ -20,6 +20,7 @@ export async function requestSignupAction(formData: {
   church?: string | null;
   bio?: string | null;
   affiliation?: string | null;
+  denomination?: string | null;
 }): Promise<{ ok: true } | { errorMessage: string }> {
   const missing = getMissingAdminEnv();
   if (missing.length > 0) {
@@ -35,6 +36,7 @@ export async function requestSignupAction(formData: {
       church: formData.church?.trim() || null,
       bio: formData.bio?.trim() || null,
       affiliation: formData.affiliation?.trim() || null,
+      denomination: formData.denomination?.trim() || null,
     });
     if ("error" in result) {
       if (result.error === "ALREADY_MEMBER") {

@@ -181,6 +181,16 @@ export async function restoreUser(userId: string): Promise<{ ok: boolean; error?
   return { ok: false, error: "Restore is not available in memory mode" };
 }
 
+/** Suggest people the user might want to follow (same role, not yet following). */
+export async function suggestPeopleToFollow(params: {
+  currentUserId: string;
+  role: UserRole;
+  limit?: number;
+}): Promise<User[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.suggestPeopleToFollow(params);
+  return [];
+}
+
 /** Create user profile in Supabase public.users. Call after magic-link auth when completing onboarding (e.g. bypass flow). */
 export async function createUserProfileInSupabase(
   authUserId: string,

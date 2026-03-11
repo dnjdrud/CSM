@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
-import { markAllNotificationsRead } from "@/lib/data/notifications";
+import { markAllNotificationsRead } from "@/lib/data/repository";
 import { getUserById } from "@/lib/data/repository";
 import { wrapServerAction } from "@/lib/utils/wrapServerAction";
 

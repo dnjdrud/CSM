@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { requireAdmin } from "@/lib/admin/guard";
 import { listUsers } from "@/lib/data/adminRepository";
 import { ROLE_DISPLAY } from "@/lib/domain/types";
@@ -20,10 +21,12 @@ export default async function AdminUsersPage({ searchParams }: Props) {
         Search and manage users. Block, mute, or change role.
       </p>
 
-      <AdminUsersClient
-        users={users}
-        initialQuery={q ?? ""}
-      />
+      <Suspense fallback={<p className="mt-8 text-sm text-gray-500">Loading…</p>}>
+        <AdminUsersClient
+          users={users}
+          initialQuery={q ?? ""}
+        />
+      </Suspense>
     </div>
   );
 }

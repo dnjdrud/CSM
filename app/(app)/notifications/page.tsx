@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser, getUserById } from "@/lib/data/repository";
-import { listNotifications } from "@/lib/data/notifications";
+import { listNotifications } from "@/lib/data/repository";
 import { redirect } from "next/navigation";
 import { groupNotifications } from "@/lib/notifications/groupNotifications";
 import { EmptyState } from "@/components/ui/EmptyState";

@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Script from "next/script";
 
@@ -33,7 +33,7 @@ declare global {
   }
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const params = useSearchParams();
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -169,5 +169,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-theme-bg flex items-center justify-center"><p className="text-theme-muted text-sm">Loading…</p></div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getUnreadNotificationsCount } from "@/lib/data/notifications";
+import { countUnreadNotifications as getUnreadNotificationsCount } from "@/lib/data/repository";
 
 /**
  * GET /api/notifications/unread-count
