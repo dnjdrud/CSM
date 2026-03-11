@@ -100,18 +100,27 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
             <SearchIcon className="w-5 h-5" />
           </Link>
           {user && (
-            <Link
-              href="/notifications"
-              className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded inline-flex items-center gap-1.5"
-              aria-label={displayCount > 0 ? `Notifications, ${displayCount} unread` : "Notifications"}
-            >
-              Notifications
-              {displayCount > 0 && (
-                <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-theme-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-theme-primary tabular-nums">
-                  {displayCount > 99 ? "99+" : displayCount > 9 ? "9+" : displayCount}
-                </span>
-              )}
-            </Link>
+            <>
+              <Link
+                href="/messages"
+                className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
+                aria-label="Messages"
+              >
+                Messages
+              </Link>
+              <Link
+                href="/notifications"
+                className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded inline-flex items-center gap-1.5"
+                aria-label={displayCount > 0 ? `Notifications, ${displayCount} unread` : "Notifications"}
+              >
+                Notifications
+                {displayCount > 0 && (
+                  <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-theme-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-theme-primary tabular-nums">
+                    {displayCount > 99 ? "99+" : displayCount > 9 ? "9+" : displayCount}
+                  </span>
+                )}
+              </Link>
+            </>
           )}
           {user ? (
             <>

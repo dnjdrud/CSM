@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { FEATURES } from "@/lib/config/features";
 import { groupNotifications } from "@/lib/notifications/groupNotifications";
 import type { NotificationWithActor } from "@/lib/notifications/groupNotifications";
 import { useLiveNotifications } from "./useLiveNotifications";
 import { NotificationList } from "./NotificationList";
+import { markNotificationsReadAction } from "../actions";
 
 type Props = {
   initialWithActors: NotificationWithActor[];
@@ -17,6 +18,14 @@ export function NotificationsListLive({ initialWithActors, currentUserId }: Prop
   useLiveNotifications(currentUserId, setList);
   const grouped = useMemo(() => groupNotifications(list), [list]);
 
+  const handleMarkRead = useCallback(async (ids: string[]) => {
+    if (!ids.length) return;
+    setList((prev) =>
+      prev.map((n) => (ids.includes(n.id) ? { ...n, readAt: n.readAt ?? new Date().toISOString() } : n))
+    );
+    await markNotificationsReadAction(ids);
+  }, []);
+
   return (
     <>
       {FEATURES.REALTIME_NOTIFICATIONS && (
@@ -24,7 +33,7 @@ export function NotificationsListLive({ initialWithActors, currentUserId }: Prop
           Live
         </p>
       )}
-      <NotificationList grouped={grouped} />
+      <NotificationList grouped={grouped} onMarkRead={handleMarkRead} />
     </>
   );
 }

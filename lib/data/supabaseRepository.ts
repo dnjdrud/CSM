@@ -32,6 +32,8 @@ import type {
   SupportIntent,
   SupportTransaction,
   SupportPurpose,
+  DirectMessage,
+  ConversationPreview,
 } from "@/lib/domain/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -57,7 +59,7 @@ function normalizeTag(tag: string): string {
   return tag.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null; denomination?: string | null; faith_years?: number | null; username?: string | null; church?: string | null }): User {
+function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null; denomination?: string | null; faith_years?: number | null; username?: string | null; church?: string | null; support_url?: string | null }): User {
   return {
     id: r.id,
     name: r.name ?? "",
@@ -70,6 +72,7 @@ function rowToUser(r: { id: string; name: string | null; role: string | null; bi
     deactivatedAt: r.deactivated_at ?? undefined,
     denomination: r.denomination ?? undefined,
     faithYears: r.faith_years ?? undefined,
+    supportUrl: r.support_url ?? undefined,
   };
 }
 
@@ -689,6 +692,44 @@ export async function addComment(input: {
       postId: input.postId,
     });
   }
+  // Reply: notify the parent comment's author (if different from actor and post author)
+  if (parentId) {
+    const { data: parentComment } = await supabase
+      .from("comments")
+      .select("author_id")
+      .eq("id", parentId)
+      .single();
+    const parentAuthorId = parentComment?.author_id;
+    const postAuthorId = postRow.data?.author_id;
+    if (parentAuthorId && parentAuthorId !== input.authorId && parentAuthorId !== postAuthorId) {
+      const { notifyReplied } = await import("@/lib/notifications/events");
+      await notifyReplied({
+        recipientId: parentAuthorId,
+        actorId: input.authorId,
+        postId: input.postId,
+      });
+    }
+  }
+  // @mention: notify matched users (max 5, skip actor and post author)
+  const mentionTokens = (input.content.match(/@(\S+)/g) ?? []).map((t) => t.slice(1)).slice(0, 5);
+  if (mentionTokens.length > 0) {
+    const { data: mentioned } = await supabase
+      .from("users")
+      .select("id")
+      .in("name", mentionTokens)
+      .neq("id", input.authorId)
+      .limit(5);
+    const postAuthorId = postRow.data?.author_id;
+    const toNotify = (mentioned ?? []).filter((u) => u.id !== postAuthorId);
+    if (toNotify.length > 0) {
+      const { notifyMentioned } = await import("@/lib/notifications/events");
+      await Promise.all(
+        toNotify.map((u) =>
+          notifyMentioned({ recipientId: u.id, actorId: input.authorId, postId: input.postId })
+        )
+      );
+    }
+  }
   return {
     id: row.id,
     postId: row.post_id,
@@ -911,13 +952,17 @@ export async function searchPosts(params: {
   return sorted.slice(0, SEARCH_MAX);
 }
 
-export async function searchPeople(params: { q: string; viewerId: string }): Promise<User[]> {
+export async function searchPeople(params: { q: string; viewerId: string; role?: string; denomination?: string }): Promise<User[]> {
   const tokens = tokenize(params.q);
-  if (tokens.length === 0) return [];
+  if (tokens.length === 0 && !params.role && !params.denomination) return [];
   const supabase = await supabaseServer();
-  const { data: rows } = await supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at");
+  let query = supabase.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at, denomination, support_url");
+  if (params.role) query = query.eq("role", params.role) as typeof query;
+  if (params.denomination) query = query.eq("denomination", params.denomination) as typeof query;
+  const { data: rows } = await query;
   if (!rows?.length) return [];
   const users = rows.map((r) => rowToUser(r));
+  if (tokens.length === 0) return users.slice(0, SEARCH_MAX);
   const getSearchText = (u: User) => [u.name, u.affiliation ?? "", u.bio ?? ""].join(" ");
   return sortByScore(users, getSearchText, tokens).slice(0, SEARCH_MAX);
 }
@@ -1019,12 +1064,52 @@ export async function listPostsByAuthorId(authorId: string): Promise<PostWithAut
   })) as PostWithAuthor[];
 }
 
+export async function listPostsByAuthorIdPaged(params: {
+  authorId: string;
+  limit: number;
+  offset: number;
+}): Promise<{ items: PostWithAuthor[]; hasMore: boolean }> {
+  const supabase = await supabaseServer();
+  const { data: { session: _sess } } = await supabase.auth.getSession();
+  const uid = _sess?.user?.id ?? null;
+  const fetchLimit = params.limit + 1;
+  const { data: rows } = await supabase
+    .from("posts")
+    .select(POSTS_FEED_SELECT)
+    .eq("author_id", params.authorId)
+    .order("created_at", { ascending: false })
+    .range(params.offset, params.offset + fetchLimit - 1);
+  if (!rows?.length) return { items: [], hasMore: false };
+  const hasMore = rows.length > params.limit;
+  const pageRows = hasMore ? rows.slice(0, params.limit) : rows;
+  const authorMap = await getAuthorMap(supabase, [params.authorId]);
+  const author = authorMap.get(params.authorId);
+  if (!author) return { items: [], hasMore: false };
+  const postIds = pageRows.map((r) => r.id);
+  const [reactionCountsMap, { data: reactionRows }, commentCountsMap] = await Promise.all([
+    getReactionCountsByPostIds(supabase, postIds),
+    supabase.from("reactions").select("post_id, type").in("post_id", postIds).eq("user_id", uid ?? ""),
+    getCommentCountsByPostIds(supabase, postIds),
+  ]);
+  const items = pageRows.map((r) => {
+    const userReactions = uid ? (reactionRows ?? []).filter((rx) => rx.post_id === r.id) : [];
+    return {
+      ...rowToPost(r),
+      author,
+      reactionsByCurrentUser: { prayed: userReactions.some((rx) => rx.type === "PRAYED"), withYou: userReactions.some((rx) => rx.type === "WITH_YOU") },
+      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+      commentCount: commentCountsMap.get(r.id) ?? 0,
+    };
+  }) as PostWithAuthor[];
+  return { items, hasMore };
+}
+
 export async function getUserById(id: string): Promise<User | null> {
   const r = await getUserByIdWithError(id);
   return r.user;
 }
 
-const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church";
+const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church, support_url";
 const USERS_SELECT_MINIMAL = "id, name, role, bio, affiliation, created_at";
 
 function isColumnError(msg: string): boolean {
@@ -1084,6 +1169,7 @@ export async function updateUserProfile(
     denomination?: string | null;
     faithYears?: number | null;
     role?: UserRole;
+    supportUrl?: string | null;
   }
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = await supabaseServer();
@@ -1096,6 +1182,7 @@ export async function updateUserProfile(
   if ("denomination" in data) update.denomination = data.denomination?.trim() || null;
   if ("faithYears" in data) update.faith_years = data.faithYears ?? null;
   if (data.role !== undefined) update.role = data.role;
+  if ("supportUrl" in data) update.support_url = data.supportUrl?.trim() || null;
   if (Object.keys(update).length === 0) return { ok: true };
   const { error } = await supabase.from("users").update(update).eq("id", userId);
   if (error) {
@@ -1412,6 +1499,26 @@ export async function listSharedNotesByUserId(params: {
   return (rows ?? []).map(rowToNote);
 }
 
+export async function listSharedNotesByUserIdPaged(params: {
+  userId: string;
+  limit: number;
+  offset: number;
+}): Promise<{ items: Note[]; hasMore: boolean }> {
+  const supabase = await supabaseServer();
+  const fetchLimit = params.limit + 1;
+  const { data: rows, error } = await supabase
+    .from("notes")
+    .select("id, user_id, type, title, content, tags, is_archived, share_to_profile, published_post_id, status, answer_note, created_at, updated_at")
+    .eq("user_id", params.userId)
+    .eq("share_to_profile", true)
+    .eq("is_archived", false)
+    .order("created_at", { ascending: false })
+    .range(params.offset, params.offset + fetchLimit - 1);
+  if (error || !rows?.length) return { items: [], hasMore: false };
+  const hasMore = rows.length > params.limit;
+  return { items: (hasMore ? rows.slice(0, params.limit) : rows).map(rowToNote), hasMore };
+}
+
 export async function toggleShareToProfile(params: {
   userId: string;
   noteId: string;
@@ -1692,4 +1799,184 @@ export async function failSupportIntent(intentId: string): Promise<void> {
   const admin = getSupabaseAdmin();
   if (!admin) return;
   await admin.from("support_intents").update({ status: "FAILED" }).eq("id", intentId);
+}
+
+// ─── Comment Reactions ─────────────────────────────────────────────────────
+
+export async function toggleCommentLike(
+  commentId: string,
+  userId: string
+): Promise<{ liked: boolean; count: number }> {
+  const supabase = await supabaseServer();
+  const { data: existing } = await supabase
+    .from("comment_reactions")
+    .select("id")
+    .eq("comment_id", commentId)
+    .eq("user_id", userId)
+    .eq("type", "LIKE")
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("comment_reactions").delete().eq("id", existing.id);
+  } else {
+    await supabase.from("comment_reactions").insert({ comment_id: commentId, user_id: userId, type: "LIKE" });
+  }
+
+  const { count } = await supabase
+    .from("comment_reactions")
+    .select("id", { count: "exact", head: true })
+    .eq("comment_id", commentId)
+    .eq("type", "LIKE");
+
+  return { liked: !existing, count: count ?? 0 };
+}
+
+export async function getCommentLikeCounts(
+  commentIds: string[],
+  viewerId: string | null
+): Promise<Record<string, { count: number; likedByMe: boolean }>> {
+  if (!commentIds.length) return {};
+  const supabase = await supabaseServer();
+  const { data: rows } = await supabase
+    .from("comment_reactions")
+    .select("comment_id, user_id")
+    .in("comment_id", commentIds)
+    .eq("type", "LIKE");
+
+  const result: Record<string, { count: number; likedByMe: boolean }> = {};
+  for (const id of commentIds) result[id] = { count: 0, likedByMe: false };
+  for (const r of rows ?? []) {
+    const entry = result[r.comment_id];
+    if (entry) {
+      entry.count += 1;
+      if (viewerId && r.user_id === viewerId) entry.likedByMe = true;
+    }
+  }
+  return result;
+}
+
+// ─── Direct Messages ────────────────────────────────────────────────────────
+
+export async function sendDirectMessage(
+  senderId: string,
+  recipientId: string,
+  content: string
+): Promise<DirectMessage> {
+  const supabase = await supabaseServer();
+  const { data: row, error } = await supabase
+    .from("direct_messages")
+    .insert({ sender_id: senderId, recipient_id: recipientId, content: content.trim() })
+    .select("id, sender_id, recipient_id, content, created_at, read_at")
+    .single();
+  if (error || !row) throw new Error(error?.message ?? "Failed to send message");
+  return {
+    id: row.id,
+    senderId: row.sender_id,
+    recipientId: row.recipient_id,
+    content: row.content,
+    createdAt: row.created_at,
+    readAt: row.read_at ?? undefined,
+  };
+}
+
+export async function listConversations(userId: string): Promise<ConversationPreview[]> {
+  const supabase = await supabaseServer();
+  // Get all DMs involving this user, ordered by created_at desc
+  const { data: rows } = await supabase
+    .from("direct_messages")
+    .select("id, sender_id, recipient_id, content, created_at, read_at")
+    .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (!rows?.length) return [];
+
+  // Group by partner (the other user in the conversation)
+  const seenPartners = new Set<string>();
+  const latestByPartner = new Map<string, typeof rows[0]>();
+  const unreadByPartner = new Map<string, number>();
+
+  for (const row of rows) {
+    const partnerId = row.sender_id === userId ? row.recipient_id : row.sender_id;
+    if (!latestByPartner.has(partnerId)) {
+      latestByPartner.set(partnerId, row);
+    }
+    if (!seenPartners.has(partnerId)) {
+      seenPartners.add(partnerId);
+      unreadByPartner.set(partnerId, 0);
+    }
+    // Count unread: messages sent TO this user that have no read_at
+    if (row.recipient_id === userId && !row.read_at) {
+      unreadByPartner.set(partnerId, (unreadByPartner.get(partnerId) ?? 0) + 1);
+    }
+  }
+
+  const partnerIds = [...seenPartners];
+  const authorMap = await getAuthorMap(supabase, partnerIds);
+
+  return partnerIds
+    .map((partnerId) => {
+      const latest = latestByPartner.get(partnerId)!;
+      const partner = authorMap.get(partnerId);
+      if (!partner) return null;
+      return {
+        partner,
+        latestMessage: {
+          content: latest.content,
+          createdAt: latest.created_at,
+          senderId: latest.sender_id,
+        },
+        unreadCount: unreadByPartner.get(partnerId) ?? 0,
+      } satisfies ConversationPreview;
+    })
+    .filter((c): c is ConversationPreview => c !== null);
+}
+
+export async function listMessages(
+  userId: string,
+  partnerId: string,
+  limit = 100
+): Promise<(DirectMessage & { sender: import("@/lib/domain/types").User })[]> {
+  const supabase = await supabaseServer();
+  const { data: rows } = await supabase
+    .from("direct_messages")
+    .select("id, sender_id, recipient_id, content, created_at, read_at")
+    .or(
+      `and(sender_id.eq.${userId},recipient_id.eq.${partnerId}),and(sender_id.eq.${partnerId},recipient_id.eq.${userId})`
+    )
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (!rows?.length) return [];
+
+  const authorMap = await getAuthorMap(supabase, [userId, partnerId]);
+  return rows.map((r) => ({
+    id: r.id,
+    senderId: r.sender_id,
+    recipientId: r.recipient_id,
+    content: r.content,
+    createdAt: r.created_at,
+    readAt: r.read_at ?? undefined,
+    sender: authorMap.get(r.sender_id) ?? { id: r.sender_id, name: "Unknown", role: "LAY" as const, createdAt: r.created_at },
+  }));
+}
+
+export async function markConversationRead(userId: string, partnerId: string): Promise<void> {
+  const supabase = await supabaseServer();
+  await supabase
+    .from("direct_messages")
+    .update({ read_at: new Date().toISOString() })
+    .eq("recipient_id", userId)
+    .eq("sender_id", partnerId)
+    .is("read_at", null);
+}
+
+export async function countUnreadDMs(userId: string): Promise<number> {
+  const supabase = await supabaseServer();
+  const { count } = await supabase
+    .from("direct_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", userId)
+    .is("read_at", null);
+  return count ?? 0;
 }

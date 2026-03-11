@@ -5,7 +5,7 @@
 import { supabaseServer } from "@/lib/supabase/server";
 
 type NotifyPayload = {
-  type: "FOLLOWED_YOU" | "COMMENTED_ON_YOUR_POST" | "REACTED_TO_YOUR_POST";
+  type: "FOLLOWED_YOU" | "COMMENTED_ON_YOUR_POST" | "REACTED_TO_YOUR_POST" | "REPLIED_TO_YOUR_COMMENT" | "REACTED_TO_YOUR_COMMENT" | "MENTIONED_IN_COMMENT" | "NEW_MESSAGE";
   recipientId: string;
   actorId: string;
   postId?: string;
@@ -54,5 +54,55 @@ export async function notifyReacted(params: {
     recipientId: params.recipientId,
     actorId: params.actorId,
     postId: params.postId,
+  });
+}
+
+export async function notifyReplied(params: {
+  recipientId: string;
+  actorId: string;
+  postId: string;
+}): Promise<void> {
+  await invokeNotify({
+    type: "REPLIED_TO_YOUR_COMMENT",
+    recipientId: params.recipientId,
+    actorId: params.actorId,
+    postId: params.postId,
+  });
+}
+
+export async function notifyCommentReacted(params: {
+  recipientId: string;
+  actorId: string;
+  postId: string;
+}): Promise<void> {
+  await invokeNotify({
+    type: "REACTED_TO_YOUR_COMMENT",
+    recipientId: params.recipientId,
+    actorId: params.actorId,
+    postId: params.postId,
+  });
+}
+
+export async function notifyMentioned(params: {
+  recipientId: string;
+  actorId: string;
+  postId: string;
+}): Promise<void> {
+  await invokeNotify({
+    type: "MENTIONED_IN_COMMENT",
+    recipientId: params.recipientId,
+    actorId: params.actorId,
+    postId: params.postId,
+  });
+}
+
+export async function notifyNewMessage(params: {
+  recipientId: string;
+  actorId: string;
+}): Promise<void> {
+  await invokeNotify({
+    type: "NEW_MESSAGE",
+    recipientId: params.recipientId,
+    actorId: params.actorId,
   });
 }

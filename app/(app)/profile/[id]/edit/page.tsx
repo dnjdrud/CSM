@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import { getAuthUserId } from "@/lib/auth/session";
 import { getUserById } from "@/lib/data/repository";
 import { ProfileEditForm } from "./_components/ProfileEditForm";
+import { DeleteAccountSection } from "../_components/DeleteAccountSection";
+import { canRestore } from "@/lib/security/accountLifecycle";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,10 @@ export default async function ProfileEditPage({
         프로필 편집
       </h1>
       <ProfileEditForm user={user} />
+      <DeleteAccountSection
+        isDeactivated={!!user.deactivatedAt}
+        canRestore={canRestore(user.deactivatedAt ?? null)}
+      />
     </div>
   );
 }

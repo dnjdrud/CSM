@@ -15,6 +15,7 @@ export function CommentList({
   comments,
   postId,
   currentUserId,
+  likeData,
   loading,
   onCommentDeleted,
   onCommentUpdated,
@@ -25,6 +26,7 @@ export function CommentList({
   comments: CommentWithAuthor[];
   postId: string;
   currentUserId: string | null;
+  likeData?: Record<string, { count: number; likedByMe: boolean }>;
   loading?: boolean;
   onCommentDeleted?: (commentId: string) => void;
   onCommentUpdated?: (commentId: string, content: string) => void;
@@ -80,6 +82,8 @@ export function CommentList({
             comment={root}
             postId={postId}
             currentUserId={currentUserId}
+            initialLikeCount={likeData?.[root.id]?.count ?? 0}
+            initialLikedByMe={likeData?.[root.id]?.likedByMe ?? false}
             onDeleted={handleDeleted}
             onUpdated={handleUpdated}
             onReplyClick={currentUserId ? (id) => setReplyingTo(replyingTo === id ? null : id) : undefined}
@@ -103,6 +107,8 @@ export function CommentList({
               comment={reply}
               postId={postId}
               currentUserId={currentUserId}
+              initialLikeCount={likeData?.[reply.id]?.count ?? 0}
+              initialLikedByMe={likeData?.[reply.id]?.likedByMe ?? false}
               isReply
               onDeleted={handleDeleted}
               onUpdated={handleUpdated}

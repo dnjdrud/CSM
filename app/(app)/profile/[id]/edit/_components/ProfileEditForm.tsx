@@ -32,6 +32,7 @@ export function ProfileEditForm({ user }: Props) {
   const [church, setChurch] = useState(user.church ?? "");
   const [affiliation, setAffiliation] = useState(user.affiliation ?? "");
   const [bio, setBio] = useState(user.bio ?? "");
+  const [supportUrl, setSupportUrl] = useState(user.supportUrl ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -51,6 +52,7 @@ export function ProfileEditForm({ user }: Props) {
       church: church.trim() || null,
       affiliation: affiliation.trim() || null,
       bio: bio.trim() || null,
+      supportUrl: supportUrl.trim() || null,
     });
     setPending(false);
     if ("ok" in result && result.ok) {
@@ -170,6 +172,22 @@ export function ProfileEditForm({ user }: Props) {
           maxLength={500}
         />
         <p className="mt-1 text-xs text-gray-400 text-right">{bio.length}/500</p>
+      </div>
+
+      {/* Support URL */}
+      <div>
+        <label htmlFor="supportUrl" className="block text-sm font-medium text-gray-800">
+          후원 링크 <span className="text-gray-500 font-normal">(선택)</span>
+        </label>
+        <input
+          id="supportUrl"
+          type="url"
+          value={supportUrl}
+          onChange={(e) => setSupportUrl(e.target.value)}
+          placeholder="https://toss.me/... 또는 후원 안내 페이지 URL"
+          className={inputCls}
+        />
+        <p className="mt-1 text-xs text-gray-500">토스, 카카오페이, 후원 안내 페이지 등 외부 링크를 입력하면 프로필에 후원 버튼이 표시됩니다.</p>
       </div>
 
       {error && <p className="text-sm text-red-600" role="alert">{error}</p>}

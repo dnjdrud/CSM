@@ -3,7 +3,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const NOTIFY_TYPES = ["FOLLOWED_YOU", "COMMENTED_ON_YOUR_POST", "REACTED_TO_YOUR_POST"] as const;
+const NOTIFY_TYPES = ["FOLLOWED_YOU", "COMMENTED_ON_YOUR_POST", "REACTED_TO_YOUR_POST", "REPLIED_TO_YOUR_COMMENT", "REACTED_TO_YOUR_COMMENT", "MENTIONED_IN_COMMENT", "NEW_MESSAGE"] as const;
 type NotifyType = (typeof NOTIFY_TYPES)[number];
 
 interface NotifyPayload {
@@ -98,13 +98,17 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // NEW_MESSAGE uses a shorter dedup window (1 min) so multiple messages can each notify
+  const dedupWindowMs = type === "NEW_MESSAGE" ? 60 * 1000 : 10 * 60 * 1000;
+  const dedupWindowStart = new Date(Date.now() - dedupWindowMs).toISOString();
+
   const { data: duplicates } = await supabase
     .from("notifications")
     .select("id, post_id")
     .eq("type", type)
     .eq("recipient_id", recipientId)
     .eq("actor_id", actorId)
-    .gte("created_at", windowStart);
+    .gte("created_at", dedupWindowStart);
 
   const postIdVal = postId ?? null;
   const isDuplicate = (duplicates ?? []).some(

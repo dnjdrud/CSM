@@ -24,6 +24,8 @@ export interface User {
   deactivatedAt?: string | null; // ISO
   denomination?: string | null;
   faithYears?: number | null;
+  /** 외부 후원 링크 (토스, 카카오페이, 계좌번호 안내 등). */
+  supportUrl?: string | null;
 }
 
 export interface Post {
@@ -178,7 +180,11 @@ export const CATEGORY_LABELS: Record<PostCategory, string> = {
 export type NotificationType =
   | "FOLLOWED_YOU"
   | "COMMENTED_ON_YOUR_POST"
-  | "REACTED_TO_YOUR_POST";
+  | "REACTED_TO_YOUR_POST"
+  | "REPLIED_TO_YOUR_COMMENT"
+  | "REACTED_TO_YOUR_COMMENT"
+  | "MENTIONED_IN_COMMENT"
+  | "NEW_MESSAGE";
 
 export interface Notification {
   id: string;
@@ -188,6 +194,21 @@ export interface Notification {
   postId?: string;
   createdAt: string; // ISO
   readAt?: string;   // ISO
+}
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  createdAt: string;
+  readAt?: string;
+}
+
+export interface ConversationPreview {
+  partner: User;
+  latestMessage: { content: string; createdAt: string; senderId: string };
+  unreadCount: number;
 }
 
 /** Moderation actions (mock storage; no backend). */

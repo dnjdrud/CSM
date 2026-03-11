@@ -34,24 +34,32 @@ export interface DashboardStats {
   openReportsToday: number;
   newUsersToday: number;
   activeUsersLast7d: number;
+  totalUsers: number;
+  totalPosts: number;
+  totalComments: number;
+  newPostsToday: number;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await supabaseServer();
   const today = new Date().toISOString().slice(0, 10);
+  const todayEnd = `${today}T23:59:59.999Z`;
 
-  const { count: openReportsToday } = await supabase
-    .from("moderation_reports")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "OPEN")
-    .gte("created_at", today)
-    .lt("created_at", `${today}T23:59:59.999Z`);
-
-  const { count: newUsersToday } = await supabase
-    .from("users")
-    .select("id", { count: "exact", head: true })
-    .gte("created_at", today)
-    .lt("created_at", `${today}T23:59:59.999Z`);
+  const [
+    { count: openReportsToday },
+    { count: newUsersToday },
+    { count: totalUsers },
+    { count: totalPosts },
+    { count: totalComments },
+    { count: newPostsToday },
+  ] = await Promise.all([
+    supabase.from("moderation_reports").select("id", { count: "exact", head: true }).eq("status", "OPEN").gte("created_at", today).lt("created_at", todayEnd),
+    supabase.from("users").select("id", { count: "exact", head: true }).gte("created_at", today).lt("created_at", todayEnd),
+    supabase.from("users").select("id", { count: "exact", head: true }),
+    supabase.from("posts").select("id", { count: "exact", head: true }),
+    supabase.from("comments").select("id", { count: "exact", head: true }),
+    supabase.from("posts").select("id", { count: "exact", head: true }).gte("created_at", today).lt("created_at", todayEnd),
+  ]);
 
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: postAuthors } = await supabase.from("posts").select("author_id").gte("created_at", since);
@@ -66,6 +74,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     openReportsToday: openReportsToday ?? 0,
     newUsersToday: newUsersToday ?? 0,
     activeUsersLast7d: activeIds.size,
+    totalUsers: totalUsers ?? 0,
+    totalPosts: totalPosts ?? 0,
+    totalComments: totalComments ?? 0,
+    newPostsToday: newPostsToday ?? 0,
   };
 }
 
@@ -217,11 +229,12 @@ function getTodayAsiaSeoul(): string {
 }
 
 /** Create today's Daily Prayer post and log audit. Idempotent: if a post with same title by this admin exists today, return reused. */
-export async function createDailyPrayer(adminId: string): Promise<{ postId: string; reused: boolean }> {
+export async function createDailyPrayer(adminId: string, customContent?: string): Promise<{ postId: string; reused: boolean }> {
   const { buildDailyPrayerPost } = await import("@/lib/domain/dailyPrayer");
   const supabase = await supabaseServer();
   const today = getTodayAsiaSeoul();
   const payload = buildDailyPrayerPost({ date: new Date() });
+  if (customContent?.trim()) payload.content = customContent.trim();
 
   const startOfToday = new Date(today + "T00:00:00.000Z").toISOString();
   const { data: existing } = await supabase

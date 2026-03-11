@@ -54,6 +54,12 @@ export function ProfileHero({
         {currentUserId && !isOwnProfile && (
           <>
             <ProfileFollowButton profileId={user.id} following={following} />
+            <Link
+              href={`/messages/${user.id}`}
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md border border-gray-200 bg-transparent px-3 py-2.5 text-[13px] font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:opacity-80"
+            >
+              메시지
+            </Link>
             <UserActionsMenu
               targetUserId={user.id}
               targetUserName={user.name}
@@ -70,13 +76,15 @@ export function ProfileHero({
             Go to My Space
           </Link>
         )}
-        {!isOwnProfile && user.role === "MISSIONARY" && (
-          <Link
-            href="/support"
-            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md border border-gray-300 bg-transparent px-3 py-2.5 text-[13px] font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:opacity-80"
+        {!isOwnProfile && user.supportUrl && (
+          <a
+            href={user.supportUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-transparent px-3 py-2.5 text-[13px] font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:opacity-80"
           >
-            Support this work
-          </Link>
+            🙌 후원하기
+          </a>
         )}
       </div>
     </header>

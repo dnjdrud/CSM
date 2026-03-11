@@ -9,7 +9,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { ReportMenu } from "@/components/ReportMenu";
 import { useToast } from "@/components/ui/Toast";
-import { deleteCommentAction as deleteCommentActionDefault, updateCommentAction as updateCommentActionDefault } from "../actions";
+import { MentionText } from "@/components/MentionText";
+import { deleteCommentAction as deleteCommentActionDefault, updateCommentAction as updateCommentActionDefault, toggleCommentLikeAction } from "../actions";
 
 type CommentWithAuthor = Comment & { author: User };
 type DeleteCommentAction = (commentId: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
@@ -33,6 +34,8 @@ export function CommentItem({
   comment,
   postId,
   currentUserId,
+  initialLikeCount = 0,
+  initialLikedByMe = false,
   onDeleted,
   onUpdated,
   isReply,
@@ -43,6 +46,8 @@ export function CommentItem({
   comment: CommentWithAuthor;
   postId: string;
   currentUserId: string | null;
+  initialLikeCount?: number;
+  initialLikedByMe?: boolean;
   onDeleted?: (commentId: string) => void;
   onUpdated?: (commentId: string, content: string) => void;
   isReply?: boolean;
@@ -54,11 +59,31 @@ export function CommentItem({
   const [content, setContent] = useState(comment.content);
   const [pending, setPending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [likedByMe, setLikedByMe] = useState(initialLikedByMe);
+  const [likePending, setLikePending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const isAuthor = currentUserId != null && currentUserId === comment.authorId;
   const deleteCommentAction = deleteCommentActionProp ?? deleteCommentActionDefault;
   const updateCommentAction = updateCommentActionProp ?? updateCommentActionDefault;
   const toast = useToast();
+
+  async function handleLike() {
+    if (!currentUserId || likePending) return;
+    setLikePending(true);
+    const prev = { likedByMe, likeCount };
+    setLikedByMe(!likedByMe);
+    setLikeCount((c) => (likedByMe ? Math.max(0, c - 1) : c + 1));
+    const result = await toggleCommentLikeAction(comment.id, postId);
+    if (!result.ok) {
+      setLikedByMe(prev.likedByMe);
+      setLikeCount(prev.likeCount);
+    } else {
+      if (result.count !== undefined) setLikeCount(result.count);
+      if (result.liked !== undefined) setLikedByMe(result.liked);
+    }
+    setLikePending(false);
+  }
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -157,14 +182,27 @@ export function CommentItem({
           </div>
         ) : (
           <p className="mt-0.5 text-[15px] leading-7 text-gray-900 whitespace-pre-wrap">
-            {comment.content}
+            <MentionText text={comment.content} />
           </p>
         )}
 
-        {/* Footer: Reply + … menu */}
-        {currentUserId && !editing && (
+        {/* Footer: Like + Reply + … menu */}
+        {!editing && (
           <div className="mt-1.5 flex items-center gap-1">
-            {!isReply && onReplyClick && (
+            <button
+              type="button"
+              onClick={handleLike}
+              disabled={!currentUserId || likePending}
+              aria-label={likedByMe ? "Unlike" : "Like"}
+              aria-pressed={likedByMe}
+              className={`flex items-center gap-1 text-xs rounded px-1 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 transition-colors ${
+                likedByMe ? "text-red-500 font-medium" : "text-neutral-400 hover:text-gray-600"
+              } disabled:opacity-40`}
+            >
+              <span aria-hidden>{likedByMe ? "❤️" : "🤍"}</span>
+              {likeCount > 0 && <span className="tabular-nums">{likeCount}</span>}
+            </button>
+            {currentUserId && !isReply && onReplyClick && (
               <button
                 type="button"
                 onClick={() => onReplyClick(comment.id)}
@@ -174,7 +212,7 @@ export function CommentItem({
                 Reply
               </button>
             )}
-            <div className="relative" ref={menuRef}>
+            {currentUserId && <div className="relative" ref={menuRef}>
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
@@ -223,7 +261,7 @@ export function CommentItem({
                   )}
                 </div>
               )}
-            </div>
+            </div>}
           </div>
         )}
       </div>

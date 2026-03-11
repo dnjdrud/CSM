@@ -9,13 +9,21 @@ import { formatRelativeTime } from "@/lib/utils/time";
 function getActionPhrase(type: string): string {
   switch (type as NotificationType) {
     case "COMMENTED_ON_YOUR_POST":
-      return "commented on your post";
+      return "게시물에 댓글을 달았습니다";
     case "REACTED_TO_YOUR_POST":
-      return "reacted to your post";
+      return "게시물에 반응했습니다";
     case "FOLLOWED_YOU":
-      return "followed you";
+      return "팔로우했습니다";
+    case "REPLIED_TO_YOUR_COMMENT":
+      return "댓글에 답글을 달았습니다";
+    case "REACTED_TO_YOUR_COMMENT":
+      return "댓글에 좋아요를 눌렀습니다";
+    case "MENTIONED_IN_COMMENT":
+      return "댓글에서 회원님을 멘션했습니다";
+    case "NEW_MESSAGE":
+      return "메시지를 보냈습니다";
     default:
-      return "notification";
+      return "알림";
   }
 }
 
@@ -34,10 +42,11 @@ function getGroupLabel(g: GroupedNotification): string {
 }
 
 function getHref(g: GroupedNotification): string {
-  if (
-    g.postId &&
-    (g.type === "COMMENTED_ON_YOUR_POST" || g.type === "REACTED_TO_YOUR_POST")
-  ) {
+  if (g.type === "NEW_MESSAGE") {
+    const first = g.actors[0];
+    return first ? `/messages/${first.id}` : "/messages";
+  }
+  if (g.postId) {
     return `/post/${g.postId}`;
   }
   const first = g.actors[0];
@@ -47,8 +56,10 @@ function getHref(g: GroupedNotification): string {
 
 export function NotificationList({
   grouped,
+  onMarkRead,
 }: {
   grouped: GroupedNotification[];
+  onMarkRead?: (ids: string[]) => void;
 }) {
   return (
     <ul className="list-none p-0 space-y-1" role="list">
@@ -61,6 +72,9 @@ export function NotificationList({
           <li key={`${g.type}:${g.postId ?? "n"}:${i}`}>
             <Link
               href={href}
+              onClick={() => {
+                if (g.unread && onMarkRead) onMarkRead(g.ids);
+              }}
               className={`flex items-center gap-3 rounded-md py-3 px-3 text-[15px] leading-7 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 min-h-[44px] ${
                 g.unread ? "bg-gray-50/80" : ""
               }`}

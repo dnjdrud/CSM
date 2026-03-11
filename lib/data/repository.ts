@@ -193,6 +193,7 @@ export async function updateUserProfile(
     denomination?: string | null;
     faithYears?: number | null;
     role?: UserRole;
+    supportUrl?: string | null;
   }
 ): Promise<{ ok: true } | { error: string }> {
   if (DATA_MODE === "supabase") return supabaseRepo.updateUserProfile(userId, data);
@@ -306,7 +307,7 @@ export async function searchPosts(params: {
 }
 
 /** Search people by name, affiliation, bio. Excludes blocked (both directions). Top 30. */
-export async function searchPeople(params: { q: string; viewerId: string }): Promise<User[]> {
+export async function searchPeople(params: { q: string; viewerId: string; role?: string; denomination?: string }): Promise<User[]> {
   if (DATA_MODE === "supabase") return supabaseRepo.searchPeople(params);
   const tokens = tokenize(params.q);
   if (tokens.length === 0) return [];
@@ -566,6 +567,22 @@ export async function listPostsByAuthorId(authorId: string): Promise<PostWithAut
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   return sorted.map((p) => toPostWithAuthor(p, uid));
+}
+
+export async function listPostsByAuthorIdPaged(params: {
+  authorId: string;
+  limit: number;
+  offset: number;
+}): Promise<{ items: PostWithAuthor[]; hasMore: boolean }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listPostsByAuthorIdPaged(params);
+  const session = await getSession();
+  const uid = session?.userId ?? null;
+  const sorted = posts
+    .filter((p) => p.authorId === params.authorId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const page = sorted.slice(params.offset, params.offset + params.limit);
+  const hasMore = sorted.length > params.offset + params.limit;
+  return { items: page.map((p) => toPostWithAuthor(p, uid)), hasMore };
 }
 
 /** Comments for a post, stable order: top-level first, then replies by createdAt. */
@@ -935,6 +952,20 @@ export async function listSharedNotesByUserId(params: {
     .slice(0, params.limit ?? 50);
 }
 
+export async function listSharedNotesByUserIdPaged(params: {
+  userId: string;
+  limit: number;
+  offset: number;
+}): Promise<{ items: Note[]; hasMore: boolean }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listSharedNotesByUserIdPaged(params);
+  const sorted = notes
+    .filter((n) => n.userId === params.userId && n.shareToProfile === true && !n.isArchived)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const page = sorted.slice(params.offset, params.offset + params.limit);
+  const hasMore = sorted.length > params.offset + params.limit;
+  return { items: page, hasMore };
+}
+
 export async function toggleShareToProfile(params: {
   userId: string;
   noteId: string;
@@ -1173,4 +1204,44 @@ export async function getBookmarkedPostIds(userId: string, postIds: string[]): P
   if (DATA_MODE === "supabase") return supabaseRepo.getBookmarkedPostIds(userId, postIds);
   const set = new Set(postIds);
   return bookmarks.filter((b) => b.userId === userId && set.has(b.postId)).map((b) => b.postId);
+}
+
+// ─── Comment Reactions ───────────────────────────────────────────────────────
+
+export async function toggleCommentLike(commentId: string, userId: string): Promise<{ liked: boolean; count: number }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.toggleCommentLike(commentId, userId);
+  return { liked: false, count: 0 };
+}
+
+export async function getCommentLikeCounts(commentIds: string[], viewerId: string | null): Promise<Record<string, { count: number; likedByMe: boolean }>> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getCommentLikeCounts(commentIds, viewerId);
+  const result: Record<string, { count: number; likedByMe: boolean }> = {};
+  for (const id of commentIds) result[id] = { count: 0, likedByMe: false };
+  return result;
+}
+
+// ─── Direct Messages ─────────────────────────────────────────────────────────
+
+export async function sendDirectMessage(senderId: string, recipientId: string, content: string): Promise<import("@/lib/domain/types").DirectMessage> {
+  if (DATA_MODE === "supabase") return supabaseRepo.sendDirectMessage(senderId, recipientId, content);
+  throw new Error("DM not supported in memory mode");
+}
+
+export async function listConversations(userId: string): Promise<import("@/lib/domain/types").ConversationPreview[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listConversations(userId);
+  return [];
+}
+
+export async function listMessages(userId: string, partnerId: string, limit?: number): Promise<(import("@/lib/domain/types").DirectMessage & { sender: import("@/lib/domain/types").User })[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listMessages(userId, partnerId, limit);
+  return [];
+}
+
+export async function markConversationRead(userId: string, partnerId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.markConversationRead(userId, partnerId);
+}
+
+export async function countUnreadDMs(userId: string): Promise<number> {
+  if (DATA_MODE === "supabase") return supabaseRepo.countUnreadDMs(userId);
+  return 0;
 }

@@ -3,9 +3,50 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import { toggleMute, toggleBlock, deactivateUser, restoreUser, updateUserProfile } from "@/lib/data/repository";
+import { toggleMute, toggleBlock, deactivateUser, restoreUser, updateUserProfile, getCurrentUser, listPostsByAuthorIdPaged, listFollowingIds, isBlocked, isMuted, listSharedNotesByUserIdPaged } from "@/lib/data/repository";
 import { supabaseServer } from "@/lib/supabase/server";
-import type { UserRole } from "@/lib/domain/types";
+import { canViewPost } from "@/lib/domain/guards";
+import type { UserRole, PostWithAuthor, Note } from "@/lib/domain/types";
+
+const POSTS_PAGE_SIZE = 20;
+const NOTES_PAGE_SIZE = 20;
+
+/** 프로필 포스트 탭: 다음 페이지 로드. 가시성/차단 필터 적용. */
+export async function loadMoreProfilePostsAction(
+  profileId: string,
+  offset: number
+): Promise<{ items: PostWithAuthor[]; hasMore: boolean }> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { items: [], hasMore: false };
+  const blocked = isBlocked(currentUser.id, profileId);
+  const muted = isMuted(currentUser.id, profileId);
+  if (blocked || muted) return { items: [], hasMore: false };
+  const followingIds = await listFollowingIds(currentUser.id);
+  const isFollowing = (followerId: string, followingId: string) =>
+    followerId === currentUser.id && followingIds.includes(followingId);
+  // 필터가 있어서 요청보다 적게 나올 수 있으므로 두 배로 요청
+  const { items, hasMore } = await listPostsByAuthorIdPaged({
+    authorId: profileId,
+    limit: POSTS_PAGE_SIZE * 2,
+    offset,
+  });
+  const filtered = items
+    .filter((p) => p.category !== "TESTIMONY")
+    .filter((p) => canViewPost(p, currentUser, isFollowing));
+  return { items: filtered.slice(0, POSTS_PAGE_SIZE), hasMore: hasMore || filtered.length > POSTS_PAGE_SIZE };
+}
+
+/** 프로필 노트 탭: 다음 페이지 로드. */
+export async function loadMoreProfileNotesAction(
+  profileId: string,
+  offset: number
+): Promise<{ items: Note[]; hasMore: boolean }> {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { items: [], hasMore: false };
+  const blocked = isBlocked(currentUser.id, profileId);
+  if (blocked) return { items: [], hasMore: false };
+  return listSharedNotesByUserIdPaged({ userId: profileId, limit: NOTES_PAGE_SIZE, offset });
+}
 
 const ALLOWED_ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 
@@ -20,6 +61,7 @@ export async function updateProfileAction(data: {
   denomination?: string | null;
   faithYears?: number | null;
   role?: UserRole;
+  supportUrl?: string | null;
 }): Promise<UpdateProfileResult> {
   const session = await getSession();
   if (!session) return { error: "로그인이 필요합니다." };

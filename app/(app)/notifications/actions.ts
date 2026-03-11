@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
-import { markAllNotificationsRead } from "@/lib/data/repository";
+import { markAllNotificationsRead, markNotificationRead } from "@/lib/data/repository";
 import { getUserById } from "@/lib/data/repository";
 import { wrapServerAction } from "@/lib/utils/wrapServerAction";
 
@@ -15,6 +15,15 @@ export const markAllReadAction = wrapServerAction(
     revalidatePath("/");
   },
   "markAllReadAction"
+);
+
+export const markNotificationsReadAction = wrapServerAction(
+  async (ids: string[]): Promise<void> => {
+    const session = await getSession();
+    if (!session || !ids.length) return;
+    await Promise.all(ids.map((id) => markNotificationRead(id)));
+  },
+  "markNotificationsReadAction"
 );
 
 /** For realtime: resolve actor when a new notification arrives. Returns minimal public user. */

@@ -10,6 +10,7 @@ export type GroupedNotification = {
   count: number;
   latestCreatedAt: Date;
   unread: boolean;
+  ids: string[];
 };
 
 /**
@@ -19,7 +20,9 @@ export type GroupedNotification = {
 export function groupNotifications(
   notifications: NotificationWithActor[]
 ): GroupedNotification[] {
-  const key = (n: NotificationWithActor) => `${n.type}:${n.postId ?? ""}`;
+  // DMs group per sender (actorId); all others group by (type, postId)
+  const key = (n: NotificationWithActor) =>
+    n.type === "NEW_MESSAGE" ? `${n.type}:${n.actorId}` : `${n.type}:${n.postId ?? ""}`;
   const map = new Map<string, NotificationWithActor[]>();
 
   for (const n of notifications) {
@@ -55,6 +58,7 @@ export function groupNotifications(
       count: list.length,
       latestCreatedAt,
       unread,
+      ids: list.map((n) => n.id),
     });
   }
 

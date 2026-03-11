@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import { addComment, deleteComment, updateComment, deletePost, updatePost } from "@/lib/data/repository";
+import { addComment, deleteComment, updateComment, deletePost, updatePost, toggleCommentLike } from "@/lib/data/repository";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
 
 export async function addCommentAction(
@@ -93,6 +93,30 @@ export async function deletePostAction(postId: string): Promise<{ ok: boolean; e
   revalidatePath("/feed");
   revalidatePath(`/post/${postId}`);
   redirect("/feed");
+}
+
+export async function toggleCommentLikeAction(
+  commentId: string,
+  postId: string
+): Promise<{ ok: boolean; liked?: boolean; count?: number; error?: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Not logged in" };
+  try {
+    const result = await toggleCommentLike(commentId, session.userId);
+    // Fire notification if liked (not on unlike)
+    if (result.liked) {
+      const { supabaseServer } = await import("@/lib/supabase/server");
+      const supabase = await supabaseServer();
+      const { data: comment } = await supabase.from("comments").select("author_id").eq("id", commentId).single();
+      if (comment && comment.author_id !== session.userId) {
+        const { notifyCommentReacted } = await import("@/lib/notifications/events");
+        await notifyCommentReacted({ recipientId: comment.author_id, actorId: session.userId, postId });
+      }
+    }
+    return { ok: true, liked: result.liked, count: result.count };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Failed" };
+  }
 }
 
 export async function updatePostAction(

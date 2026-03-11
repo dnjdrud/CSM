@@ -17,22 +17,24 @@ function parseTab(tab: string | null): SearchTab {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; tab?: string }>;
+  searchParams: Promise<{ q?: string; tab?: string; role?: string; denomination?: string }>;
 }) {
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const tab = parseTab(params.tab ?? null);
+  const role = params.role?.trim() || undefined;
+  const denomination = params.denomination?.trim() || undefined;
   const currentUser = await getCurrentUser();
 
   let posts: Awaited<ReturnType<typeof searchPosts>> = [];
   let people: Awaited<ReturnType<typeof searchPeople>> = [];
   let tags: string[] = [];
 
-  if (q && currentUser) {
+  if (currentUser && (q || (tab === "people" && (role || denomination)))) {
     const [postsResult, peopleResult, tagsResult] = await Promise.all([
-      searchPosts({ q, currentUserId: currentUser.id, scope: "ALL" }),
-      Promise.resolve(searchPeople({ q, viewerId: currentUser.id })),
-      Promise.resolve(searchTags(q)),
+      q ? searchPosts({ q, currentUserId: currentUser.id, scope: "ALL" }) : Promise.resolve([]),
+      searchPeople({ q, viewerId: currentUser.id, role, denomination }),
+      q ? Promise.resolve(searchTags(q)) : Promise.resolve([]),
     ]);
     posts = postsResult;
     people = peopleResult;
@@ -45,13 +47,13 @@ export default async function SearchPage({
         href="/feed"
         className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded mb-6 inline-block"
       >
-        ← Back to feed
+        ← 피드로 돌아가기
       </Link>
       <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
-        Search
+        검색
       </h1>
       <p className="mt-2 text-gray-600 font-sans text-sm">
-        Find posts, people, and topics. No algorithms.
+        포스트, 사람, 주제를 찾아보세요.
       </p>
 
       <Suspense fallback={
@@ -60,7 +62,7 @@ export default async function SearchPage({
           <Skeleton className="h-10 w-24 rounded-md" />
         </div>
       }>
-        <SearchForm initialQ={q} initialTab={tab} />
+        <SearchForm initialQ={q} initialTab={tab} initialRole={role} initialDenomination={denomination} />
       </Suspense>
 
       <div className="mt-6">
