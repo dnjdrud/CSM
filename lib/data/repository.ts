@@ -1206,6 +1206,11 @@ export async function getBookmarkedPostIds(userId: string, postIds: string[]): P
   return bookmarks.filter((b) => b.userId === userId && set.has(b.postId)).map((b) => b.postId);
 }
 
+export async function getCommentById(commentId: string): Promise<(import("@/lib/domain/types").Comment & { author: import("@/lib/domain/types").User }) | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getCommentById(commentId);
+  return null;
+}
+
 // ─── Comment Reactions ───────────────────────────────────────────────────────
 
 export async function toggleCommentLike(commentId: string, userId: string): Promise<{ liked: boolean; count: number }> {
@@ -1244,4 +1249,13 @@ export async function markConversationRead(userId: string, partnerId: string): P
 export async function countUnreadDMs(userId: string): Promise<number> {
   if (DATA_MODE === "supabase") return supabaseRepo.countUnreadDMs(userId);
   return 0;
+}
+
+export async function uploadAvatar(
+  userId: string,
+  fileBuffer: ArrayBuffer,
+  mimeType: string
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.uploadAvatar(userId, fileBuffer, mimeType);
+  return { ok: false, error: "Not supported" };
 }

@@ -1,6 +1,6 @@
 import type { Comment } from "@/lib/domain/types";
 import type { User } from "@/lib/domain/types";
-import { CommentList } from "./CommentList";
+import { CommentsLive } from "./CommentsLive";
 import { addCommentFormAction } from "../actions";
 import { getCommentLikeCounts } from "@/lib/data/repository";
 
@@ -47,10 +47,10 @@ export async function CommentsSection({ postId, currentUserId, comments }: Props
       )}
 
       <div className="mt-4">
-        <CommentList
-          comments={comments}
+        <CommentsLive
           postId={postId}
           currentUserId={currentUserId}
+          initialComments={comments}
           likeData={likeData}
         />
       </div>

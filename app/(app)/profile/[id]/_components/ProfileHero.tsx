@@ -25,7 +25,7 @@ export function ProfileHero({
   return (
     <header className="flex flex-col gap-3">
       <div className="flex gap-3">
-        <Avatar name={user.name} size="md" className="shrink-0 h-11 w-11 text-sm" />
+        <Avatar name={user.name} src={user.avatarUrl} size="md" className="shrink-0 h-11 w-11 text-sm" />
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold text-gray-900 tracking-tight truncate">
             {user.name}

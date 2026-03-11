@@ -88,7 +88,7 @@ export function ProfileShell({
         {/* Profile header card */}
         <section className="rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
           <div className="flex items-start gap-4">
-            <Avatar name={user.name} size="md" className="shrink-0" />
+            <Avatar name={user.name} src={user.avatarUrl} size="md" className="shrink-0" />
             <div className="min-w-0 flex-1 space-y-1">
               <div>
                 <h1 className="text-[18px] font-semibold text-gray-900 truncate">

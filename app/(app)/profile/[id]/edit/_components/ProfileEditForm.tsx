@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfileAction } from "../../actions";
 import { ROLE_DISPLAY, type UserRole, type User } from "@/lib/domain/types";
+import { AvatarUpload } from "./AvatarUpload";
 
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 
@@ -67,6 +68,9 @@ export function ProfileEditForm({ user }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Avatar */}
+      <AvatarUpload currentAvatarUrl={user.avatarUrl} name={user.name} />
+
       {/* Name */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-800">

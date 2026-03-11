@@ -77,7 +77,7 @@ export function MessageThread({
           ←
         </Link>
         <Link href={`/profile/${partner.id}`} className="flex items-center gap-2 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded">
-          <Avatar name={partner.name} size="sm" className="h-8 w-8" />
+          <Avatar name={partner.name} src={partner.avatarUrl} size="sm" className="h-8 w-8" />
           <span className="font-medium text-gray-900 text-[15px]">{partner.name}</span>
         </Link>
       </div>
@@ -91,7 +91,7 @@ export function MessageThread({
           const isMine = msg.senderId === currentUserId;
           return (
             <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"} gap-2`}>
-              {!isMine && <Avatar name={partner.name} size="sm" className="h-7 w-7 shrink-0 self-end" />}
+              {!isMine && <Avatar name={partner.name} src={partner.avatarUrl} size="sm" className="h-7 w-7 shrink-0 self-end" />}
               <div className={`max-w-[70%] ${isMine ? "items-end" : "items-start"} flex flex-col gap-0.5`}>
                 <div
                   className={`px-3 py-2 rounded-2xl text-[14px] leading-6 whitespace-pre-wrap break-words ${

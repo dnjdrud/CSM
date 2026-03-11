@@ -26,6 +26,8 @@ export interface User {
   faithYears?: number | null;
   /** 외부 후원 링크 (토스, 카카오페이, 계좌번호 안내 등). */
   supportUrl?: string | null;
+  /** Supabase Storage public URL for profile photo. */
+  avatarUrl?: string | null;
 }
 
 export interface Post {

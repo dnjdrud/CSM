@@ -64,7 +64,7 @@ export function ReactorsModal({ type, users, loading, onClose }: Props) {
               {users.map((user) => (
                 <li key={user.id} className="flex items-center gap-3 py-2.5">
                   <Link href={`/profile/${user.id}`} onClick={onClose} className="shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded-full">
-                    <Avatar name={user.name} size="sm" />
+                    <Avatar name={user.name} src={user.avatarUrl} size="sm" />
                   </Link>
                   <div className="min-w-0">
                     <Link

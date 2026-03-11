@@ -85,7 +85,7 @@ export function NotificationList({
                 ) : null}
               </span>
               {firstActor ? (
-                <Avatar name={firstActor.name} size="sm" className="shrink-0" />
+                <Avatar name={firstActor.name} src={firstActor.avatarUrl} size="sm" className="shrink-0" />
               ) : (
                 <span className="shrink-0 w-8 h-8 rounded-full bg-gray-200" aria-hidden />
               )}

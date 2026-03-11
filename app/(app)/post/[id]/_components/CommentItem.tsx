@@ -131,7 +131,7 @@ export function CommentItem({
 
   return (
     <div className={`flex gap-3 ${wrapperClass}`}>
-      <Avatar name={comment.author.name} size="sm" className="shrink-0 mt-0.5" />
+      <Avatar name={comment.author.name} src={comment.author.avatarUrl} size="sm" className="shrink-0 mt-0.5" />
 
       <div className="min-w-0 flex-1">
         {/* Header */}

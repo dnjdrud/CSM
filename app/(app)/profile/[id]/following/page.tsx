@@ -46,7 +46,7 @@ export default async function FollowingPage({
           {following.map((person) => (
             <li key={person.id} className="flex items-center gap-3 py-3">
               <Link href={`/profile/${person.id}`} className="shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded-full">
-                <Avatar name={person.name} size="md" />
+                <Avatar name={person.name} src={person.avatarUrl} size="md" />
               </Link>
               <div className="min-w-0 flex-1">
                 <Link

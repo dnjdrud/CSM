@@ -59,7 +59,7 @@ function normalizeTag(tag: string): string {
   return tag.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null; denomination?: string | null; faith_years?: number | null; username?: string | null; church?: string | null; support_url?: string | null }): User {
+function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null; denomination?: string | null; faith_years?: number | null; username?: string | null; church?: string | null; support_url?: string | null; avatar_url?: string | null }): User {
   return {
     id: r.id,
     name: r.name ?? "",
@@ -73,6 +73,7 @@ function rowToUser(r: { id: string; name: string | null; role: string | null; bi
     denomination: r.denomination ?? undefined,
     faithYears: r.faith_years ?? undefined,
     supportUrl: r.support_url ?? undefined,
+    avatarUrl: r.avatar_url ?? undefined,
   };
 }
 
@@ -290,7 +291,7 @@ async function getAuthorMap(supabase: Awaited<ReturnType<typeof supabaseServer>>
   if (ids.length === 0) return new Map();
   const client = getSupabaseAdmin() ?? supabase;
   try {
-    const { data, error } = await client.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at").in("id", ids);
+    const { data, error } = await client.from("users").select("id, name, role, bio, affiliation, created_at, deactivated_at, avatar_url").in("id", ids);
     if (error) {
       console.warn("[getAuthorMap] users select failed:", error.message);
       return new Map(ids.map((id) => [id, placeholderUser(id)]));
@@ -648,6 +649,28 @@ export async function listCommentsByPostId(postId: string): Promise<(Comment & {
       } as Comment & { author: User };
     })
     .filter((x): x is Comment & { author: User } => x != null);
+}
+
+export async function getCommentById(commentId: string): Promise<(Comment & { author: User }) | null> {
+  const supabase = await supabaseServer();
+  const { data: r, error } = await supabase
+    .from("comments")
+    .select("id, post_id, author_id, content, parent_id, created_at")
+    .eq("id", commentId)
+    .single();
+  if (error || !r) return null;
+  const authorMap = await getAuthorMap(supabase, [r.author_id]);
+  const author = authorMap.get(r.author_id);
+  if (!author) return null;
+  return {
+    id: r.id,
+    postId: r.post_id,
+    authorId: r.author_id,
+    content: r.content,
+    createdAt: r.created_at ?? new Date().toISOString(),
+    parentId: r.parent_id ?? undefined,
+    author,
+  } as Comment & { author: User };
 }
 
 export async function addComment(input: {
@@ -1109,7 +1132,7 @@ export async function getUserById(id: string): Promise<User | null> {
   return r.user;
 }
 
-const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church, support_url";
+const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church, support_url, avatar_url";
 const USERS_SELECT_MINIMAL = "id, name, role, bio, affiliation, created_at";
 
 function isColumnError(msg: string): boolean {
@@ -1979,4 +2002,38 @@ export async function countUnreadDMs(userId: string): Promise<number> {
     .eq("recipient_id", userId)
     .is("read_at", null);
   return count ?? 0;
+}
+
+/**
+ * Upload a profile avatar to Supabase Storage and update the user's avatar_url.
+ * Bucket: avatars (public). Path: {userId}/avatar.{ext}
+ */
+export async function uploadAvatar(
+  userId: string,
+  fileBuffer: ArrayBuffer,
+  mimeType: string
+): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return { ok: false, error: "Storage not available" };
+
+  const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+  const path = `${userId}/avatar.${ext}`;
+
+  const { error: uploadError } = await admin.storage
+    .from("avatars")
+    .upload(path, fileBuffer, { contentType: mimeType, upsert: true });
+
+  if (uploadError) return { ok: false, error: uploadError.message };
+
+  const { data: urlData } = admin.storage.from("avatars").getPublicUrl(path);
+  const url = `${urlData.publicUrl}?t=${Date.now()}`;
+
+  const { error: updateError } = await admin
+    .from("users")
+    .update({ avatar_url: url })
+    .eq("id", userId);
+
+  if (updateError) return { ok: false, error: updateError.message };
+
+  return { ok: true, url };
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import { addComment, deleteComment, updateComment, deletePost, updatePost, toggleCommentLike } from "@/lib/data/repository";
+import { addComment, deleteComment, updateComment, deletePost, updatePost, toggleCommentLike, getCommentById } from "@/lib/data/repository";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
 
 export async function addCommentAction(
@@ -117,6 +117,10 @@ export async function toggleCommentLikeAction(
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed" };
   }
+}
+
+export async function getCommentByIdAction(commentId: string) {
+  return getCommentById(commentId);
 }
 
 export async function updatePostAction(

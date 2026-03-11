@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import { toggleMute, toggleBlock, deactivateUser, restoreUser, updateUserProfile, getCurrentUser, listPostsByAuthorIdPaged, listFollowingIds, isBlocked, isMuted, listSharedNotesByUserIdPaged } from "@/lib/data/repository";
+import { toggleMute, toggleBlock, deactivateUser, restoreUser, updateUserProfile, getCurrentUser, listPostsByAuthorIdPaged, listFollowingIds, isBlocked, isMuted, listSharedNotesByUserIdPaged, uploadAvatar } from "@/lib/data/repository";
 import { supabaseServer } from "@/lib/supabase/server";
 import { canViewPost } from "@/lib/domain/guards";
 import type { UserRole, PostWithAuthor, Note } from "@/lib/domain/types";
@@ -116,6 +116,22 @@ export async function deactivateAccountAction(): Promise<{ ok: boolean; error?: 
     return { ok: false, error: e instanceof Error ? e.message : "Failed to deactivate" };
   }
   return { ok: true };
+}
+
+export async function uploadAvatarAction(formData: FormData): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "로그인이 필요합니다." };
+  const file = formData.get("avatar") as File | null;
+  if (!file || file.size === 0) return { ok: false, error: "파일을 선택해주세요." };
+  if (file.size > 5 * 1024 * 1024) return { ok: false, error: "파일 크기는 5MB 이하여야 합니다." };
+  const allowed = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowed.includes(file.type)) return { ok: false, error: "JPG, PNG, WEBP 형식만 지원합니다." };
+  const buffer = await file.arrayBuffer();
+  const result = await uploadAvatar(session.userId, buffer, file.type);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath(`/profile/${session.userId}`);
+  revalidatePath(`/profile/${session.userId}/edit`);
+  return { ok: true, url: result.url };
 }
 
 /** Restore account within 7 days. */
