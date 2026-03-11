@@ -6,9 +6,6 @@ import { ToastProvider } from "@/components/ui/Toast";
 import Link from "next/link";
 import { BottomNavWrapper } from "@/components/layout/BottomNavWrapper";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 export const metadata: Metadata = {
   title: "Cellah — Haven for Digital Exodus",
   description:

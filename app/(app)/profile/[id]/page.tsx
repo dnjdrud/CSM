@@ -9,9 +9,9 @@ import {
   listFollowingIds,
 } from "@/lib/data/repository";
 import { isBlocked, isMuted } from "@/lib/data/repository";
+import { getAuthUserId } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export default async function ProfilePage({
   params,
@@ -20,13 +20,17 @@ export default async function ProfilePage({
 }) {
   const { id } = await params;
 
-  const [{ user, errorMessage }, currentUser, posts, followerIds, followingIds] =
+  // getAuthUserId: cookie-only, no DB call — lets us include viewerFollowingIds in the main batch
+  const currentUserId = await getAuthUserId();
+
+  const [{ user, errorMessage }, currentUser, posts, followerIds, followingIds, viewerFollowingIds] =
     await Promise.all([
       getProfileWithError(id),
-      getCurrentUser(),
+      currentUserId ? getCurrentUser() : Promise.resolve(null),
       listPostsByAuthorId(id),
       listFollowerIds(id),
       listFollowingIds(id),
+      currentUserId ? listFollowingIds(currentUserId) : Promise.resolve([]),
     ]);
 
   if (!user) {
@@ -42,16 +46,9 @@ export default async function ProfilePage({
     );
   }
 
-  const currentUserId = currentUser?.id ?? null;
   const blocked = currentUserId ? isBlocked(currentUserId, id) : false;
   const muted = currentUserId ? isMuted(currentUserId, id) : false;
-
-  const viewerFollowingIds = currentUserId
-    ? await listFollowingIds(currentUserId)
-    : [];
-  const following = currentUserId
-    ? viewerFollowingIds.includes(user.id)
-    : false;
+  const following = currentUserId ? viewerFollowingIds.includes(user.id) : false;
 
   const testimonyPosts = posts.filter((p) => p.category === "TESTIMONY");
   const normalPosts = posts.filter((p) => p.category !== "TESTIMONY");

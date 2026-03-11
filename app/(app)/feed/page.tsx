@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted } from "@/lib/data/repository";
 import { getSession } from "@/lib/auth/session";
@@ -21,25 +20,33 @@ export default async function FeedPage({
 }: {
   searchParams: Promise<{ scope?: string; message?: string }>;
 }) {
-  const [session, currentUser] = await Promise.all([getSession(), getCurrentUser()]);
-  const params = await searchParams;
+  // Batch 1: user identity + search params (no data dependency between them)
+  const [params, [session, currentUser]] = await Promise.all([
+    searchParams,
+    Promise.all([getSession(), getCurrentUser()]),
+  ]);
+
   const scopeParam = scopeFromSearchParams(params);
   const showAdminRequiredBanner = params.message === "admin_required";
-  const adminContext = await getAdminOrNull();
-  const isAdmin = Boolean(adminContext);
 
-  const firstPage = await listFeedPostsPage({
-    currentUserId: currentUser?.id ?? null,
-    scope: scopeParam,
-    limit: FEED_PAGE_SIZE,
-    cursor: null,
-  });
+  // Batch 2: all data queries in parallel (adminContext, firstPage, followingIds)
+  const [adminContext, firstPage, followingIds] = await Promise.all([
+    getAdminOrNull(),
+    listFeedPostsPage({
+      currentUserId: currentUser?.id ?? null,
+      scope: scopeParam,
+      limit: FEED_PAGE_SIZE,
+      cursor: null,
+    }),
+    currentUser ? listFollowingIds(currentUser.id) : Promise.resolve([]),
+  ]);
+
+  const isAdmin = Boolean(adminContext);
 
   if (process.env.NODE_ENV !== "production" && (firstPage.error || firstPage.items.length === 0)) {
     console.log("[FeedPage]", { postCount: firstPage.items.length, feedError: firstPage.error });
   }
 
-  const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
   const isFollowing = (followerId: string, followingId: string) =>
     followerId === currentUser?.id && followingIds.includes(followingId);
 
