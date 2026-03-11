@@ -664,6 +664,24 @@ export async function listFollowerIds(userId: string): Promise<string[]> {
   return follows.filter((f) => f.followingId === userId).map((f) => f.followerId);
 }
 
+export async function listFollowers(userId: string): Promise<User[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listFollowers(userId);
+  const ids = follows
+    .filter((f) => f.followingId === userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map((f) => f.followerId);
+  return ids.map((id) => users.find((u) => u.id === id)).filter((u): u is User => u != null);
+}
+
+export async function listFollowing(userId: string): Promise<User[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listFollowing(userId);
+  const ids = follows
+    .filter((f) => f.followerId === userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map((f) => f.followingId);
+  return ids.map((id) => users.find((u) => u.id === id)).filter((u): u is User => u != null);
+}
+
 export async function listFollowingWithNames(userId: string): Promise<{ id: string; name: string }[]> {
   if (DATA_MODE === "supabase") return supabaseRepo.listFollowingWithNames(userId);
   return [];

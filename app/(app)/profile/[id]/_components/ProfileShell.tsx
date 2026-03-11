@@ -115,12 +115,18 @@ export function ProfileShell({
                 <span>
                   <strong className="text-gray-900">{postsCount}</strong> posts
                 </span>
-                <span>
+                <Link
+                  href={`/profile/${user.id}/followers`}
+                  className="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+                >
                   <strong className="text-gray-900">{followerCount}</strong> followers
-                </span>
-                <span>
+                </Link>
+                <Link
+                  href={`/profile/${user.id}/following`}
+                  className="hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+                >
                   <strong className="text-gray-900">{followingCount}</strong> following
-                </span>
+                </Link>
               </div>
             </div>
           </div>

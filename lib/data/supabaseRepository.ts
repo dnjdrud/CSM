@@ -736,6 +736,44 @@ export async function listFollowerIds(userId: string): Promise<string[]> {
   return (data ?? []).map((r) => r.follower_id);
 }
 
+export async function listFollowers(userId: string): Promise<User[]> {
+  const supabase = await supabaseServer();
+  const { data: followRows } = await supabase
+    .from("follows")
+    .select("follower_id")
+    .eq("following_id", userId)
+    .order("created_at", { ascending: false });
+  if (!followRows?.length) return [];
+  const ids = followRows.map((r) => r.follower_id);
+  const { data: rows } = await supabase
+    .from("users")
+    .select("id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church")
+    .in("id", ids)
+    .is("deactivated_at", null);
+  if (!rows?.length) return [];
+  const map = new Map(rows.map((r) => [r.id, rowToUser(r)]));
+  return ids.map((id) => map.get(id)).filter((u): u is User => u != null);
+}
+
+export async function listFollowing(userId: string): Promise<User[]> {
+  const supabase = await supabaseServer();
+  const { data: followRows } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", userId)
+    .order("created_at", { ascending: false });
+  if (!followRows?.length) return [];
+  const ids = followRows.map((r) => r.following_id);
+  const { data: rows } = await supabase
+    .from("users")
+    .select("id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church")
+    .in("id", ids)
+    .is("deactivated_at", null);
+  if (!rows?.length) return [];
+  const map = new Map(rows.map((r) => [r.id, rowToUser(r)]));
+  return ids.map((id) => map.get(id)).filter((u): u is User => u != null);
+}
+
 export async function toggleFollow(followerId: string, followingId: string): Promise<boolean> {
   const supabase = await supabaseServer();
   const { data: existing } = await supabase.from("follows").select("follower_id").eq("follower_id", followerId).eq("following_id", followingId).maybeSingle();

@@ -6,6 +6,8 @@ export {
   getProfileWithError,
   listFollowingIds,
   listFollowerIds,
+  listFollowers,
+  listFollowing,
   toggleFollow,
   isBlocked,
   isMuted,
