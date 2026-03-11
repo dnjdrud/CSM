@@ -57,13 +57,15 @@ function normalizeTag(tag: string): string {
   return tag.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null; denomination?: string | null; faith_years?: number | null }): User {
+function rowToUser(r: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; deactivated_at?: string | null; denomination?: string | null; faith_years?: number | null; username?: string | null; church?: string | null }): User {
   return {
     id: r.id,
     name: r.name ?? "",
     role: (r.role as UserRole) ?? "LAY",
     bio: r.bio ?? undefined,
     affiliation: r.affiliation ?? undefined,
+    church: r.church ?? undefined,
+    username: r.username ?? undefined,
     createdAt: r.created_at ?? new Date().toISOString(),
     deactivatedAt: r.deactivated_at ?? undefined,
     denomination: r.denomination ?? undefined,
@@ -964,7 +966,7 @@ export async function getUserById(id: string): Promise<User | null> {
   return r.user;
 }
 
-const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years";
+const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church";
 const USERS_SELECT_MINIMAL = "id, name, role, bio, affiliation, created_at";
 
 function isColumnError(msg: string): boolean {
@@ -1012,6 +1014,39 @@ export async function restoreUser(userId: string): Promise<{ ok: boolean; error?
   return { ok: true };
 }
 
+/** Update own profile fields. Uses user's own session (RLS allows self-update). */
+export async function updateUserProfile(
+  userId: string,
+  data: {
+    name?: string;
+    username?: string | null;
+    bio?: string | null;
+    affiliation?: string | null;
+    church?: string | null;
+    denomination?: string | null;
+    faithYears?: number | null;
+    role?: UserRole;
+  }
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await supabaseServer();
+  const update: Record<string, unknown> = {};
+  if (data.name !== undefined) update.name = data.name.trim() || undefined;
+  if ("username" in data) update.username = data.username?.trim() || null;
+  if ("bio" in data) update.bio = data.bio?.trim() || null;
+  if ("affiliation" in data) update.affiliation = data.affiliation?.trim() || null;
+  if ("church" in data) update.church = data.church?.trim() || null;
+  if ("denomination" in data) update.denomination = data.denomination?.trim() || null;
+  if ("faithYears" in data) update.faith_years = data.faithYears ?? null;
+  if (data.role !== undefined) update.role = data.role;
+  if (Object.keys(update).length === 0) return { ok: true };
+  const { error } = await supabase.from("users").update(update).eq("id", userId);
+  if (error) {
+    if (/unique|duplicate/i.test(error.message)) return { error: "이 사용자 이름은 이미 사용 중입니다." };
+    return { error: error.message };
+  }
+  return { ok: true };
+}
+
 /**
  * Suggest people the user might want to follow.
  * Returns up to `limit` users with the same role, excluding those already followed.
@@ -1046,6 +1081,80 @@ export async function suggestPeopleToFollow(params: {
     .map((r) => rowToUser(r))
     .filter((u) => !excludeIds.has(u.id))
     .slice(0, limit);
+}
+
+// ----- Bookmarks -----
+
+export async function toggleBookmark(userId: string, postId: string): Promise<{ bookmarked: boolean }> {
+  const supabase = await supabaseServer();
+  const { data: existing } = await supabase
+    .from("user_bookmarks")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("post_id", postId)
+    .maybeSingle();
+  if (existing) {
+    await supabase.from("user_bookmarks").delete().eq("id", existing.id);
+    return { bookmarked: false };
+  }
+  await supabase.from("user_bookmarks").insert({ user_id: userId, post_id: postId });
+  return { bookmarked: true };
+}
+
+export async function listBookmarks(userId: string, limit = 50): Promise<PostWithAuthor[]> {
+  const supabase = await supabaseServer();
+  const { data: bookmarkRows } = await supabase
+    .from("user_bookmarks")
+    .select("post_id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (!bookmarkRows?.length) return [];
+  const postIds = bookmarkRows.map((r) => r.post_id);
+  const { data: rows } = await supabase
+    .from("posts")
+    .select(POSTS_FEED_SELECT)
+    .in("id", postIds);
+  if (!rows?.length) return [];
+  const authorIds = [...new Set(rows.map((r) => r.author_id))];
+  const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
+    getAuthorMap(supabase, authorIds),
+    getReactionCountsByPostIds(supabase, postIds),
+    supabase.from("reactions").select("post_id, type").in("post_id", postIds).eq("user_id", userId),
+  ]);
+  const reactionsByPost = new Map<string, { prayed: boolean; withYou: boolean }>();
+  rows.forEach((p) => {
+    const userReactions = (reactionRows ?? []).filter((r) => r.post_id === p.id);
+    reactionsByPost.set(p.id, {
+      prayed: userReactions.some((r) => r.type === "PRAYED"),
+      withYou: userReactions.some((r) => r.type === "WITH_YOU"),
+    });
+  });
+  const postMap = new Map(rows.map((r) => [r.id, r]));
+  return bookmarkRows
+    .map((b) => {
+      const r = postMap.get(b.post_id);
+      if (!r) return null;
+      const author = authorMap.get(r.author_id) ?? placeholderUser(r.author_id);
+      return {
+        ...rowToPost(r),
+        author,
+        reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
+        reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+      } as PostWithAuthor;
+    })
+    .filter((x): x is PostWithAuthor => x != null);
+}
+
+export async function getBookmarkedPostIds(userId: string, postIds: string[]): Promise<string[]> {
+  if (!postIds.length) return [];
+  const supabase = await supabaseServer();
+  const { data } = await supabase
+    .from("user_bookmarks")
+    .select("post_id")
+    .eq("user_id", userId)
+    .in("post_id", postIds);
+  return (data ?? []).map((r) => r.post_id);
 }
 
 export async function createReport(params: {

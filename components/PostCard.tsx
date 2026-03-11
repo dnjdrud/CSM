@@ -38,6 +38,7 @@ type DeleteCommentAction = (commentId: string, postId?: string) => Promise<{ ok:
 type UpdateCommentAction = (commentId: string, content: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
 type DeletePostAction = (postId: string) => Promise<{ ok: boolean; error?: string }>;
 type UpdatePostAction = (postId: string, content: string, category?: string, visibility?: string, tags?: string[]) => Promise<{ ok: boolean; error?: string }>;
+type ToggleBookmarkAction = (postId: string) => Promise<{ ok: boolean; bookmarked: boolean } | void>;
 
 const CONTENT_CLAMP_LINES = 6;
 
@@ -46,6 +47,8 @@ export function PostCard({
   currentUserId = null,
   compact = false,
   onToggleReaction,
+  onToggleBookmark,
+  initialBookmarked = false,
   getCommentsForPost,
   addCommentAction: addCommentActionProp,
   deleteCommentAction: deleteCommentActionProp,
@@ -59,7 +62,9 @@ export function PostCard({
   compact?: boolean;
   /** When set, show Follow button for post author (feed only). */
   initialFollowing?: boolean;
+  initialBookmarked?: boolean;
   onToggleReaction?: (postId: string, type: ReactionType) => Promise<{ ok?: boolean; reacted?: boolean } | void>;
+  onToggleBookmark?: ToggleBookmarkAction;
   getCommentsForPost?: (postId: string) => Promise<CommentWithAuthor[]>;
   addCommentAction?: AddCommentAction;
   deleteCommentAction?: DeleteCommentAction;
@@ -77,6 +82,7 @@ export function PostCard({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<CommentWithAuthor[] | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [bookmarked, setBookmarked] = useState(initialBookmarked);
   const isAuthor = effectiveUserId != null && effectiveUserId === post.authorId;
   const canReact = Boolean(onToggleReaction);
   const canCommentInline = Boolean(getCommentsForPost && effectiveUserId != null);
@@ -155,6 +161,18 @@ export function PostCard({
     } catch {
       setResponses(prevResponses);
       setCounts(prevCounts);
+    }
+  }
+
+  async function handleBookmark() {
+    if (!onToggleBookmark) return;
+    const prev = bookmarked;
+    setBookmarked(!prev);
+    try {
+      const result = await onToggleBookmark(post.id);
+      if (result && result.ok === false) setBookmarked(prev);
+    } catch {
+      setBookmarked(prev);
     }
   }
 
@@ -312,6 +330,18 @@ export function PostCard({
             <span aria-hidden>💬</span>
             Comment
           </Link>
+        )}
+        {onToggleBookmark && (
+          <button
+            type="button"
+            onClick={handleBookmark}
+            aria-label={bookmarked ? "Remove bookmark" : "Bookmark this post"}
+            className={`ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-transparent bg-transparent px-2 py-2 transition-colors duration-200 hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${bookmarked ? "text-theme-text" : "text-theme-muted"}`}
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
         )}
       </div>
 

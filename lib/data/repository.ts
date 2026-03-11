@@ -181,6 +181,24 @@ export async function restoreUser(userId: string): Promise<{ ok: boolean; error?
   return { ok: false, error: "Restore is not available in memory mode" };
 }
 
+/** Update own profile fields (name, bio, church, denomination, etc.). */
+export async function updateUserProfile(
+  userId: string,
+  data: {
+    name?: string;
+    username?: string | null;
+    bio?: string | null;
+    affiliation?: string | null;
+    church?: string | null;
+    denomination?: string | null;
+    faithYears?: number | null;
+    role?: UserRole;
+  }
+): Promise<{ ok: true } | { error: string }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.updateUserProfile(userId, data);
+  return { error: "Profile update is not available in memory mode" };
+}
+
 /** Suggest people the user might want to follow (same role, not yet following). */
 export async function suggestPeopleToFollow(params: {
   currentUserId: string;
@@ -1067,4 +1085,64 @@ export async function completeSupportIntent(
 
 export async function failSupportIntent(intentId: string): Promise<void> {
   if (DATA_MODE === "supabase") return supabaseRepo.failSupportIntent(intentId);
+}
+
+// ----- Bookmarks -----
+
+type BookmarkEntry = { userId: string; postId: string; createdAt: string };
+let bookmarks: BookmarkEntry[] = [];
+const bookmarksAdapter = createLocalAdapter<BookmarkEntry[]>("bookmarks");
+
+function loadBookmarks() {
+  if (typeof window === "undefined") return;
+  const loaded = bookmarksAdapter.load();
+  if (loaded != null && Array.isArray(loaded)) bookmarks = loaded;
+}
+loadBookmarks();
+
+export async function toggleBookmark(userId: string, postId: string): Promise<{ bookmarked: boolean }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.toggleBookmark(userId, postId);
+  const i = bookmarks.findIndex((b) => b.userId === userId && b.postId === postId);
+  if (i >= 0) {
+    bookmarks.splice(i, 1);
+    bookmarksAdapter.save(bookmarks);
+    return { bookmarked: false };
+  }
+  bookmarks.push({ userId, postId, createdAt: new Date().toISOString() });
+  bookmarksAdapter.save(bookmarks);
+  return { bookmarked: true };
+}
+
+export async function listBookmarks(userId: string, limit = 50): Promise<PostWithAuthor[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listBookmarks(userId, limit);
+  const userBookmarks = bookmarks
+    .filter((b) => b.userId === userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, limit);
+  const postIds = new Set(userBookmarks.map((b) => b.postId));
+  const bookmarkedPosts = posts.filter((p) => postIds.has(p.id));
+  return bookmarkedPosts.map((p) => {
+    const author = users.find((u) => u.id === p.authorId) ?? {
+      id: p.authorId, name: "Unknown", role: "LAY" as const, createdAt: p.createdAt,
+    };
+    const postReactions = reactions.filter((r) => r.postId === p.id);
+    return {
+      ...p,
+      author,
+      reactionsByCurrentUser: {
+        prayed: postReactions.some((r) => r.userId === userId && r.type === "PRAYED"),
+        withYou: postReactions.some((r) => r.userId === userId && r.type === "WITH_YOU"),
+      },
+      reactionCounts: {
+        prayed: postReactions.filter((r) => r.type === "PRAYED").length,
+        withYou: postReactions.filter((r) => r.type === "WITH_YOU").length,
+      },
+    } as PostWithAuthor;
+  });
+}
+
+export async function getBookmarkedPostIds(userId: string, postIds: string[]): Promise<string[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getBookmarkedPostIds(userId, postIds);
+  const set = new Set(postIds);
+  return bookmarks.filter((b) => b.userId === userId && set.has(b.postId)).map((b) => b.postId);
 }

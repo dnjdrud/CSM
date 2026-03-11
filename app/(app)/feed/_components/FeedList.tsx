@@ -7,6 +7,7 @@ type Props = {
   scope: "ALL" | "FOLLOWING";
   currentUserId: string | null;
   followingIds: string[];
+  bookmarkedPostIds?: string[];
 };
 
 export function FeedList({
@@ -15,6 +16,7 @@ export function FeedList({
   scope,
   currentUserId,
   followingIds,
+  bookmarkedPostIds = [],
 }: Props) {
   return (
     <FeedInfiniteList
@@ -23,6 +25,7 @@ export function FeedList({
       scope={scope}
       currentUserId={currentUserId}
       followingIds={followingIds}
+      bookmarkedPostIds={bookmarkedPostIds}
     />
   );
 }

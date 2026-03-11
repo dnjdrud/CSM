@@ -7,6 +7,7 @@ import { createPost, toggleReaction } from "@/backend/features/posts";
 import { listFeedPostsPage, decodeCursor, encodeCursor } from "@/backend/features/feed";
 import { listFollowingIds, isBlocked, isMuted, toggleFollow } from "@/backend/features/profile";
 import { addComment, listCommentsByPostId } from "@/backend/features/comments";
+import { toggleBookmark } from "@/backend/features/bookmarks";
 import type { ReactionType, PostWithAuthor } from "@/lib/domain/types";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
 import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
@@ -22,6 +23,19 @@ export async function toggleReactionAction(postId: string, type: ReactionType): 
     return { ok: true, reacted };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Something went wrong" };
+  }
+}
+
+/** Toggle bookmark (save/unsave post). Returns { ok, bookmarked } for optimistic UI. */
+export async function toggleBookmarkAction(postId: string): Promise<{ ok: boolean; bookmarked: boolean }> {
+  const session = await getSession();
+  if (!session) return { ok: false, bookmarked: false };
+  try {
+    const { bookmarked } = await toggleBookmark(session.userId, postId);
+    revalidatePath("/bookmarks");
+    return { ok: true, bookmarked };
+  } catch (e) {
+    return { ok: false, bookmarked: false };
   }
 }
 

@@ -3,8 +3,36 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import { toggleMute, toggleBlock, deactivateUser, restoreUser } from "@/lib/data/repository";
+import { toggleMute, toggleBlock, deactivateUser, restoreUser, updateUserProfile } from "@/lib/data/repository";
 import { supabaseServer } from "@/lib/supabase/server";
+import type { UserRole } from "@/lib/domain/types";
+
+const ALLOWED_ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
+
+export type UpdateProfileResult = { ok: true } | { error: string };
+
+export async function updateProfileAction(data: {
+  name?: string;
+  username?: string | null;
+  bio?: string | null;
+  affiliation?: string | null;
+  church?: string | null;
+  denomination?: string | null;
+  faithYears?: number | null;
+  role?: UserRole;
+}): Promise<UpdateProfileResult> {
+  const session = await getSession();
+  if (!session) return { error: "로그인이 필요합니다." };
+  const name = data.name?.trim();
+  if (name !== undefined && !name) return { error: "이름은 비워둘 수 없습니다." };
+  const role = data.role && ALLOWED_ROLES.includes(data.role) ? data.role : undefined;
+  const result = await updateUserProfile(session.userId, { ...data, name: name || undefined, role });
+  if ("ok" in result && result.ok) {
+    revalidatePath(`/profile/${session.userId}`);
+    revalidatePath(`/profile/${session.userId}/edit`);
+  }
+  return result;
+}
 
 export async function toggleFollowAction(profileId: string): Promise<boolean> {
   const session = await getSession();

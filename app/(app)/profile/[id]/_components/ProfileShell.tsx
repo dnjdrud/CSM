@@ -25,7 +25,6 @@ type Props = {
   postsCount: number;
   followerCount: number;
   followingCount: number;
-  username?: string | null;
   children: React.ReactNode;
 };
 
@@ -38,7 +37,6 @@ export function ProfileShell({
   postsCount,
   followerCount,
   followingCount,
-  username,
   children,
 }: Props) {
   const pathname = usePathname();
@@ -48,7 +46,7 @@ export function ProfileShell({
   return (
     <div className="bg-white">
       <div className="mx-auto w-full max-w-4xl px-4 py-6">
-        {/* Top row: back + actions (match other pages) */}
+        {/* Top row: back + actions */}
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href="/feed"
@@ -69,12 +67,20 @@ export function ProfileShell({
               </>
             )}
             {isOwnProfile && (
-              <Link
-                href="/me"
-                className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
-              >
-                My Life
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/profile/${user.id}/edit`}
+                  className="inline-flex items-center rounded-md bg-gray-800 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+                >
+                  프로필 편집
+                </Link>
+                <Link
+                  href="/me"
+                  className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+                >
+                  My Life
+                </Link>
+              </div>
             )}
           </div>
         </div>
@@ -89,7 +95,8 @@ export function ProfileShell({
                   {user.name}
                 </h1>
                 <p className="mt-0.5 text-[13px] text-neutral-500">
-                  {username ? `@${username}` : ROLE_DISPLAY[user.role]}
+                  {user.username ? `@${user.username} · ` : ""}{ROLE_DISPLAY[user.role]}
+                  {user.denomination ? ` · ${user.denomination}` : ""}
                 </p>
               </div>
               {user.bio && (
@@ -97,9 +104,13 @@ export function ProfileShell({
                   {user.bio}
                 </p>
               )}
-              {user.affiliation && (
-                <p className="text-[13px] text-neutral-500">{user.affiliation}</p>
-              )}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-neutral-500">
+                {user.church && <span>{user.church}</span>}
+                {user.affiliation && <span>{user.affiliation}</span>}
+                {user.faithYears != null && (
+                  <span>신앙 {user.faithYears}년</span>
+                )}
+              </div>
               <div className="mt-2 flex flex-wrap items-center gap-4 text-[13px] text-gray-600">
                 <span>
                   <strong className="text-gray-900">{postsCount}</strong> posts

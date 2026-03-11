@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted } from "@/lib/data/repository";
+import { listFeedPostsPage, getCurrentUser, listFollowingIds, isBlocked, isMuted, getBookmarkedPostIds } from "@/lib/data/repository";
 import { getSession } from "@/lib/auth/session";
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
@@ -42,6 +42,10 @@ export default async function FeedPage({
     }),
     currentUser ? listFollowingIds(currentUser.id) : Promise.resolve([]),
   ]);
+
+  const bookmarkedPostIds = currentUser
+    ? await getBookmarkedPostIds(currentUser.id, firstPage.items.map((p) => p.id))
+    : [];
 
   const isAdmin = Boolean(adminContext);
 
@@ -108,6 +112,7 @@ export default async function FeedPage({
             scope={scopeParam}
             currentUserId={currentUser?.id ?? null}
             followingIds={followingIds}
+            bookmarkedPostIds={bookmarkedPostIds}
           />
         )}
       </div>

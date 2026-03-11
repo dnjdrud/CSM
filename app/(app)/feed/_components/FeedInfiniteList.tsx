@@ -15,6 +15,7 @@ type Props = {
   scope: Scope;
   currentUserId?: string | null;
   followingIds: string[];
+  bookmarkedPostIds?: string[];
 };
 
 export function FeedInfiniteList({
@@ -23,6 +24,7 @@ export function FeedInfiniteList({
   scope,
   currentUserId,
   followingIds,
+  bookmarkedPostIds = [],
 }: Props) {
   const [items, setItems] = useState<PostWithAuthor[]>(initialItems);
   const [nextCursorStr, setNextCursorStr] = useState<string | null>(initialNextCursorStr);
@@ -77,6 +79,7 @@ export function FeedInfiniteList({
               post={post}
               currentUserId={currentUserId ?? null}
               initialFollowing={followingIds.includes(post.authorId)}
+              initialBookmarked={bookmarkedPostIds.includes(post.id)}
               compact
             />
           </li>

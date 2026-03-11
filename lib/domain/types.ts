@@ -17,6 +17,8 @@ export interface User {
   role: UserRole;
   bio?: string;
   affiliation?: string;
+  church?: string | null;
+  username?: string | null;
   createdAt: string; // ISO
   /** Set when user deactivates account; reversible within 7 days. */
   deactivatedAt?: string | null; // ISO

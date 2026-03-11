@@ -142,6 +142,11 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               Sign in
             </Link>
           )}
+          {user && (
+            <Link href="/bookmarks" className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Saved posts">
+              Saved
+            </Link>
+          )}
           <Link href="/write" className="text-[15px] font-medium text-theme-primary hover:text-theme-accent">Write</Link>
         </nav>
       </div>
