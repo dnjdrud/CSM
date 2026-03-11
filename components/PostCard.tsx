@@ -16,6 +16,7 @@ import { CommentList } from "@/app/(app)/post/[id]/_components/CommentList";
 import { PostActionsMenu } from "@/app/(app)/post/[id]/_components/PostActionsMenu";
 import { FollowButton } from "@/components/FollowButton";
 import { useClientSession } from "@/lib/auth/useClientSession";
+import { ReactorsModal } from "@/components/ReactorsModal";
 
 function relativeTime(iso: string): string {
   const d = new Date(iso);
@@ -36,9 +37,46 @@ type CommentWithAuthor = Comment & { author: User };
 type AddCommentAction = (postId: string, content: string, parentId?: string) => Promise<{ ok: boolean; error?: string }>;
 type DeleteCommentAction = (commentId: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
 type UpdateCommentAction = (commentId: string, content: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
+function ShareButton({ postId }: { postId: string }) {
+  const [copied, setCopied] = useState(false);
+  async function handleCopy() {
+    const url = `${window.location.origin}/post/${postId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  }
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      aria-label="링크 복사"
+      title={copied ? "복사됨!" : "링크 복사"}
+      className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-transparent bg-transparent px-2 py-2 text-theme-muted transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2"
+    >
+      {copied ? (
+        <svg viewBox="0 0 24 24" className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12" /></svg>
+      ) : (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      )}
+    </button>
+  );
+}
+
 type DeletePostAction = (postId: string) => Promise<{ ok: boolean; error?: string }>;
 type UpdatePostAction = (postId: string, content: string, category?: string, visibility?: string, tags?: string[]) => Promise<{ ok: boolean; error?: string }>;
 type ToggleBookmarkAction = (postId: string) => Promise<{ ok: boolean; bookmarked: boolean } | void>;
+type GetReactorsAction = (postId: string, type: ReactionType) => Promise<User[]>;
 
 const CONTENT_CLAMP_LINES = 6;
 
@@ -48,6 +86,7 @@ export function PostCard({
   compact = false,
   onToggleReaction,
   onToggleBookmark,
+  getReactorsAction,
   initialBookmarked = false,
   getCommentsForPost,
   addCommentAction: addCommentActionProp,
@@ -65,6 +104,7 @@ export function PostCard({
   initialBookmarked?: boolean;
   onToggleReaction?: (postId: string, type: ReactionType) => Promise<{ ok?: boolean; reacted?: boolean } | void>;
   onToggleBookmark?: ToggleBookmarkAction;
+  getReactorsAction?: GetReactorsAction;
   getCommentsForPost?: (postId: string) => Promise<CommentWithAuthor[]>;
   addCommentAction?: AddCommentAction;
   deleteCommentAction?: DeleteCommentAction;
@@ -82,7 +122,9 @@ export function PostCard({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [comments, setComments] = useState<CommentWithAuthor[] | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.commentCount ?? 0);
   const [bookmarked, setBookmarked] = useState(initialBookmarked);
+  const [reactorsModal, setReactorsModal] = useState<{ type: "PRAYED" | "WITH_YOU"; users: User[]; loading: boolean } | null>(null);
   const isAuthor = effectiveUserId != null && effectiveUserId === post.authorId;
   const canReact = Boolean(onToggleReaction);
   const canCommentInline = Boolean(getCommentsForPost && effectiveUserId != null);
@@ -113,6 +155,7 @@ export function PostCard({
 
   async function handleCommentSuccess() {
     await loadComments();
+    setCommentCount((c) => c + 1);
   }
 
   async function handlePrayed() {
@@ -176,7 +219,15 @@ export function PostCard({
     }
   }
 
+  async function openReactorsModal(type: "PRAYED" | "WITH_YOU") {
+    if (!getReactorsAction) return;
+    setReactorsModal({ type, users: [], loading: true });
+    const users = await getReactorsAction(post.id, type);
+    setReactorsModal({ type, users, loading: false });
+  }
+
   return (
+    <>
     <Card
       role="article"
       data-post-id={post.id}
@@ -217,9 +268,17 @@ export function PostCard({
               </span>
             )}
           </div>
-          <time dateTime={post.createdAt} className="mt-0.5 block text-[11px] text-theme-muted">
-            {relativeTime(post.createdAt)}
-          </time>
+          <div className="mt-0.5 flex items-center gap-1.5">
+            <time dateTime={post.createdAt} className="text-[11px] text-theme-muted">
+              {relativeTime(post.createdAt)}
+            </time>
+            {post.visibility === "PRIVATE" && (
+              <span className="text-[11px] text-theme-muted" title="나만 보기" aria-label="비공개">🔒</span>
+            )}
+            {post.visibility === "FOLLOWERS" && (
+              <span className="text-[11px] text-theme-muted" title="팔로워 공개" aria-label="팔로워 공개">👥</span>
+            )}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {isAuthor && (
@@ -291,9 +350,20 @@ export function PostCard({
               <span aria-hidden>🙏</span>
               Prayed
               {counts.prayed > 0 && (
-                <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.prayed} prayed`}>
-                  {counts.prayed}
-                </span>
+                getReactorsAction ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); openReactorsModal("PRAYED"); }}
+                    className="ml-1 tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
+                    aria-label={`${counts.prayed}명이 기도했습니다. 클릭하여 목록 보기`}
+                  >
+                    {counts.prayed}
+                  </button>
+                ) : (
+                  <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.prayed} prayed`}>
+                    {counts.prayed}
+                  </span>
+                )
               )}
             </button>
             <button
@@ -304,9 +374,20 @@ export function PostCard({
               <span aria-hidden>🤍</span>
               With you
               {counts.withYou > 0 && (
-                <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.withYou} with you`}>
-                  {counts.withYou}
-                </span>
+                getReactorsAction ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); openReactorsModal("WITH_YOU"); }}
+                    className="ml-1 tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
+                    aria-label={`${counts.withYou}명이 함께합니다. 클릭하여 목록 보기`}
+                  >
+                    {counts.withYou}
+                  </button>
+                ) : (
+                  <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.withYou} with you`}>
+                    {counts.withYou}
+                  </span>
+                )
               )}
             </button>
           </>
@@ -321,6 +402,11 @@ export function PostCard({
           >
             <span aria-hidden>💬</span>
             Comment
+            {commentCount > 0 && (
+              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${commentCount} comments`}>
+                {commentCount}
+              </span>
+            )}
           </button>
         ) : (
           <Link
@@ -329,8 +415,14 @@ export function PostCard({
           >
             <span aria-hidden>💬</span>
             Comment
+            {commentCount > 0 && (
+              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${commentCount} comments`}>
+                {commentCount}
+              </span>
+            )}
           </Link>
         )}
+        <ShareButton postId={post.id} />
         {onToggleBookmark && (
           <button
             type="button"
@@ -409,5 +501,14 @@ export function PostCard({
       )}
       </CardContent>
     </Card>
+    {reactorsModal && (
+      <ReactorsModal
+        type={reactorsModal.type}
+        users={reactorsModal.users}
+        loading={reactorsModal.loading}
+        onClose={() => setReactorsModal(null)}
+      />
+    )}
+    </>
   );
 }

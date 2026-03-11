@@ -8,7 +8,8 @@ import { listFeedPostsPage, decodeCursor, encodeCursor } from "@/backend/feature
 import { listFollowingIds, isBlocked, isMuted, toggleFollow } from "@/backend/features/profile";
 import { addComment, listCommentsByPostId } from "@/backend/features/comments";
 import { toggleBookmark } from "@/backend/features/bookmarks";
-import type { ReactionType, PostWithAuthor } from "@/lib/domain/types";
+import { getReactors } from "@/lib/data/repository";
+import type { ReactionType, PostWithAuthor, User } from "@/lib/domain/types";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
 import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
 
@@ -148,6 +149,17 @@ export async function composePostAction(params: {
       error: display,
     });
     return { ok: false, error: display };
+  }
+}
+
+/** Fetch reactors for a post reaction type (shown in modal). */
+export async function getReactorsAction(postId: string, type: ReactionType): Promise<User[]> {
+  const session = await getSession();
+  if (!session) return [];
+  try {
+    return await getReactors(postId, type);
+  } catch {
+    return [];
   }
 }
 

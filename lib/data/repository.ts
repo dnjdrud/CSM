@@ -473,12 +473,14 @@ function toPostWithAuthor(post: DomainPost, currentUserId: string | null): PostW
     prayed: postReactions.filter((r) => r.type === "PRAYED").length,
     withYou: postReactions.filter((r) => r.type === "WITH_YOU").length,
   };
+  const commentCount = comments.filter((c) => c.postId === post.id).length;
   return {
     ...post,
     tags: post.tags ?? [],
     author,
     reactionsByCurrentUser: { prayed, withYou },
     reactionCounts,
+    commentCount,
   };
 }
 
@@ -734,6 +736,14 @@ export async function toggleReaction(postId: string, userId: string, type: React
   }
   persistAll();
   return { reacted: true };
+}
+
+export async function getReactors(postId: string, type: ReactionType): Promise<User[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getReactors(postId, type);
+  const reactorIds = reactions
+    .filter((r) => r.postId === postId && r.type === type)
+    .map((r) => r.userId);
+  return reactorIds.map((id) => users.find((u) => u.id === id)).filter((u): u is User => u != null);
 }
 
 /** Create notification (id generated). Used by follow/comment/reaction flows. */

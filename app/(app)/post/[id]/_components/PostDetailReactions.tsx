@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toggleReactionAction } from "@/app/(app)/feed/actions";
-import type { PostWithAuthor } from "@/lib/domain/types";
+import { toggleReactionAction, getReactorsAction } from "@/app/(app)/feed/actions";
+import { ReactorsModal } from "@/components/ReactorsModal";
+import type { PostWithAuthor, User } from "@/lib/domain/types";
 import type { ReactionType } from "@/lib/domain/types";
 
 type Props = {
@@ -16,6 +17,13 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
   const countsFromPost = post.reactionCounts ?? { prayed: 0, withYou: 0 };
   const [responses, setResponses] = useState(post.reactionsByCurrentUser);
   const [counts, setCounts] = useState(countsFromPost);
+  const [reactorsModal, setReactorsModal] = useState<{ type: "PRAYED" | "WITH_YOU"; users: User[]; loading: boolean } | null>(null);
+
+  async function openReactorsModal(type: "PRAYED" | "WITH_YOU") {
+    setReactorsModal({ type, users: [], loading: true });
+    const users = await getReactorsAction(post.id, type);
+    setReactorsModal({ type, users, loading: false });
+  }
 
   async function handleToggle(type: ReactionType) {
     if (!currentUserId) return;
@@ -48,6 +56,7 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
   if (!currentUserId) return null;
 
   return (
+    <>
     <div
       className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-4 text-[12px] text-neutral-400"
       role="group"
@@ -61,9 +70,14 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
         <span aria-hidden>🙏</span>
         Prayed
         {counts.prayed > 0 && (
-          <span className="tabular-nums text-neutral-500" aria-label={`${counts.prayed} prayed`}>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); openReactorsModal("PRAYED"); }}
+            className="tabular-nums text-neutral-500 underline-offset-2 hover:underline focus:outline-none"
+            aria-label={`${counts.prayed}명이 기도했습니다. 클릭하여 목록 보기`}
+          >
             {counts.prayed}
-          </span>
+          </button>
         )}
       </button>
       <button
@@ -74,11 +88,25 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
         <span aria-hidden>🤍</span>
         With you
         {counts.withYou > 0 && (
-          <span className="tabular-nums text-neutral-500" aria-label={`${counts.withYou} with you`}>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); openReactorsModal("WITH_YOU"); }}
+            className="tabular-nums text-neutral-500 underline-offset-2 hover:underline focus:outline-none"
+            aria-label={`${counts.withYou}명이 함께합니다. 클릭하여 목록 보기`}
+          >
             {counts.withYou}
-          </span>
+          </button>
         )}
       </button>
     </div>
+    {reactorsModal && (
+      <ReactorsModal
+        type={reactorsModal.type}
+        users={reactorsModal.users}
+        loading={reactorsModal.loading}
+        onClose={() => setReactorsModal(null)}
+      />
+    )}
+    </>
   );
 }

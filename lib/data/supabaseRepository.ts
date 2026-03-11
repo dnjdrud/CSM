@@ -304,6 +304,24 @@ async function getAuthorMap(supabase: Awaited<ReturnType<typeof supabaseServer>>
   }
 }
 
+/** Fetch comment counts per post in one query. Returns map postId -> count. */
+async function getCommentCountsByPostIds(
+  supabase: Awaited<ReturnType<typeof supabaseServer>>,
+  postIds: string[]
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  postIds.forEach((id) => map.set(id, 0));
+  if (postIds.length === 0) return map;
+  const { data: rows } = await supabase
+    .from("comments")
+    .select("post_id")
+    .in("post_id", postIds);
+  (rows ?? []).forEach((r: { post_id: string }) => {
+    map.set(r.post_id, (map.get(r.post_id) ?? 0) + 1);
+  });
+  return map;
+}
+
 /** Fetch reaction counts per post in one query. Returns map postId -> { prayed, withYou }. */
 async function getReactionCountsByPostIds(
   supabase: Awaited<ReturnType<typeof supabaseServer>>,
@@ -465,9 +483,10 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
   const pageRows = hasMore ? normalizedRows.slice(0, limit) : normalizedRows;
   const authorIds = [...new Set(pageRows.map((r) => r.author_id))];
   const postIds = pageRows.map((r) => r.id);
-  const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
+  const [authorMap, reactionCountsMap, commentCountsMap, { data: reactionRows }] = await Promise.all([
     getAuthorMap(supabase, authorIds),
     getReactionCountsByPostIds(supabase, postIds),
+    getCommentCountsByPostIds(supabase, postIds),
     uid ? supabase.from("reactions").select("post_id, user_id, type").in("post_id", postIds).eq("user_id", uid) : { data: [] },
   ]);
   const reactionsByPost = new Map<string, { prayed: boolean; withYou: boolean }>();
@@ -486,6 +505,7 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
       author,
       reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
       reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+      commentCount: commentCountsMap.get(r.id) ?? 0,
     } as PostWithAuthor;
   });
 
@@ -741,18 +761,11 @@ export async function listFollowers(userId: string): Promise<User[]> {
   const { data: followRows } = await supabase
     .from("follows")
     .select("follower_id")
-    .eq("following_id", userId)
-    .order("created_at", { ascending: false });
+    .eq("following_id", userId);
   if (!followRows?.length) return [];
   const ids = followRows.map((r) => r.follower_id);
-  const { data: rows } = await supabase
-    .from("users")
-    .select("id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church")
-    .in("id", ids)
-    .is("deactivated_at", null);
-  if (!rows?.length) return [];
-  const map = new Map(rows.map((r) => [r.id, rowToUser(r)]));
-  return ids.map((id) => map.get(id)).filter((u): u is User => u != null);
+  const authorMap = await getAuthorMap(supabase, ids);
+  return ids.map((id) => authorMap.get(id)).filter((u): u is User => u != null);
 }
 
 export async function listFollowing(userId: string): Promise<User[]> {
@@ -760,18 +773,11 @@ export async function listFollowing(userId: string): Promise<User[]> {
   const { data: followRows } = await supabase
     .from("follows")
     .select("following_id")
-    .eq("follower_id", userId)
-    .order("created_at", { ascending: false });
+    .eq("follower_id", userId);
   if (!followRows?.length) return [];
   const ids = followRows.map((r) => r.following_id);
-  const { data: rows } = await supabase
-    .from("users")
-    .select("id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church")
-    .in("id", ids)
-    .is("deactivated_at", null);
-  if (!rows?.length) return [];
-  const map = new Map(rows.map((r) => [r.id, rowToUser(r)]));
-  return ids.map((id) => map.get(id)).filter((u): u is User => u != null);
+  const authorMap = await getAuthorMap(supabase, ids);
+  return ids.map((id) => authorMap.get(id)).filter((u): u is User => u != null);
 }
 
 export async function toggleFollow(followerId: string, followingId: string): Promise<boolean> {
@@ -805,6 +811,20 @@ export async function toggleReaction(postId: string, userId: string, type: React
     });
   }
   return { reacted: true };
+}
+
+export async function getReactors(postId: string, type: ReactionType): Promise<User[]> {
+  const supabase = await supabaseServer();
+  const { data: rows } = await supabase
+    .from("reactions")
+    .select("user_id")
+    .eq("post_id", postId)
+    .eq("type", type)
+    .order("created_at", { ascending: false });
+  if (!rows?.length) return [];
+  const ids = rows.map((r) => r.user_id);
+  const authorMap = await getAuthorMap(supabase, ids);
+  return ids.map((id) => authorMap.get(id)).filter((u): u is User => u != null);
 }
 
 export async function listNotifications(recipientId: string): Promise<Notification[]> {
@@ -1155,9 +1175,10 @@ export async function listBookmarks(userId: string, limit = 50): Promise<PostWit
     .in("id", postIds);
   if (!rows?.length) return [];
   const authorIds = [...new Set(rows.map((r) => r.author_id))];
-  const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
+  const [authorMap, reactionCountsMap, commentCountsMap, { data: reactionRows }] = await Promise.all([
     getAuthorMap(supabase, authorIds),
     getReactionCountsByPostIds(supabase, postIds),
+    getCommentCountsByPostIds(supabase, postIds),
     supabase.from("reactions").select("post_id, type").in("post_id", postIds).eq("user_id", userId),
   ]);
   const reactionsByPost = new Map<string, { prayed: boolean; withYou: boolean }>();
@@ -1179,6 +1200,7 @@ export async function listBookmarks(userId: string, limit = 50): Promise<PostWit
         author,
         reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
         reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+        commentCount: commentCountsMap.get(r.id) ?? 0,
       } as PostWithAuthor;
     })
     .filter((x): x is PostWithAuthor => x != null);

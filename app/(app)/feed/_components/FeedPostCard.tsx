@@ -5,6 +5,7 @@ import {
   toggleReactionAction,
   toggleBookmarkAction,
   getCommentsForPostAction,
+  getReactorsAction,
   addCommentAction,
   deleteCommentAction,
   updateCommentAction,
@@ -33,6 +34,7 @@ export function FeedPostCard({ post, currentUserId, initialFollowing, initialBoo
       compact={compact}
       onToggleReaction={currentUserId ? toggleReactionAction : undefined}
       onToggleBookmark={currentUserId ? toggleBookmarkAction : undefined}
+      getReactorsAction={getReactorsAction}
       getCommentsForPost={getCommentsForPostAction}
       addCommentAction={addCommentAction}
       deleteCommentAction={deleteCommentAction}

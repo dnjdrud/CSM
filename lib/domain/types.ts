@@ -142,6 +142,8 @@ export interface PostWithAuthor extends Post {
   reactionsByCurrentUser: { prayed: boolean; withYou: boolean };
   /** Aggregated counts; omit or empty when not loaded. */
   reactionCounts?: ReactionCounts;
+  /** Total comment count for the post. */
+  commentCount?: number;
 }
 
 /** Ministry or worker that can receive support. No goals, no public amounts. */
