@@ -133,7 +133,6 @@ export default async function HomePage() {
             currentUserId={currentUser?.id ?? null}
             followingIds={followingIds}
             bookmarkedPostIds={bookmarkedPostIds}
-            isAdmin={false}
           />
         )}
       </div>
