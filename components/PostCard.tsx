@@ -25,11 +25,11 @@ function relativeTime(iso: string): string {
   const diffM = Math.floor(diffMs / 60000);
   const diffH = Math.floor(diffMs / 3600000);
   const diffD = Math.floor(diffMs / 86400000);
-  if (diffM < 1) return "now";
-  if (diffM < 60) return `${diffM}m`;
-  if (diffH < 24) return `${diffH}h`;
-  if (diffD < 7) return `${diffD}d`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (diffM < 1) return "방금";
+  if (diffM < 60) return `${diffM}분`;
+  if (diffH < 24) return `${diffH}시간`;
+  if (diffD < 7) return `${diffD}일`;
+  return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
 type CommentWithAuthor = Comment & { author: User };
@@ -240,12 +240,12 @@ export function PostCard({
       <CardContent className="py-4 px-4 sm:px-5">
       {isTestimony && (
         <div className="mb-2">
-          <Badge variant="testimony">Testimony</Badge>
+          <Badge variant="testimony">간증</Badge>
         </div>
       )}
       {isDailyPrayer && !isTestimony && (
         <p className="mb-2 text-[12px] text-theme-muted">
-          Daily Prayer
+          오늘의 기도
         </p>
       )}
 
@@ -311,7 +311,7 @@ export function PostCard({
               href={`/post/${post.id}`}
               className="mt-1 inline-block text-xs font-medium text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
             >
-              Show more
+              더 보기
             </Link>
           </>
         ) : (
@@ -348,7 +348,7 @@ export function PostCard({
               className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "prayed" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.prayed ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
             >
               <span aria-hidden>🙏</span>
-              Prayed
+              기도했어요
               {counts.prayed > 0 && (
                 getReactorsAction ? (
                   <button
@@ -372,7 +372,7 @@ export function PostCard({
               className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "withYou" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.withYou ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
             >
               <span aria-hidden>🤍</span>
-              With you
+              함께해요
               {counts.withYou > 0 && (
                 getReactorsAction ? (
                   <button
@@ -401,9 +401,9 @@ export function PostCard({
             className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${commentsOpen ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
           >
             <span aria-hidden>💬</span>
-            Comment
+            댓글
             {commentCount > 0 && (
-              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${commentCount} comments`}>
+              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`댓글 ${commentCount}개`}>
                 {commentCount}
               </span>
             )}
@@ -414,9 +414,9 @@ export function PostCard({
             className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2"
           >
             <span aria-hidden>💬</span>
-            Comment
+            댓글
             {commentCount > 0 && (
-              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${commentCount} comments`}>
+              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`댓글 ${commentCount}개`}>
                 {commentCount}
               </span>
             )}
@@ -427,7 +427,7 @@ export function PostCard({
           <button
             type="button"
             onClick={handleBookmark}
-            aria-label={bookmarked ? "Remove bookmark" : "Bookmark this post"}
+            aria-label={bookmarked ? "북마크 해제" : "북마크 추가"}
             className={`ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-transparent bg-transparent px-2 py-2 transition-colors duration-200 hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${bookmarked ? "text-theme-text" : "text-theme-muted"}`}
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

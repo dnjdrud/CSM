@@ -1,0 +1,231 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { TimelineContainer } from "@/components/TimelineContainer";
+import {
+  getCurrentUser,
+  listFeedPostsPage,
+  isBlocked,
+  isMuted,
+} from "@/lib/data/repository";
+import { canViewPost } from "@/lib/domain/guards";
+import {
+  MISSION_COUNTRIES,
+  findCountryByCode,
+  type MissionCountry,
+} from "@/lib/mission/countries";
+import { MissionFeedSection } from "./_components/MissionFeedSection";
+import { MissionContentSection } from "./_components/MissionContentSection";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ country: string }>;
+}) {
+  const { country } = await params;
+  const c = findCountryByCode(country);
+  if (!c) return {};
+  return { title: `${c.flag} ${c.name} 선교 – Cellah` };
+}
+
+const PAGE_SIZE = 20;
+
+function filterByCountryTags<T extends { tags: string[] }>(
+  items: T[],
+  countryTags: string[]
+): T[] {
+  return items.filter((post) => {
+    if (!Array.isArray(post.tags) || post.tags.length === 0) return false;
+    return countryTags.some((ct) =>
+      post.tags.some((pt) => pt.toLowerCase() === ct.toLowerCase())
+    );
+  });
+}
+
+function OtherCountryChips({ currentCode }: { currentCode: string }) {
+  return (
+    <>
+      {MISSION_COUNTRIES.filter((c) => c.code !== currentCode).map((c) => (
+        <Link
+          key={c.code}
+          href={`/mission/${c.code}`}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-[12px] font-medium text-theme-text hover:border-blue-300 hover:bg-blue-50/50 transition-all"
+        >
+          <span aria-hidden>{c.flag}</span>
+          {c.name}
+        </Link>
+      ))}
+    </>
+  );
+}
+
+export default async function MissionCountryPage({
+  params,
+}: {
+  params: Promise<{ country: string }>;
+}) {
+  const { country } = await params;
+  const _countryLookup = findCountryByCode(country);
+  if (!_countryLookup) notFound();
+  const countryData = _countryLookup;
+
+  const currentUser = await getCurrentUser();
+  const uid = currentUser?.id ?? null;
+
+  const [missionPage, contentPage] = await Promise.all([
+    listFeedPostsPage({
+      currentUserId: uid,
+      scope: "ALL",
+      limit: PAGE_SIZE,
+      cursor: null,
+      includeCategories: ["MISSION"],
+    }),
+    listFeedPostsPage({
+      currentUserId: uid,
+      scope: "ALL",
+      limit: 10,
+      cursor: null,
+      includeCategories: ["CONTENT", "PHOTO"],
+    }),
+  ]);
+
+  function filterVisible<T extends { tags: string[]; authorId: string }>(
+    items: T[]
+  ): T[] {
+    const moderated = currentUser
+      ? items.filter((p) => {
+          if (isBlocked(currentUser.id, p.authorId)) return false;
+          if (isMuted(currentUser.id, p.authorId)) return false;
+          return canViewPost(
+            p as unknown as Parameters<typeof canViewPost>[0],
+            currentUser,
+            () => false
+          );
+        })
+      : items;
+    return filterByCountryTags(moderated, countryData.tags);
+  }
+
+  const missionItems = filterVisible(missionPage.items);
+  const contentItems = filterVisible(contentPage.items);
+
+  const writeUrl = `/write?category=MISSION&tag=${encodeURIComponent(countryData.tags[0] ?? "")}`;
+
+  return (
+    <TimelineContainer>
+      {/* 뒤로가기 */}
+      <div className="pt-1 pb-3 px-1">
+        <Link
+          href="/mission"
+          className="text-[13px] text-theme-muted hover:text-theme-text transition-colors"
+        >
+          ← 세계 선교
+        </Link>
+      </div>
+
+      {/* 국가 헤더 */}
+      <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 mb-4">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl" aria-hidden>{countryData.flag}</span>
+            <div>
+              <h1 className="text-[18px] font-bold text-blue-900">
+                {countryData.name}
+              </h1>
+              <p className="text-[12px] text-blue-600/80">{countryData.nameEn}</p>
+            </div>
+          </div>
+          <Link
+            href={writeUrl}
+            className="shrink-0 text-[12px] font-semibold px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-100 text-blue-700 hover:opacity-80 transition-all"
+          >
+            + 선교 소식
+          </Link>
+        </div>
+        <p className="text-[13px] text-blue-800/70 leading-relaxed mt-1">
+          {countryData.description}
+        </p>
+        <div className="flex flex-wrap gap-1.5 mt-2.5">
+          {countryData.tags.map((tag) => (
+            <span
+              key={tag}
+              className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Section A: 선교 소식 */}
+      <section aria-labelledby="mission-posts-heading">
+        <div className="flex items-center justify-between px-1 py-3 border-b border-theme-border/60 mb-0">
+          <h2
+            id="mission-posts-heading"
+            className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
+          >
+            <span aria-hidden>🙏</span> 선교 소식
+          </h2>
+          <Link
+            href={writeUrl}
+            className="text-[12px] font-medium text-theme-primary hover:opacity-80"
+          >
+            + 올리기
+          </Link>
+        </div>
+
+        {missionPage.error ? (
+          <div className="mx-0 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            게시글을 불러올 수 없습니다. {missionPage.error}
+          </div>
+        ) : (
+          <MissionFeedSection
+            items={missionItems}
+            country={countryData}
+            writeUrl={writeUrl}
+          />
+        )}
+      </section>
+
+      {/* Section B: 관련 콘텐츠 */}
+      <section
+        aria-labelledby="mission-content-heading"
+        className="mt-6 pt-6 border-t border-theme-border/40"
+      >
+        <div className="flex items-center justify-between px-1 mb-3">
+          <h2
+            id="mission-content-heading"
+            className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
+          >
+            <span aria-hidden>🎬</span> 관련 콘텐츠
+          </h2>
+          <Link
+            href="/contents"
+            className="text-[12px] text-theme-muted hover:text-theme-text transition-colors"
+          >
+            전체 보기 →
+          </Link>
+        </div>
+
+        {contentPage.error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            콘텐츠를 불러올 수 없습니다. {contentPage.error}
+          </div>
+        ) : (
+          <MissionContentSection items={contentItems} country={countryData} currentUserId={uid} />
+        )}
+      </section>
+
+      {/* 다른 나라 보기 */}
+      <div className="mt-8 pt-6 border-t border-theme-border/40">
+        <p className="text-[12px] font-semibold text-theme-muted uppercase tracking-wide mb-3 px-1">
+          다른 선교지 보기
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <OtherCountryChips currentCode={countryData.code} />
+        </div>
+      </div>
+    </TimelineContainer>
+  );
+}

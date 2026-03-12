@@ -7,7 +7,39 @@ export type UserRole = "LAY" | "MINISTRY_WORKER" | "PASTOR" | "MISSIONARY" | "SE
 
 export type Visibility = "PUBLIC" | "MEMBERS" | "FOLLOWERS" | "PRIVATE";
 
-export type PostCategory = "PRAYER" | "DEVOTIONAL" | "MINISTRY" | "TESTIMONY";
+export type PostCategory =
+  // --- 홈 피드 ---
+  | "GENERAL"    // 일반 글 (기본값)
+  | "DEVOTIONAL" // 묵상
+  | "MINISTRY"   // 사역 나눔
+  | "TESTIMONY"  // 간증
+  | "PHOTO"      // 사진
+  // --- 기도 탭 ---
+  | "PRAYER"     // 기도 제목
+  // --- 셀 탭 ---
+  | "CELL"       // 셀 나눔
+  // --- 컨텐츠 탭 ---
+  | "CONTENT"    // 유튜브/컨텐츠
+  | "REQUEST"    // 후원/기도 요청
+  // --- 선교 탭 ---
+  | "MISSION";   // 선교 업데이트
+
+/** Maps each post category to the bottom-nav tab where it appears. */
+export const CATEGORY_TAB: Record<PostCategory, "home" | "prayer" | "cells" | "contents" | "mission"> = {
+  GENERAL:   "home",
+  DEVOTIONAL:"home",
+  MINISTRY:  "home",
+  TESTIMONY: "home",
+  PHOTO:     "home",
+  PRAYER:    "prayer",
+  CELL:      "cells",
+  CONTENT:   "contents",
+  REQUEST:   "contents",
+  MISSION:   "mission",
+};
+
+/** Categories shown in the home feed tab (excludes prayer/cell/content/mission). */
+export const HOME_FEED_CATEGORIES: PostCategory[] = ["GENERAL", "DEVOTIONAL", "MINISTRY", "TESTIMONY", "PHOTO"];
 
 export type ReactionType = "PRAYED" | "WITH_YOU";
 
@@ -45,6 +77,10 @@ export interface Post {
   isDailyPrayer?: boolean;
   /** Date (YYYY-MM-DD) for which this is the Daily Prayer thread; set when isDailyPrayer is true. */
   dailyPrayerDate?: string;
+  /** YouTube URL for CONTENT type posts. */
+  youtubeUrl?: string | null;
+  /** Media URLs for PHOTO type posts (Supabase Storage public URLs). */
+  mediaUrls?: string[];
 }
 
 export interface Comment {
@@ -162,20 +198,26 @@ export interface Ministry {
 
 /** Display labels for roles (single source of truth). */
 export const ROLE_DISPLAY: Record<UserRole, string> = {
-  LAY: "Layperson",
-  MINISTRY_WORKER: "Ministry Worker",
-  PASTOR: "Pastor",
-  MISSIONARY: "Missionary",
-  SEMINARIAN: "Seminarian",
-  ADMIN: "Admin",
+  LAY: "평신도",
+  MINISTRY_WORKER: "사역자",
+  PASTOR: "목사",
+  MISSIONARY: "선교사",
+  SEMINARIAN: "신학생",
+  ADMIN: "관리자",
 };
 
 /** Display labels for post categories. */
 export const CATEGORY_LABELS: Record<PostCategory, string> = {
-  PRAYER: "Prayer request",
-  DEVOTIONAL: "Devotional",
-  MINISTRY: "Ministry update",
-  TESTIMONY: "Testimony",
+  GENERAL:   "일반",
+  DEVOTIONAL:"묵상",
+  MINISTRY:  "사역 나눔",
+  TESTIMONY: "간증",
+  PHOTO:     "사진",
+  PRAYER:    "기도 제목",
+  CELL:      "셀 나눔",
+  CONTENT:   "컨텐츠",
+  REQUEST:   "후원/기도 요청",
+  MISSION:   "선교 업데이트",
 };
 
 /** Notification types for in-app list (no push/email in MVP). */

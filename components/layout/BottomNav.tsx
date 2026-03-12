@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type TabKey = "home" | "explore" | "cells" | "prayer" | "profile";
+type TabKey = "home" | "mission" | "cells" | "contents" | "profile";
 
 type Tab = {
   key: TabKey;
@@ -13,18 +13,18 @@ type Tab = {
 };
 
 const BASE_TABS: Tab[] = [
-  { key: "home",    href: "/home",    label: "홈",     icon: "🏠" },
-  { key: "explore", href: "/explore", label: "탐색",   icon: "🔍" },
-  { key: "cells",   href: "/cells",   label: "셀",     icon: "💬" },
-  { key: "prayer",  href: "/prayer",  label: "기도",   icon: "🙏" },
-  { key: "profile", href: "/me",      label: "프로필", icon: "👤" },
+  { key: "home",     href: "/home",     label: "홈",     icon: "🏠" },
+  { key: "mission",  href: "/mission",  label: "선교",   icon: "🌍" },
+  { key: "cells",    href: "/cells",    label: "셀",     icon: "💬" },
+  { key: "contents", href: "/contents", label: "컨텐츠", icon: "🎬" },
+  { key: "profile",  href: "/me",       label: "프로필", icon: "👤" },
 ];
 
 function isActive(tab: Tab, pathname: string): boolean {
   if (tab.key === "home") return pathname === "/home" || pathname === "/feed";
-  if (tab.key === "explore") return pathname === "/explore" || pathname === "/search";
+  if (tab.key === "mission") return pathname.startsWith("/mission") || pathname.startsWith("/missions") || pathname.startsWith("/missionary");
   if (tab.key === "cells") return pathname.startsWith("/cells") || pathname.startsWith("/cell");
-  if (tab.key === "prayer") return pathname.startsWith("/prayer");
+  if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology");
   if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
   return false;
 }

@@ -62,26 +62,27 @@ export async function publishPostAction(
   redirect("/feed");
 }
 
-/** Compose post (no redirect). Revalidates feed. Used by ComposeBox on /write. */
+/** Compose post (no redirect). Revalidates feed. Used by write page. */
 export async function composePostAction(params: {
   content: string;
   category?: PostCategory;
   visibility?: Visibility;
   tags?: string[];
+  youtubeUrl?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   logInfo("SERVER_ACTION", "composePostAction(write) start", {
     hasContent: params.content.trim().length > 0,
-    category: params.category ?? "PRAYER",
+    category: params.category ?? "GENERAL",
     visibility: params.visibility ?? "MEMBERS",
     hasTags: !!params.tags && params.tags.length > 0,
   });
   const session = await getSession();
   if (!session) {
     logWarn("SERVER_ACTION", "composePostAction(write) session null");
-    return { ok: false, error: "Not logged in. Please refresh and try again." };
+    return { ok: false, error: "로그인이 필요합니다. 새로고침 후 다시 시도해주세요." };
   }
   const trimmed = params.content.trim();
-  if (!trimmed) return { ok: false, error: "Content is required" };
+  if (!trimmed) return { ok: false, error: "내용을 입력해주세요" };
   try {
     await assertRateLimit({
       userId: session.userId,
@@ -100,10 +101,11 @@ export async function composePostAction(params: {
   try {
     await createPost({
       authorId: session.userId,
-      category: params.category ?? "PRAYER",
+      category: params.category ?? "GENERAL",
       content: trimmed,
       visibility: params.visibility ?? "MEMBERS",
       tags,
+      youtubeUrl: params.youtubeUrl || null,
     });
     logInfo("SERVER_ACTION", "composePostAction(write) success", {
       userId: session.userId,
@@ -111,6 +113,7 @@ export async function composePostAction(params: {
       tagsCount: tags.length,
     });
     revalidatePath("/feed");
+    revalidatePath("/home");
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

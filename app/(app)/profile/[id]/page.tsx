@@ -1,6 +1,8 @@
 import { ProfileShell } from "./_components/ProfileShell";
-import { RecentPosts } from "./_components/RecentPosts";
-import { FeaturedTestimonies } from "./_components/FeaturedTestimonies";
+import { ProfilePostsTab } from "./_components/ProfilePostsTab";
+import { ProfileContentsTab } from "./_components/ProfileContentsTab";
+import { ProfileCrowTab } from "./_components/ProfileCrowTab";
+import { ProfileSpiritualTab } from "./_components/ProfileSpiritualTab";
 import {
   getProfileWithError,
   getCurrentUser,
@@ -10,36 +12,49 @@ import {
 } from "@/lib/data/repository";
 import { isBlocked, isMuted } from "@/lib/data/repository";
 import { getAuthUserId } from "@/lib/auth/session";
+import type { PostCategory } from "@/lib/domain/types";
 
 export const dynamic = "force-dynamic";
 
+const CONTENT_CATEGORIES: PostCategory[] = ["CONTENT", "PHOTO"];
+
 export default async function ProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { tab }] = await Promise.all([params, searchParams]);
+  const activeTab = (tab === "contents" || tab === "crow" || tab === "spiritual")
+    ? tab
+    : "posts";
 
-  // getAuthUserId: cookie-only, no DB call — lets us include viewerFollowingIds in the main batch
   const currentUserId = await getAuthUserId();
 
-  const [{ user, errorMessage }, currentUser, posts, followerIds, followingIds, viewerFollowingIds] =
-    await Promise.all([
-      getProfileWithError(id),
-      currentUserId ? getCurrentUser() : Promise.resolve(null),
-      listPostsByAuthorId(id),
-      listFollowerIds(id),
-      listFollowingIds(id),
-      currentUserId ? listFollowingIds(currentUserId) : Promise.resolve([]),
-    ]);
+  const [
+    { user, errorMessage },
+    currentUser,
+    posts,
+    followerIds,
+    followingIds,
+    viewerFollowingIds,
+  ] = await Promise.all([
+    getProfileWithError(id),
+    currentUserId ? getCurrentUser() : Promise.resolve(null),
+    listPostsByAuthorId(id),
+    listFollowerIds(id),
+    listFollowingIds(id),
+    currentUserId ? listFollowingIds(currentUserId) : Promise.resolve([]),
+  ]);
 
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-12">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">
-          <h1 className="text-xl font-semibold">Profile unavailable</h1>
+          <h1 className="text-xl font-semibold">프로필을 불러올 수 없습니다</h1>
           <p className="mt-2 text-sm">
-            {errorMessage ?? "User not found or repository error."}
+            {errorMessage ?? "존재하지 않는 사용자이거나 오류가 발생했습니다."}
           </p>
         </div>
       </main>
@@ -50,8 +65,13 @@ export default async function ProfilePage({
   const muted = currentUserId ? isMuted(currentUserId, id) : false;
   const following = currentUserId ? viewerFollowingIds.includes(user.id) : false;
 
-  const testimonyPosts = posts.filter((p) => p.category === "TESTIMONY");
-  const normalPosts = posts.filter((p) => p.category !== "TESTIMONY");
+  // 탭별 게시글 분류
+  const contentPosts = posts.filter((p) =>
+    CONTENT_CATEGORIES.includes(p.category as PostCategory)
+  );
+  const normalPosts = posts.filter(
+    (p) => !CONTENT_CATEGORIES.includes(p.category as PostCategory)
+  );
 
   return (
     <ProfileShell
@@ -64,28 +84,34 @@ export default async function ProfilePage({
       followerCount={followerIds.length}
       followingCount={followingIds.length}
     >
-      <main className="mx-auto w-full max-w-2xl px-4 py-4 space-y-8">
-        <section aria-label="Recent posts">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">Recent posts</h2>
-          <RecentPosts
-            posts={normalPosts}
-            profileId={user.id}
-            currentUserId={currentUserId}
-            blocked={blocked}
-          />
-        </section>
-        <section aria-label="Featured testimonies">
-          <h2 className="mb-3 text-sm font-semibold text-gray-900">
-            Featured testimonies
-          </h2>
-          <FeaturedTestimonies
-            posts={testimonyPosts}
-            profileId={user.id}
-            currentUserId={currentUserId}
-            blocked={blocked}
-          />
-        </section>
-      </main>
+      {activeTab === "posts" && (
+        <ProfilePostsTab
+          posts={normalPosts}
+          currentUserId={currentUserId}
+          blocked={blocked}
+          isOwnProfile={currentUserId === user.id}
+        />
+      )}
+      {activeTab === "contents" && (
+        <ProfileContentsTab
+          posts={contentPosts}
+          currentUserId={currentUserId}
+          blocked={blocked}
+          isOwnProfile={currentUserId === user.id}
+        />
+      )}
+      {activeTab === "crow" && (
+        <ProfileCrowTab
+          profileId={user.id}
+          currentUserId={currentUserId}
+        />
+      )}
+      {activeTab === "spiritual" && (
+        <ProfileSpiritualTab
+          profileId={user.id}
+          isOwnProfile={currentUserId === user.id}
+        />
+      )}
     </ProfileShell>
   );
 }

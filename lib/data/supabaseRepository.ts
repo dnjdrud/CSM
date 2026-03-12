@@ -99,6 +99,8 @@ function rowToPost(r: {
   visibility: string;
   tags: string[] | null;
   created_at: string | null;
+  youtube_url?: string | null;
+  media_urls?: string[] | null;
 }): DomainPost {
   return {
     id: r.id,
@@ -109,6 +111,8 @@ function rowToPost(r: {
     tags: r.tags ?? [],
     reflectionPrompt: undefined,
     createdAt: r.created_at ?? new Date().toISOString(),
+    youtubeUrl: r.youtube_url ?? undefined,
+    mediaUrls: r.media_urls ?? [],
   };
 }
 
@@ -488,6 +492,10 @@ export type ListFeedPostsPageParams = {
   scope: "ALL" | "FOLLOWING";
   limit: number;
   cursor?: { createdAt: string; id: string } | null;
+  /** Exclude posts with these categories (e.g. ["PRAYER"] for Feed tab). */
+  excludeCategories?: string[];
+  /** Include ONLY posts with these categories (e.g. ["PRAYER"] for Prayer tab). */
+  includeCategories?: string[];
 };
 
 export type ListFeedPostsPageResult = {
@@ -516,6 +524,12 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
       const followingIds = (followRows ?? []).map((r) => r.following_id);
       const authorIds = [...new Set([uid, ...followingIds])];
       q = q.in("author_id", authorIds);
+    }
+    if (params.excludeCategories && params.excludeCategories.length > 0) {
+      q = q.not("category", "in", `(${params.excludeCategories.join(",")})`);
+    }
+    if (params.includeCategories && params.includeCategories.length > 0) {
+      q = q.in("category", params.includeCategories);
     }
     if (params.cursor?.createdAt && params.cursor?.id) {
       const c = params.cursor;
@@ -616,7 +630,7 @@ export async function getPostById(id: string): Promise<PostWithAuthor | null> {
   } as PostWithAuthor;
 }
 
-const POSTS_INSERT_SELECT = "id, author_id, category, content, visibility, tags, created_at" as const;
+const POSTS_INSERT_SELECT = "id, author_id, category, content, visibility, tags, created_at, youtube_url, media_urls" as const;
 
 export async function createPost(input: {
   authorId: string;
@@ -624,16 +638,20 @@ export async function createPost(input: {
   content: string;
   visibility?: DomainPost["visibility"];
   tags?: string[];
+  youtubeUrl?: string | null;
+  mediaUrls?: string[];
 }): Promise<DomainPost> {
   const supabase = await supabaseServer();
   const tags = [...new Set((input.tags ?? []).map(normalizeTag).filter(Boolean))].slice(0, 5);
-  const payload = {
+  const payload: Record<string, unknown> = {
     author_id: input.authorId,
     category: input.category,
     content: input.content.trim(),
     visibility: input.visibility ?? "MEMBERS",
     tags,
   };
+  if (input.youtubeUrl) payload.youtube_url = input.youtubeUrl;
+  if (input.mediaUrls && input.mediaUrls.length > 0) payload.media_urls = input.mediaUrls;
   const result = await supabase.from("posts").insert(payload).select(POSTS_INSERT_SELECT).single();
   if (result.error) {
     console.error("[createPost] insert error", result.error.message, payload);

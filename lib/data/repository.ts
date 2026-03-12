@@ -366,6 +366,8 @@ export async function createPost(input: {
   content: string;
   visibility?: DomainPost["visibility"];
   tags?: string[];
+  youtubeUrl?: string | null;
+  mediaUrls?: string[];
 }): Promise<DomainPost> {
   if (DATA_MODE === "supabase") return supabaseRepo.createPost(input);
   const id = `p${Date.now()}`;
@@ -509,6 +511,10 @@ export type ListFeedPostsPageParams = {
   scope: "ALL" | "FOLLOWING";
   limit: number;
   cursor?: { createdAt: string; id: string } | null;
+  /** Exclude posts with these categories (e.g. ["PRAYER"] for Feed tab). */
+  excludeCategories?: string[];
+  /** Include ONLY posts with these categories (e.g. ["PRAYER"] for Prayer tab). */
+  includeCategories?: string[];
 };
 
 export type ListFeedPostsPageResult = {

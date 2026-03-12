@@ -6,7 +6,7 @@ import type { PostCategory, Visibility } from "@/lib/domain/types";
 import { CATEGORY_LABELS } from "@/lib/domain/types";
 import { useToast } from "@/components/ui/Toast";
 
-const PLACEHOLDER = "Share a prayer, reflection, or quiet update…";
+const PLACEHOLDER = "기도, 묵상, 혹은 조용한 나눔을 적어보세요…";
 const CONTENT_MAX_LENGTH = 10000;
 const SOFT_LIMIT = 1000;
 
@@ -18,10 +18,10 @@ const CATEGORIES: { value: PostCategory; label: string }[] = [
 ];
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
-  { value: "MEMBERS", label: "Members" },
-  { value: "PUBLIC", label: "Public" },
-  { value: "FOLLOWERS", label: "Followers" },
-  { value: "PRIVATE", label: "Private" },
+  { value: "MEMBERS", label: "멤버 공개" },
+  { value: "PUBLIC", label: "전체 공개" },
+  { value: "FOLLOWERS", label: "팔로워 공개" },
+  { value: "PRIVATE", label: "나만 보기" },
 ];
 
 export type ComposePostActionParams = {
@@ -99,7 +99,7 @@ export function ComposeBox({
     if (result.ok) {
       setContent("");
       setJustPosted(true);
-      toast.show("Posted.");
+      toast.show("게시되었습니다.");
       setTimeout(() => {
         setJustPosted(false);
         setExpanded(false);
@@ -107,7 +107,7 @@ export function ComposeBox({
         if (redirectOnSuccess) router.push(redirectOnSuccess);
       }, 1200);
     } else {
-      const err = result.error ?? "Something went wrong. Please try again.";
+      const err = result.error ?? "문제가 발생했습니다. 다시 시도해 주세요.";
       setErrorMessage(err);
       toast.error(err);
     }
@@ -142,8 +142,8 @@ export function ComposeBox({
             aria-label="Post options"
           >
             <div>
-              <span className="text-xs font-medium text-theme-muted">Visibility</span>
-              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="Visibility">
+              <span className="text-xs font-medium text-theme-muted">공개 범위</span>
+              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="공개 범위">
                 {VISIBILITY_OPTIONS.map(({ value, label }) => (
                   <label key={value} className="flex items-center gap-1.5 cursor-pointer">
                     <input
@@ -153,7 +153,7 @@ export function ComposeBox({
                       checked={visibility === value}
                       onChange={() => setVisibility(value)}
                       className="rounded-full border-theme-border text-theme-text focus:ring-theme-primary"
-                      aria-label={`Visibility: ${label}`}
+                      aria-label={`공개 범위: ${label}`}
                     />
                     <span className="text-theme-text">{label}</span>
                   </label>
@@ -161,8 +161,8 @@ export function ComposeBox({
               </div>
             </div>
             <div>
-              <span className="text-xs font-medium text-theme-muted">Category</span>
-              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="Category">
+              <span className="text-xs font-medium text-theme-muted">카테고리</span>
+              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="카테고리">
                 {CATEGORIES.map(({ value, label }) => (
                   <label key={value} className="flex items-center gap-1.5 cursor-pointer">
                     <input
@@ -172,7 +172,7 @@ export function ComposeBox({
                       checked={category === value}
                       onChange={() => setCategory(value)}
                       className="rounded-full border-theme-border text-theme-text focus:ring-theme-primary"
-                      aria-label={`Category: ${label}`}
+                      aria-label={`카테고리: ${label}`}
                     />
                     <span className="text-theme-text">{label}</span>
                   </label>
@@ -181,16 +181,16 @@ export function ComposeBox({
             </div>
             <div>
               <label htmlFor="compose-tags" className="text-xs font-medium text-neutral-600">
-                Topics (optional, max 5)
+                태그 (선택, 최대 5개)
               </label>
               <input
                 id="compose-tags"
                 type="text"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="e.g. prayer, work"
+                placeholder="예: 기도, 일상"
                 className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface px-2.5 py-1.5 text-[15px] text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
-                aria-label="Topics, optional, max 5"
+                aria-label="태그, 선택, 최대 5개"
               />
             </div>
           </div>
@@ -217,9 +217,9 @@ export function ComposeBox({
                   type="submit"
                   disabled={!canPost && !justPosted}
                   className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-theme-primary px-5 py-3 text-[14px] font-medium text-white transition-colors duration-200 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:transform-none"
-                  aria-label={justPosted ? "Posted" : pending ? "Posting" : "Share"}
+                  aria-label={justPosted ? "게시됨" : pending ? "게시 중" : "나누기"}
                 >
-                  {justPosted ? "Posted" : pending ? "Posting…" : "Share"}
+                  {justPosted ? "게시됨" : pending ? "게시 중…" : "나누기"}
                 </button>
               </div>
             </>
