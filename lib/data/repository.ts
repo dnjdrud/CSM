@@ -1363,3 +1363,63 @@ export async function toggleMissionarySupport(projectId: string, userId: string)
   if (DATA_MODE === "supabase") return supabaseRepo.toggleMissionarySupport(projectId, userId);
   return "added";
 }
+
+// =============================================================
+// Cells / Network / Creator
+// =============================================================
+
+export async function listCellsByUserId(userId: string): Promise<import("@/lib/domain/types").Cell[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listCellsByUserId(userId);
+  return [];
+}
+
+export async function listSuggestedUsers(currentUserId: string, limit?: number): Promise<import("@/lib/domain/types").User[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listSuggestedUsers(currentUserId, limit);
+  return [];
+}
+
+export async function getCreatorStats(authorId: string): Promise<{ postCount: number; totalPrayed: number; totalWithYou: number; totalComments: number }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getCreatorStats(authorId);
+  return { postCount: 0, totalPrayed: 0, totalWithYou: 0, totalComments: 0 };
+}
+
+// =============================================================
+// Theology Q&A
+// =============================================================
+
+export async function listTheologyQuestions(opts?: Parameters<typeof supabaseRepo.listTheologyQuestions>[0]): Promise<import("@/lib/domain/types").TheologyQuestion[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listTheologyQuestions(opts);
+  return [];
+}
+
+export async function getTheologyQuestionById(id: string, viewerId?: string | null): Promise<import("@/lib/domain/types").TheologyQuestion | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getTheologyQuestionById(id, viewerId);
+  return null;
+}
+
+export async function createTheologyQuestion(input: Parameters<typeof supabaseRepo.createTheologyQuestion>[0]): Promise<import("@/lib/domain/types").TheologyQuestion> {
+  if (DATA_MODE === "supabase") return supabaseRepo.createTheologyQuestion(input);
+  throw new Error("Not supported");
+}
+
+export async function deleteTheologyQuestion(id: string, userId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.deleteTheologyQuestion(id, userId);
+}
+
+export async function listTheologyAnswers(questionId: string, viewerId?: string | null): Promise<import("@/lib/domain/types").TheologyAnswer[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listTheologyAnswers(questionId, viewerId);
+  return [];
+}
+
+export async function createTheologyAnswer(questionId: string, userId: string, content: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.createTheologyAnswer(questionId, userId, content);
+}
+
+export async function toggleTheologyAnswerVote(answerId: string, userId: string): Promise<"added" | "removed"> {
+  if (DATA_MODE === "supabase") return supabaseRepo.toggleTheologyAnswerVote(answerId, userId);
+  return "added";
+}
+
+export async function acceptTheologyAnswer(answerId: string, questionId: string, questionOwnerId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.acceptTheologyAnswer(answerId, questionId, questionOwnerId);
+}

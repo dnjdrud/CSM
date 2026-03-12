@@ -386,6 +386,50 @@ export interface MissionarySupporter {
   user?: User;
 }
 
+// =============================================================
+// Theology Q&A
+// =============================================================
+
+export type TheologyCategory =
+  | "GENERAL"
+  | "SALVATION"
+  | "ESCHATOLOGY"
+  | "ECCLESIOLOGY"
+  | "ETHICS"
+  | "BIBLE";
+
+export const THEOLOGY_CATEGORY_LABELS: Record<TheologyCategory, string> = {
+  GENERAL:      "일반",
+  SALVATION:    "구원론",
+  ESCHATOLOGY:  "종말론",
+  ECCLESIOLOGY: "교회론",
+  ETHICS:       "기독교 윤리",
+  BIBLE:        "성경 해석",
+};
+
+export interface TheologyQuestion {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  category: TheologyCategory;
+  createdAt: string;
+  author?: User;
+  answerCount?: number;
+}
+
+export interface TheologyAnswer {
+  id: string;
+  questionId: string;
+  userId: string;
+  content: string;
+  isAccepted: boolean;
+  createdAt: string;
+  author?: User;
+  voteCount?: number;
+  hasVoted?: boolean;
+}
+
 /** Private note types for My Space (not in feed/search). */
 export type NoteType = "PRAYER" | "GRATITUDE" | "MEDITATION";
 
