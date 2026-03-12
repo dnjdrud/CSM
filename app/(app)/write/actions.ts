@@ -64,12 +64,14 @@ export async function publishPostAction(
 
 /** Compose post (no redirect). Revalidates feed. Used by write page. */
 export async function composePostAction(params: {
+  title?: string;
   content: string;
   category?: PostCategory;
   visibility?: Visibility;
   tags?: string[];
   youtubeUrl?: string;
-}): Promise<{ ok: boolean; error?: string }> {
+  mediaUrls?: string[];
+}): Promise<{ ok: true; postId: string } | { ok: false; error: string }> {
   logInfo("SERVER_ACTION", "composePostAction(write) start", {
     hasContent: params.content.trim().length > 0,
     category: params.category ?? "GENERAL",
@@ -99,13 +101,14 @@ export async function composePostAction(params: {
     ? [...new Set(params.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5)
     : [];
   try {
-    await createPost({
+    const post = await createPost({
       authorId: session.userId,
       category: params.category ?? "GENERAL",
       content: trimmed,
       visibility: params.visibility ?? "MEMBERS",
       tags,
       youtubeUrl: params.youtubeUrl || null,
+      mediaUrls: params.mediaUrls ?? [],
     });
     logInfo("SERVER_ACTION", "composePostAction(write) success", {
       userId: session.userId,
@@ -114,7 +117,7 @@ export async function composePostAction(params: {
     });
     revalidatePath("/feed");
     revalidatePath("/home");
-    return { ok: true };
+    return { ok: true, postId: post.id };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const display = (msg && msg.trim() !== "") ? msg : "Failed to create post (check server logs)";

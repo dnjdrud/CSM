@@ -14,9 +14,9 @@ type Tab = {
 
 const BASE_TABS: Tab[] = [
   { key: "home",     href: "/home",     label: "홈",     icon: "🏠" },
-  { key: "mission",  href: "/mission",  label: "선교",   icon: "🌍" },
   { key: "cells",    href: "/cells",    label: "셀",     icon: "💬" },
   { key: "contents", href: "/contents", label: "컨텐츠", icon: "🎬" },
+  { key: "mission",  href: "/mission",  label: "선교",   icon: "🌍" },
   { key: "profile",  href: "/me",       label: "프로필", icon: "👤" },
 ];
 

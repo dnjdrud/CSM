@@ -8,6 +8,7 @@ import {
 } from "@/lib/data/repository";
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
+import { listMySubscriptions } from "@/lib/data/subscriptionRepository";
 import { ContentsTabs } from "./_components/ContentsTabs";
 import { ContentsInfiniteList } from "./_components/ContentsInfiniteList";
 import { RequestInfiniteList } from "./_components/RequestInfiniteList";
@@ -52,13 +53,18 @@ async function ContentTabContent({
 }: {
   currentUser: Awaited<ReturnType<typeof getCurrentUser>>;
 }) {
-  const firstPage = await listFeedPostsPage({
-    currentUserId: currentUser?.id ?? null,
-    scope: "ALL",
-    limit: PAGE_SIZE,
-    cursor: null,
-    includeCategories: [...CONTENT_CATEGORIES],
-  });
+  const [firstPage, mySubscriptions] = await Promise.all([
+    listFeedPostsPage({
+      currentUserId: currentUser?.id ?? null,
+      scope: "ALL",
+      limit: PAGE_SIZE,
+      cursor: null,
+      includeCategories: [...CONTENT_CATEGORIES],
+    }),
+    currentUser ? listMySubscriptions(currentUser.id) : Promise.resolve([]),
+  ]);
+
+  const subscribedCreatorIds = mySubscriptions.map((s) => s.creatorId);
 
   const visibleItems = currentUser
     ? firstPage.items.filter((post) => {
@@ -97,6 +103,7 @@ async function ContentTabContent({
           firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null
         }
         currentUserId={currentUser?.id ?? null}
+        subscribedCreatorIds={subscribedCreatorIds}
       />
     </div>
   );

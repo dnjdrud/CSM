@@ -7,6 +7,7 @@ import {
   updateSpiritualNoteAction,
   deleteSpiritualNoteAction,
 } from "../spiritual/actions";
+import { SharePrayerModal } from "./SharePrayerModal";
 
 function relativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -30,6 +31,7 @@ export function SpiritualNoteCard({ note }: { note: SpiritualNote }) {
   const [editContent, setEditContent] = useState(note.content);
   const [pending, setPending] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   async function handleSave() {
     if (!editContent.trim()) return;
@@ -103,74 +105,90 @@ export function SpiritualNoteCard({ note }: { note: SpiritualNote }) {
   }
 
   return (
-    <div className={`py-4 space-y-1.5 ${note.isAnswered ? "opacity-55" : ""}`}>
-      {/* Header row: title + actions */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1 space-y-1">
-          {note.title && (
-            <p className="text-[14px] font-semibold text-theme-text">
-              {note.title}
+    <>
+      <div className={`py-4 space-y-1.5 ${note.isAnswered ? "opacity-55" : ""}`}>
+        {/* Header row: title + actions */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-1">
+            {note.title && (
+              <p className="text-[14px] font-semibold text-theme-text">
+                {note.title}
+              </p>
+            )}
+            <p className="text-[14px] text-theme-text leading-relaxed whitespace-pre-wrap">
+              {note.content}
             </p>
-          )}
-          <p className="text-[14px] text-theme-text leading-relaxed whitespace-pre-wrap">
-            {note.content}
-          </p>
-        </div>
+          </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 shrink-0 pt-0.5">
-          <button
-            onClick={() => setEditing(true)}
-            className="text-[11px] text-theme-muted hover:text-theme-text transition-colors px-1.5 py-0.5 rounded"
-          >
-            수정
-          </button>
-          {!confirmDelete ? (
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 shrink-0 pt-0.5">
             <button
-              onClick={() => setConfirmDelete(true)}
-              className="text-[11px] text-theme-muted hover:text-red-500 transition-colors px-1.5 py-0.5 rounded"
+              onClick={() => setEditing(true)}
+              className="text-[11px] text-theme-muted hover:text-theme-text transition-colors px-1.5 py-0.5 rounded"
             >
-              삭제
+              수정
             </button>
-          ) : (
-            <span className="flex items-center gap-0.5">
+            {!confirmDelete ? (
               <button
-                onClick={handleDelete}
-                disabled={pending}
-                className="text-[11px] text-red-500 hover:text-red-700 font-medium px-1.5 py-0.5"
+                onClick={() => setConfirmDelete(true)}
+                className="text-[11px] text-theme-muted hover:text-red-500 transition-colors px-1.5 py-0.5 rounded"
               >
-                {pending ? "…" : "확인"}
+                삭제
               </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="text-[11px] text-theme-muted px-1.5 py-0.5"
-              >
-                취소
-              </button>
-            </span>
+            ) : (
+              <span className="flex items-center gap-0.5">
+                <button
+                  onClick={handleDelete}
+                  disabled={pending}
+                  className="text-[11px] text-red-500 hover:text-red-700 font-medium px-1.5 py-0.5"
+                >
+                  {pending ? "…" : "확인"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-[11px] text-theme-muted px-1.5 py-0.5"
+                >
+                  취소
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Footer row: timestamp + badges + share button */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-[11px] text-theme-muted">
+            {relativeTime(note.createdAt)}
+          </span>
+
+          {note.type === "prayer" && (
+            <button
+              onClick={handleToggleAnswered}
+              disabled={pending}
+              className={`text-[11px] font-medium px-2 py-0.5 rounded-full transition-all ${
+                note.isAnswered
+                  ? "bg-green-100 text-green-700"
+                  : "bg-theme-surface-2 text-theme-muted hover:bg-green-50 hover:text-green-600"
+              }`}
+            >
+              {note.isAnswered ? "✓ 응답받음" : "응답 표시"}
+            </button>
           )}
+
+          {/* 기도 요청 공유 */}
+          <button
+            onClick={() => setSharing(true)}
+            className="ml-auto text-[11px] font-medium text-theme-primary/80 hover:text-theme-primary transition-colors flex items-center gap-1"
+          >
+            🙏 기도 요청 보내기
+          </button>
         </div>
       </div>
 
-      {/* Footer row: timestamp + answered badge */}
-      <div className="flex items-center gap-3">
-        <span className="text-[11px] text-theme-muted">
-          {relativeTime(note.createdAt)}
-        </span>
-        {note.type === "prayer" && (
-          <button
-            onClick={handleToggleAnswered}
-            disabled={pending}
-            className={`text-[11px] font-medium px-2 py-0.5 rounded-full transition-all ${
-              note.isAnswered
-                ? "bg-green-100 text-green-700"
-                : "bg-theme-surface-2 text-theme-muted hover:bg-green-50 hover:text-green-600"
-            }`}
-          >
-            {note.isAnswered ? "✓ 응답받음" : "응답 표시"}
-          </button>
-        )}
-      </div>
-    </div>
+      {/* 공유 모달 (Portal처럼 위에 렌더) */}
+      {sharing && (
+        <SharePrayerModal note={note} onClose={() => setSharing(false)} />
+      )}
+    </>
   );
 }

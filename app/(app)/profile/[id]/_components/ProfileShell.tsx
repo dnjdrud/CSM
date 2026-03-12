@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { User } from "@/lib/domain/types";
 import { ROLE_DISPLAY } from "@/lib/domain/types";
 import { Avatar } from "@/components/ui/Avatar";
+import { SubscribeButton } from "@/components/ui/SubscribeButton";
 import { ProfileTabs } from "./ProfileTabs";
 import { ProfileFollowButton } from "./ProfileFollowButton";
 import { UserActionsMenu } from "./UserActionsMenu";
@@ -17,6 +18,10 @@ type Props = {
   postsCount: number;
   followerCount: number;
   followingCount: number;
+  /** 타인 프로필 전용: 구독자 수 */
+  subscriberCount?: number;
+  /** 타인 프로필 전용: 현재 유저가 구독 중인지 */
+  isSubscribed?: boolean;
   children: React.ReactNode;
 };
 
@@ -29,6 +34,8 @@ export function ProfileShell({
   postsCount,
   followerCount,
   followingCount,
+  subscriberCount = 0,
+  isSubscribed = false,
   children,
 }: Props) {
   const isOwnProfile = currentUserId === user.id;
@@ -109,7 +116,7 @@ export function ProfileShell({
           )}
 
           {/* 팔로워 / 팔로잉 / 게시글 수 */}
-          <div className="flex items-center gap-5 text-[13px] text-theme-muted mb-4">
+          <div className="flex items-center gap-5 text-[13px] text-theme-muted mb-3">
             <span>
               <strong className="text-theme-text font-semibold">{postsCount}</strong>{" "}
               게시글
@@ -128,7 +135,29 @@ export function ProfileShell({
               <strong className="text-theme-text font-semibold">{followingCount}</strong>{" "}
               팔로잉
             </Link>
+            {/* 구독자 수 (까마귀) */}
+            {subscriberCount > 0 && (
+              <span>
+                <strong className="text-theme-text font-semibold">
+                  {subscriberCount.toLocaleString()}
+                </strong>{" "}
+                까마귀
+              </span>
+            )}
           </div>
+
+          {/* 타인 프로필: 까마귀 되기 버튼 */}
+          {!isOwnProfile && (
+            <div className="mb-4">
+              <SubscribeButton
+                creatorId={user.id}
+                initialIsSubscribed={isSubscribed}
+                initialCount={subscriberCount}
+                isLoggedIn={!!currentUserId}
+                variant="full"
+              />
+            </div>
+          )}
         </section>
 
         {/* 탭 */}

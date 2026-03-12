@@ -9,12 +9,14 @@ type Props = {
   initialItems: PostWithAuthor[];
   initialNextCursorStr: string | null;
   currentUserId: string | null;
+  subscribedCreatorIds: string[];
 };
 
 export function ContentsInfiniteList({
   initialItems,
   initialNextCursorStr,
   currentUserId,
+  subscribedCreatorIds,
 }: Props) {
   const [items, setItems] = useState<PostWithAuthor[]>(initialItems);
   const [nextCursorStr, setNextCursorStr] = useState<string | null>(initialNextCursorStr);
@@ -80,7 +82,11 @@ export function ContentsInfiniteList({
       <ul className="list-none p-0" role="list">
         {items.map((post) => (
           <li key={post.id}>
-            <ContentCard post={post} currentUserId={currentUserId} />
+            <ContentCard
+              post={post}
+              currentUserId={currentUserId}
+              subscribedCreatorIds={subscribedCreatorIds}
+            />
           </li>
         ))}
       </ul>

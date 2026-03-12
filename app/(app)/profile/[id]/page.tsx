@@ -12,6 +12,11 @@ import {
 import { isBlocked, isMuted } from "@/lib/data/repository";
 import { getAuthUserId } from "@/lib/auth/session";
 import { listSpiritualNotes } from "@/lib/data/spiritualRepository";
+import {
+  listMySubscriptions,
+  getSubscriberCount,
+  isSubscribed,
+} from "@/lib/data/subscriptionRepository";
 import type { PostCategory } from "@/lib/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -40,9 +45,9 @@ export default async function ProfilePage({
   const currentUserId = await getAuthUserId();
   const isOwnProfile = currentUserId === id;
 
-  // Only fetch spiritual notes when viewing own spiritual tab
   const shouldFetchSpiritual =
     activeTab === "spiritual" && isOwnProfile && !!currentUserId;
+  const shouldFetchCrowList = activeTab === "crow" && isOwnProfile && !!currentUserId;
 
   const [
     { user, errorMessage },
@@ -52,18 +57,34 @@ export default async function ProfilePage({
     viewerFollowingIds,
     prayerNotes,
     lifeNotes,
+    mySubscriptions,
+    crowSubscriberCount,
+    viewerIsSubscribed,
   ] = await Promise.all([
     getProfileWithError(id),
     listPostsByAuthorId(id),
     listFollowerIds(id),
     listFollowingIds(id),
     currentUserId ? listFollowingIds(currentUserId) : Promise.resolve([]),
+    // spiritual
     shouldFetchSpiritual
       ? listSpiritualNotes(currentUserId!, "prayer")
       : Promise.resolve([]),
     shouldFetchSpiritual
       ? listSpiritualNotes(currentUserId!, "life")
       : Promise.resolve([]),
+    // crow list: own profile crow tab only
+    shouldFetchCrowList
+      ? listMySubscriptions(currentUserId!)
+      : Promise.resolve([]),
+    // subscriber count: always for non-own profiles (header + crow tab)
+    !isOwnProfile
+      ? getSubscriberCount(id)
+      : Promise.resolve(0),
+    // is current user subscribed: always for non-own + logged-in
+    !isOwnProfile && !!currentUserId
+      ? isSubscribed(currentUserId, id)
+      : Promise.resolve(false),
   ]);
 
   if (!user) {
@@ -100,6 +121,8 @@ export default async function ProfilePage({
       postsCount={normalPosts.length}
       followerCount={followerIds.length}
       followingCount={followingIds.length}
+      subscriberCount={crowSubscriberCount}
+      isSubscribed={viewerIsSubscribed}
     >
       {activeTab === "posts" && (
         <ProfilePostsTab
@@ -117,8 +140,23 @@ export default async function ProfilePage({
           isOwnProfile={currentUserId === user.id}
         />
       )}
-      {activeTab === "crow" && (
-        <ProfileCrowTab profileId={user.id} currentUserId={currentUserId} />
+      {activeTab === "crow" && isOwnProfile && (
+        <ProfileCrowTab
+          profileId={user.id}
+          isOwnProfile={true}
+          subscriptions={mySubscriptions}
+        />
+      )}
+      {activeTab === "crow" && !isOwnProfile && (
+        <ProfileCrowTab
+          profileId={user.id}
+          isOwnProfile={false}
+          creatorId={user.id}
+          creatorName={user.name}
+          subscriberCount={crowSubscriberCount}
+          isSubscribed={viewerIsSubscribed}
+          isLoggedIn={!!currentUserId}
+        />
       )}
       {activeTab === "spiritual" && (
         <ProfileSpiritualTab

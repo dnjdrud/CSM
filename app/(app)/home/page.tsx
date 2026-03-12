@@ -19,6 +19,7 @@ import { HomeTabs } from "./_components/HomeTabs";
 import { HomeInfiniteList } from "./_components/HomeInfiniteList";
 import { PrayerInfiniteList } from "./_components/PrayerInfiniteList";
 import type { HomeTab } from "./_components/HomeTabs";
+import { getRoleUX } from "@/lib/config/roleUX";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "홈 – Cellah" };
@@ -102,9 +103,12 @@ async function FeedTabContent({
       {/* 오늘의 기도 배너 — Prayer 탭 진입 유도 */}
       <DailyPrayerBanner dailyPrayer={dailyPrayer} />
 
-      {/* 글쓰기 */}
+      {/* 글쓰기 + 역할별 CTA */}
       {currentUser && (
-        <div className="border-b border-theme-border/60 px-4 py-3">
+        <div className="border-b border-theme-border/60 px-4 py-3 space-y-2">
+          <p className="text-[12px] text-theme-muted">
+            {getRoleUX(currentUser.role).homeCta}
+          </p>
           <FeedComposer />
         </div>
       )}

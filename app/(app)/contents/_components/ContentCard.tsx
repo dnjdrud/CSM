@@ -1,38 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Avatar } from "@/components/ui/Avatar";
+import { SubscribeButton } from "@/components/ui/SubscribeButton";
+import { YouTubeEmbed } from "@/components/content/YouTubeEmbed";
 import type { PostWithAuthor } from "@/lib/domain/types";
 import { CATEGORY_LABELS } from "@/lib/domain/types";
-
-/* ─── YouTube helpers ────────────────────────────────────────── */
-
-function extractYouTubeId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname === "youtu.be") {
-      return u.pathname.slice(1).split("?")[0] ?? null;
-    }
-    if (u.hostname.includes("youtube.com")) {
-      if (u.pathname.startsWith("/shorts/")) return u.pathname.split("/")[2] ?? null;
-      if (u.pathname.startsWith("/embed/")) return u.pathname.split("/")[2] ?? null;
-      return u.searchParams.get("v");
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function thumbnailUrl(videoId: string): string {
-  return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-}
-
-function embedUrl(videoId: string): string {
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`;
-}
 
 /* ─── Time helper ────────────────────────────────────────────── */
 
@@ -53,59 +26,20 @@ function relativeTime(iso: string): string {
 type Props = {
   post: PostWithAuthor;
   currentUserId: string | null;
+  /** Creator IDs the current user already subscribes to (for initial button state) */
+  subscribedCreatorIds?: string[];
 };
 
-export function ContentCard({ post }: Props) {
-  const youtubeId = post.youtubeUrl ? extractYouTubeId(post.youtubeUrl) : null;
-  const [playing, setPlaying] = useState(false);
-
+export function ContentCard({ post, currentUserId, subscribedCreatorIds = [] }: Props) {
+  const isOwnPost = currentUserId === post.author.id;
+  const isSubscribed = subscribedCreatorIds.includes(post.author.id);
   const categoryLabel = CATEGORY_LABELS[post.category] ?? post.category;
 
   return (
     <article className="border-b border-theme-border/50 last:border-b-0">
       {/* ── YouTube 썸네일 / 임베드 플레이어 ── */}
-      {youtubeId && (
-        <div className="relative w-full aspect-video bg-black overflow-hidden">
-          {playing ? (
-            <iframe
-              src={embedUrl(youtubeId)}
-              title="YouTube video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full border-0"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setPlaying(true)}
-              aria-label="영상 재생"
-              className="relative block w-full h-full group"
-            >
-              <Image
-                src={thumbnailUrl(youtubeId)}
-                alt="YouTube 썸네일"
-                fill
-                className="object-cover"
-                unoptimized
-              />
-              {/* 오버레이 */}
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
-              {/* 재생 버튼 */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-black/70 group-hover:bg-black/85 flex items-center justify-center transition-colors shadow-lg">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="white"
-                    className="w-6 h-6 ml-0.5"
-                    aria-hidden
-                  >
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-          )}
-        </div>
+      {post.youtubeUrl && (
+        <YouTubeEmbed url={post.youtubeUrl} mode="player" />
       )}
 
       {/* ── 텍스트 영역 ── */}
@@ -127,6 +61,16 @@ export function ContentCard({ post }: Props) {
               {post.author.name}
             </Link>
           </div>
+
+          {/* 까마귀 되기 (본인 게시글 제외) */}
+          {!isOwnPost && (
+            <SubscribeButton
+              creatorId={post.author.id}
+              initialIsSubscribed={isSubscribed}
+              isLoggedIn={!!currentUserId}
+              variant="compact"
+            />
+          )}
 
           {/* 카테고리 배지 */}
           <span className="shrink-0 text-[11px] font-medium text-theme-primary/80 bg-theme-primary/10 px-2 py-0.5 rounded-full">
@@ -152,10 +96,7 @@ export function ContentCard({ post }: Props) {
         {Array.isArray(post.tags) && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {post.tags.map((tag) => (
-              <span
-                key={tag}
-                className="text-[11px] text-theme-primary/70"
-              >
+              <span key={tag} className="text-[11px] text-theme-primary/70">
                 #{tag}
               </span>
             ))}

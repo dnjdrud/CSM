@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
 import type { PostWithAuthor } from "@/lib/domain/types";
@@ -321,6 +322,18 @@ export function PostCard({
         )}
       </div>
 
+      {Array.isArray(post.mediaUrls) && post.mediaUrls.length > 0 && post.mediaUrls[0] && (
+        <div className="mt-3 relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+          <Image
+            src={post.mediaUrls[0]}
+            alt="첨부 사진"
+            fill
+            className="object-contain"
+            unoptimized
+          />
+        </div>
+      )}
+
       {Array.isArray(post.tags) && post.tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Topics">
           {post.tags.map((tag) => (
@@ -440,7 +453,7 @@ export function PostCard({
       {getCommentsForPost && commentsOpen && (
         <div id={`comments-${post.id}`} className="mt-4 border-t border-theme-border pt-4 pb-2">
           <h3 className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-3">
-            Comments
+            댓글
           </h3>
           <div className="pl-3 sm:pl-4 text-[13px] leading-6 text-theme-text">
           {commentsLoading && comments === null ? (
@@ -478,7 +491,7 @@ export function PostCard({
               {!canCommentInline && effectiveUserId === null && (
                 <p className="mb-3 text-theme-muted text-[13px]">
                   <Link href={`/post/${post.id}`} className="underline hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent rounded">
-                    Sign in to comment
+                    댓글을 달려면 로그인하세요
                   </Link>
                 </p>
               )}

@@ -21,14 +21,14 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <Link
-        href="/feed"
+        href="/home"
         className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded mb-6 inline-block"
       >
-        ← Back to feed
+        ← 홈으로
       </Link>
       <div className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
-          Notifications
+          알림
         </h1>
         {hasUnread && (
           <MarkAllReadButton />
@@ -36,8 +36,8 @@ export default async function NotificationsPage() {
       </div>
       {grouped.length === 0 ? (
         <EmptyState
-          title="Nothing here yet"
-          description="When someone follows you or responds to your posts, you’ll see it here."
+          title="아직 알림이 없습니다"
+          description="누군가 팔로우하거나 게시글에 반응하면 여기에 표시됩니다."
         />
       ) : (
         <NotificationsListLive
