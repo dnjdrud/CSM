@@ -34,7 +34,18 @@ import type {
   SupportPurpose,
   DirectMessage,
   ConversationPreview,
+  PrayerRequest,
+  PrayerCategory,
+  PrayerIntercession,
+  NotificationPrefs,
+  MissionaryProject,
+  MissionaryProjectStatus,
+  MissionaryReport,
+  MissionarySupporter,
+  SupportType,
 } from "@/lib/domain/types";
+// DEFAULT_NOTIFICATION_PREFS used as value (not just type)
+import { DEFAULT_NOTIFICATION_PREFS } from "@/lib/domain/types";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { tokenize, sortByScore } from "@/lib/search";
@@ -2050,6 +2061,370 @@ export async function countUnreadDMs(userId: string): Promise<number> {
     .eq("recipient_id", userId)
     .is("read_at", null);
   return count ?? 0;
+}
+
+// =============================================================
+// Notification preferences
+// =============================================================
+
+function parseNotifPrefs(raw: unknown): NotificationPrefs {
+  const defaults = DEFAULT_NOTIFICATION_PREFS;
+  if (!raw || typeof raw !== "object") return { ...defaults };
+  const r = raw as Record<string, unknown>;
+  return {
+    pushComments:        typeof r.pushComments        === "boolean" ? r.pushComments        : defaults.pushComments,
+    pushReactions:       typeof r.pushReactions       === "boolean" ? r.pushReactions       : defaults.pushReactions,
+    pushFollowers:       typeof r.pushFollowers       === "boolean" ? r.pushFollowers       : defaults.pushFollowers,
+    pushCellMessages:    typeof r.pushCellMessages    === "boolean" ? r.pushCellMessages    : defaults.pushCellMessages,
+    pushPrayerResponses: typeof r.pushPrayerResponses === "boolean" ? r.pushPrayerResponses : defaults.pushPrayerResponses,
+    emailWeeklyDigest:   typeof r.emailWeeklyDigest   === "boolean" ? r.emailWeeklyDigest   : defaults.emailWeeklyDigest,
+    emailCellInvites:    typeof r.emailCellInvites    === "boolean" ? r.emailCellInvites    : defaults.emailCellInvites,
+  };
+}
+
+export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
+  const supabase = await supabaseServer();
+  const { data } = await supabase
+    .from("users")
+    .select("notification_prefs")
+    .eq("id", userId)
+    .single();
+  return parseNotifPrefs(data?.notification_prefs);
+}
+
+export async function updateNotificationPrefs(
+  userId: string,
+  prefs: Partial<NotificationPrefs>
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await supabaseServer();
+  const current = await getNotificationPrefs(userId);
+  const merged = { ...current, ...prefs };
+  const { error } = await supabase
+    .from("users")
+    .update({ notification_prefs: merged })
+    .eq("id", userId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// =============================================================
+// Prayer requests
+// =============================================================
+
+function rowToPrayerRequest(r: {
+  id: string;
+  user_id: string;
+  content: string;
+  category: string;
+  visibility: string;
+  answered_at?: string | null;
+  answer_note?: string | null;
+  created_at: string;
+  users?: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; avatar_url?: string | null } | null;
+  prayer_intercessions?: { count: number }[] | null;
+  viewer_prayed?: boolean;
+}): PrayerRequest {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    content: r.content,
+    category: r.category as PrayerCategory,
+    visibility: r.visibility as PrayerRequest["visibility"],
+    answeredAt: r.answered_at ?? null,
+    answerNote: r.answer_note ?? null,
+    createdAt: r.created_at,
+    author: r.users ? rowToUser(r.users as any) : undefined,
+    intercessorCount: r.prayer_intercessions?.[0]?.count ?? 0,
+    hasPrayed: r.viewer_prayed ?? false,
+  };
+}
+
+export async function listPrayerRequests(opts: {
+  limit?: number;
+  userId?: string | null; // filter to specific user's requests
+  viewerId?: string | null;
+  onlyAnswered?: boolean;
+} = {}): Promise<PrayerRequest[]> {
+  const supabase = await supabaseServer();
+  const limit = opts.limit ?? 30;
+
+  let q = supabase
+    .from("prayer_requests")
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), prayer_intercessions(count)")
+    .eq("visibility", "PUBLIC")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (opts.userId) q = q.eq("user_id", opts.userId);
+  if (opts.onlyAnswered) q = q.not("answered_at", "is", null);
+
+  const { data, error } = await q;
+  if (error) { console.error("[listPrayerRequests]", error.message); return []; }
+
+  const rows = (data ?? []) as any[];
+  if (!opts.viewerId) return rows.map(rowToPrayerRequest);
+
+  // Check which ones the viewer has prayed for
+  const ids = rows.map((r: any) => r.id);
+  const { data: intercessions } = await supabase
+    .from("prayer_intercessions")
+    .select("prayer_request_id")
+    .in("prayer_request_id", ids)
+    .eq("user_id", opts.viewerId);
+  const prayedSet = new Set((intercessions ?? []).map((i: any) => i.prayer_request_id));
+  return rows.map((r: any) => rowToPrayerRequest({ ...r, viewer_prayed: prayedSet.has(r.id) }));
+}
+
+export async function getPrayerRequestById(id: string, viewerId?: string | null): Promise<PrayerRequest | null> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("prayer_requests")
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), prayer_intercessions(count)")
+    .eq("id", id)
+    .single();
+  if (error || !data) return null;
+
+  let hasPrayed = false;
+  if (viewerId) {
+    const { data: pi } = await supabase
+      .from("prayer_intercessions")
+      .select("id")
+      .eq("prayer_request_id", id)
+      .eq("user_id", viewerId)
+      .single();
+    hasPrayed = !!pi;
+  }
+  return rowToPrayerRequest({ ...(data as any), viewer_prayed: hasPrayed });
+}
+
+export async function createPrayerRequest(input: {
+  userId: string;
+  content: string;
+  category: PrayerCategory;
+  visibility: "PUBLIC" | "CELL" | "PRIVATE";
+}): Promise<PrayerRequest> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("prayer_requests")
+    .insert({ user_id: input.userId, content: input.content.trim(), category: input.category, visibility: input.visibility })
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), prayer_intercessions(count)")
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToPrayerRequest(data as any);
+}
+
+export async function intercedeForPrayer(prayerRequestId: string, userId: string, message?: string): Promise<void> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase
+    .from("prayer_intercessions")
+    .upsert({ prayer_request_id: prayerRequestId, user_id: userId, message: message ?? null }, { onConflict: "prayer_request_id,user_id" });
+  if (error) throw new Error(error.message);
+}
+
+export async function removeIntercession(prayerRequestId: string, userId: string): Promise<void> {
+  const supabase = await supabaseServer();
+  await supabase.from("prayer_intercessions").delete().match({ prayer_request_id: prayerRequestId, user_id: userId });
+}
+
+export async function markPrayerAnswered(prayerRequestId: string, userId: string, answerNote?: string): Promise<void> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase
+    .from("prayer_requests")
+    .update({ answered_at: new Date().toISOString(), answer_note: answerNote ?? null })
+    .eq("id", prayerRequestId)
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+}
+
+export async function deletePrayerRequest(id: string, userId: string): Promise<void> {
+  const supabase = await supabaseServer();
+  await supabase.from("prayer_requests").delete().eq("id", id).eq("user_id", userId);
+}
+
+export async function listPrayerIntercessions(prayerRequestId: string): Promise<PrayerIntercession[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("prayer_intercessions")
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url)")
+    .eq("prayer_request_id", prayerRequestId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) return [];
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    prayerRequestId: r.prayer_request_id,
+    userId: r.user_id,
+    message: r.message ?? null,
+    createdAt: r.created_at,
+    author: r.users ? rowToUser(r.users) : undefined,
+  }));
+}
+
+// =============================================================
+// Missionary projects
+// =============================================================
+
+function rowToMissionaryProject(r: {
+  id: string;
+  missionary_id: string;
+  title: string;
+  country?: string | null;
+  field?: string | null;
+  description?: string | null;
+  status: string;
+  created_at: string;
+  users?: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; avatar_url?: string | null } | null;
+  missionary_supporters?: { count: number }[] | null;
+  viewer_supports?: boolean;
+}): MissionaryProject {
+  return {
+    id: r.id,
+    missionaryId: r.missionary_id,
+    title: r.title,
+    country: r.country ?? null,
+    field: r.field ?? null,
+    description: r.description ?? null,
+    status: r.status as MissionaryProjectStatus,
+    createdAt: r.created_at,
+    missionary: r.users ? rowToUser(r.users as any) : undefined,
+    supporterCount: r.missionary_supporters?.[0]?.count ?? 0,
+    hasPrayerSupport: r.viewer_supports ?? false,
+  };
+}
+
+export async function listMissionaryProjects(opts: { missionaryId?: string; viewerId?: string | null; limit?: number } = {}): Promise<MissionaryProject[]> {
+  const supabase = await supabaseServer();
+  const limit = opts.limit ?? 30;
+
+  let q = supabase
+    .from("missionary_projects")
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), missionary_supporters(count)")
+    .eq("status", "ACTIVE")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (opts.missionaryId) q = q.eq("missionary_id", opts.missionaryId);
+
+  const { data, error } = await q;
+  if (error) { console.error("[listMissionaryProjects]", error.message); return []; }
+
+  const rows = (data ?? []) as any[];
+  if (!opts.viewerId) return rows.map(rowToMissionaryProject);
+
+  const ids = rows.map((r: any) => r.id);
+  const { data: supports } = await supabase
+    .from("missionary_supporters")
+    .select("project_id")
+    .in("project_id", ids)
+    .eq("user_id", opts.viewerId);
+  const supportSet = new Set((supports ?? []).map((s: any) => s.project_id));
+  return rows.map((r: any) => rowToMissionaryProject({ ...r, viewer_supports: supportSet.has(r.id) }));
+}
+
+export async function getMissionaryProjectById(id: string, viewerId?: string | null): Promise<MissionaryProject | null> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("missionary_projects")
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), missionary_supporters(count)")
+    .eq("id", id)
+    .single();
+  if (error || !data) return null;
+
+  let viewerSupports = false;
+  if (viewerId) {
+    const { data: s } = await supabase
+      .from("missionary_supporters")
+      .select("id")
+      .eq("project_id", id)
+      .eq("user_id", viewerId)
+      .single();
+    viewerSupports = !!s;
+  }
+  return rowToMissionaryProject({ ...(data as any), viewer_supports: viewerSupports });
+}
+
+export async function createMissionaryProject(input: {
+  missionaryId: string;
+  title: string;
+  country?: string;
+  field?: string;
+  description?: string;
+}): Promise<MissionaryProject> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("missionary_projects")
+    .insert({
+      missionary_id: input.missionaryId,
+      title: input.title.trim(),
+      country: input.country?.trim() ?? null,
+      field: input.field?.trim() ?? null,
+      description: input.description?.trim() ?? null,
+    })
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), missionary_supporters(count)")
+    .single();
+  if (error) throw new Error(error.message);
+  return rowToMissionaryProject(data as any);
+}
+
+export async function listMissionaryReports(projectId: string): Promise<MissionaryReport[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("missionary_reports")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    projectId: r.project_id,
+    content: r.content,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function createMissionaryReport(projectId: string, content: string): Promise<MissionaryReport> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("missionary_reports")
+    .insert({ project_id: projectId, content: content.trim() })
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return { id: data.id, projectId: data.project_id, content: data.content, createdAt: data.created_at };
+}
+
+export async function listMissionarySupporters(projectId: string): Promise<MissionarySupporter[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("missionary_supporters")
+    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url)")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    projectId: r.project_id,
+    userId: r.user_id,
+    supportType: r.support_type as SupportType,
+    createdAt: r.created_at,
+    user: r.users ? rowToUser(r.users) : undefined,
+  }));
+}
+
+export async function toggleMissionarySupport(projectId: string, userId: string): Promise<"added" | "removed"> {
+  const supabase = await supabaseServer();
+  const { data: existing } = await supabase
+    .from("missionary_supporters")
+    .select("id")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .single();
+  if (existing) {
+    await supabase.from("missionary_supporters").delete().eq("id", existing.id);
+    return "removed";
+  }
+  await supabase.from("missionary_supporters").insert({ project_id: projectId, user_id: userId, support_type: "PRAYER" });
+  return "added";
 }
 
 /**

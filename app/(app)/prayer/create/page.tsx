@@ -2,6 +2,8 @@ import { TimelineContainer } from "@/components/TimelineContainer";
 import { getCurrentUser } from "@/lib/data/repository";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { createPrayerRequestAction } from "../actions";
+import { PRAYER_CATEGORY_LABELS } from "@/lib/domain/types";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "기도 요청하기 – Cellah" };
@@ -18,15 +20,15 @@ export default async function PrayerCreatePage() {
           <h1 className="text-xl font-semibold text-theme-text mt-2">기도 요청하기</h1>
         </div>
 
-        <form className="space-y-4">
+        <form action={createPrayerRequestAction} className="space-y-4">
           {/* Category */}
           <div className="space-y-2">
             <label className="text-[13px] font-medium text-theme-text">카테고리</label>
-            <div className="flex flex-wrap gap-2">
-              {["개인", "가족", "셀", "교회", "선교", "사회"].map((cat) => (
-                <label key={cat} className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="radio" name="category" value={cat} className="accent-theme-primary" defaultChecked={cat === "개인"} />
-                  <span className="text-[13px] text-theme-text">{cat}</span>
+            <div className="flex flex-wrap gap-3">
+              {(Object.entries(PRAYER_CATEGORY_LABELS) as [string, string][]).map(([value, label]) => (
+                <label key={value} className="flex items-center gap-1.5 cursor-pointer">
+                  <input type="radio" name="category" value={value} className="accent-theme-primary" defaultChecked={value === "PERSONAL"} />
+                  <span className="text-[13px] text-theme-text">{label}</span>
                 </label>
               ))}
             </div>
@@ -36,7 +38,11 @@ export default async function PrayerCreatePage() {
           <div className="space-y-2">
             <label className="text-[13px] font-medium text-theme-text">기도 내용</label>
             <textarea
+              name="content"
               rows={6}
+              required
+              minLength={5}
+              maxLength={1000}
               placeholder="기도 제목을 나눠주세요. 구체적일수록 함께 기도하기 좋습니다."
               className="w-full rounded-xl border border-theme-border bg-theme-surface px-4 py-3 text-[14px] text-theme-text placeholder-theme-muted resize-none focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
             />
@@ -45,21 +51,19 @@ export default async function PrayerCreatePage() {
           {/* Visibility */}
           <div className="space-y-2">
             <label className="text-[13px] font-medium text-theme-text">공개 범위</label>
-            <select className="w-full rounded-xl border border-theme-border bg-theme-surface px-4 py-3 text-[14px] text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50">
-              <option value="all">전체 공개</option>
-              <option value="cell">내 셀만</option>
-              <option value="private">나만 보기</option>
+            <select
+              name="visibility"
+              className="w-full rounded-xl border border-theme-border bg-theme-surface px-4 py-3 text-[14px] text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/50"
+            >
+              <option value="PUBLIC">전체 공개</option>
+              <option value="CELL">내 셀만</option>
+              <option value="PRIVATE">나만 보기</option>
             </select>
-          </div>
-
-          <div className="pt-2 rounded-xl border border-theme-border/60 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
-            <p className="text-[12px] text-amber-700 dark:text-amber-400">기도 요청 기능은 준비 중입니다. 곧 사용하실 수 있습니다.</p>
           </div>
 
           <button
             type="submit"
-            disabled
-            className="w-full py-3 rounded-xl bg-theme-primary text-white text-[14px] font-medium disabled:opacity-50 cursor-not-allowed"
+            className="w-full py-3 rounded-xl bg-theme-primary text-white text-[14px] font-medium hover:opacity-90"
           >
             기도 요청 등록
           </button>

@@ -283,6 +283,109 @@ export interface AuditLogEntry {
   createdAt: string; // ISO
 }
 
+// =============================================================
+// Prayer requests (community prayer board)
+// =============================================================
+
+export type PrayerCategory = "PERSONAL" | "FAMILY" | "CELL" | "CHURCH" | "MISSION" | "SOCIAL";
+
+export const PRAYER_CATEGORY_LABELS: Record<PrayerCategory, string> = {
+  PERSONAL: "개인",
+  FAMILY: "가족",
+  CELL: "셀",
+  CHURCH: "교회",
+  MISSION: "선교",
+  SOCIAL: "사회",
+};
+
+export interface PrayerRequest {
+  id: string;
+  userId: string;
+  content: string;
+  category: PrayerCategory;
+  visibility: "PUBLIC" | "CELL" | "PRIVATE";
+  answeredAt?: string | null;
+  answerNote?: string | null;
+  createdAt: string;
+  /** Joined author */
+  author?: User;
+  /** Count of intercessions */
+  intercessorCount?: number;
+  /** Whether the current viewer has prayed */
+  hasPrayed?: boolean;
+}
+
+export interface PrayerIntercession {
+  id: string;
+  prayerRequestId: string;
+  userId: string;
+  message?: string | null;
+  createdAt: string;
+  author?: User;
+}
+
+// =============================================================
+// Notification preferences
+// =============================================================
+
+export interface NotificationPrefs {
+  pushComments: boolean;
+  pushReactions: boolean;
+  pushFollowers: boolean;
+  pushCellMessages: boolean;
+  pushPrayerResponses: boolean;
+  emailWeeklyDigest: boolean;
+  emailCellInvites: boolean;
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  pushComments: true,
+  pushReactions: true,
+  pushFollowers: true,
+  pushCellMessages: true,
+  pushPrayerResponses: true,
+  emailWeeklyDigest: false,
+  emailCellInvites: true,
+};
+
+// =============================================================
+// Missionary projects
+// =============================================================
+
+export type MissionaryProjectStatus = "ACTIVE" | "PAUSED" | "COMPLETED";
+
+export interface MissionaryProject {
+  id: string;
+  missionaryId: string;
+  title: string;
+  country?: string | null;
+  field?: string | null;
+  description?: string | null;
+  status: MissionaryProjectStatus;
+  createdAt: string;
+  missionary?: User;
+  supporterCount?: number;
+  hasPrayerSupport?: boolean;
+}
+
+export interface MissionaryReport {
+  id: string;
+  projectId: string;
+  content: string;
+  createdAt: string;
+}
+
+export type SupportType = "PRAYER" | "FINANCIAL";
+
+export interface MissionarySupporter {
+  id: string;
+  projectId: string;
+  userId: string;
+  supportType: SupportType;
+  createdAt: string;
+  user?: User;
+}
+
 /** Private note types for My Space (not in feed/search). */
 export type NoteType = "PRAYER" | "GRATITUDE" | "MEDITATION";
 

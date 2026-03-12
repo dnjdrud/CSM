@@ -1269,3 +1269,97 @@ export async function listPostsByCategory(category: string, limit?: number): Pro
   if (DATA_MODE === "supabase") return supabaseRepo.listPostsByCategory(category, limit);
   return [];
 }
+
+// =============================================================
+// Notification preferences
+// =============================================================
+
+export async function getNotificationPrefs(userId: string): Promise<import("@/lib/domain/types").NotificationPrefs> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getNotificationPrefs(userId);
+  const { DEFAULT_NOTIFICATION_PREFS } = await import("@/lib/domain/types");
+  return { ...DEFAULT_NOTIFICATION_PREFS };
+}
+
+export async function updateNotificationPrefs(userId: string, prefs: Partial<import("@/lib/domain/types").NotificationPrefs>): Promise<{ ok: boolean; error?: string }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.updateNotificationPrefs(userId, prefs);
+  return { ok: true };
+}
+
+// =============================================================
+// Prayer requests
+// =============================================================
+
+export async function listPrayerRequests(opts?: Parameters<typeof supabaseRepo.listPrayerRequests>[0]): Promise<import("@/lib/domain/types").PrayerRequest[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listPrayerRequests(opts);
+  return [];
+}
+
+export async function getPrayerRequestById(id: string, viewerId?: string | null): Promise<import("@/lib/domain/types").PrayerRequest | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getPrayerRequestById(id, viewerId);
+  return null;
+}
+
+export async function createPrayerRequest(input: Parameters<typeof supabaseRepo.createPrayerRequest>[0]): Promise<import("@/lib/domain/types").PrayerRequest> {
+  if (DATA_MODE === "supabase") return supabaseRepo.createPrayerRequest(input);
+  throw new Error("Not supported");
+}
+
+export async function intercedeForPrayer(prayerRequestId: string, userId: string, message?: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.intercedeForPrayer(prayerRequestId, userId, message);
+}
+
+export async function removeIntercession(prayerRequestId: string, userId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.removeIntercession(prayerRequestId, userId);
+}
+
+export async function markPrayerAnswered(prayerRequestId: string, userId: string, answerNote?: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.markPrayerAnswered(prayerRequestId, userId, answerNote);
+}
+
+export async function deletePrayerRequest(id: string, userId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.deletePrayerRequest(id, userId);
+}
+
+export async function listPrayerIntercessions(prayerRequestId: string): Promise<import("@/lib/domain/types").PrayerIntercession[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listPrayerIntercessions(prayerRequestId);
+  return [];
+}
+
+// =============================================================
+// Missionary projects
+// =============================================================
+
+export async function listMissionaryProjects(opts?: Parameters<typeof supabaseRepo.listMissionaryProjects>[0]): Promise<import("@/lib/domain/types").MissionaryProject[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listMissionaryProjects(opts);
+  return [];
+}
+
+export async function getMissionaryProjectById(id: string, viewerId?: string | null): Promise<import("@/lib/domain/types").MissionaryProject | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getMissionaryProjectById(id, viewerId);
+  return null;
+}
+
+export async function createMissionaryProject(input: Parameters<typeof supabaseRepo.createMissionaryProject>[0]): Promise<import("@/lib/domain/types").MissionaryProject> {
+  if (DATA_MODE === "supabase") return supabaseRepo.createMissionaryProject(input);
+  throw new Error("Not supported");
+}
+
+export async function listMissionaryReports(projectId: string): Promise<import("@/lib/domain/types").MissionaryReport[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listMissionaryReports(projectId);
+  return [];
+}
+
+export async function createMissionaryReport(projectId: string, content: string): Promise<import("@/lib/domain/types").MissionaryReport> {
+  if (DATA_MODE === "supabase") return supabaseRepo.createMissionaryReport(projectId, content);
+  throw new Error("Not supported");
+}
+
+export async function listMissionarySupporters(projectId: string): Promise<import("@/lib/domain/types").MissionarySupporter[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listMissionarySupporters(projectId);
+  return [];
+}
+
+export async function toggleMissionarySupport(projectId: string, userId: string): Promise<"added" | "removed"> {
+  if (DATA_MODE === "supabase") return supabaseRepo.toggleMissionarySupport(projectId, userId);
+  return "added";
+}
