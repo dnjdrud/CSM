@@ -1259,3 +1259,13 @@ export async function uploadAvatar(
   if (DATA_MODE === "supabase") return supabaseRepo.uploadAvatar(userId, fileBuffer, mimeType);
   return { ok: false, error: "Not supported" };
 }
+
+export async function getTodaysDailyPrayer(): Promise<import("@/lib/domain/types").PostWithAuthor | null> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getTodaysDailyPrayer();
+  return null;
+}
+
+export async function listPostsByCategory(category: string, limit?: number): Promise<import("@/lib/domain/types").PostWithAuthor[]> {
+  if (DATA_MODE === "supabase") return supabaseRepo.listPostsByCategory(category, limit);
+  return [];
+}

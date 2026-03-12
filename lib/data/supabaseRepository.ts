@@ -421,6 +421,54 @@ export async function listFeedPosts(options: {
   });
 }
 
+/** Fetch today's Daily Prayer post (has daily-prayer tag, most recent today KST). */
+export async function getTodaysDailyPrayer(): Promise<PostWithAuthor | null> {
+  const supabase = await supabaseServer();
+  const todayKST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const startOfDay = `${todayKST}T00:00:00.000Z`;
+  const { data: rows } = await supabase
+    .from("posts")
+    .select(POSTS_FEED_SELECT)
+    .contains("tags", ["daily-prayer"])
+    .gte("created_at", startOfDay)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (!rows?.length) return null;
+  const r = rows[0]!;
+  const authorMap = await getAuthorMap(supabase, [r.author_id]);
+  const author = authorMap.get(r.author_id) ?? placeholderUser(r.author_id);
+  return {
+    ...rowToPost(r),
+    author,
+    reactionsByCurrentUser: { prayed: false, withYou: false },
+    reactionCounts: { prayed: 0, withYou: 0 },
+  } as PostWithAuthor;
+}
+
+/** List recent posts by category for Connect/Explore page. */
+export async function listPostsByCategory(
+  category: string,
+  limit = 12
+): Promise<PostWithAuthor[]> {
+  const supabase = await supabaseServer();
+  const { data: rows } = await supabase
+    .from("posts")
+    .select(POSTS_FEED_SELECT)
+    .eq("category", category)
+    .in("visibility", ["PUBLIC", "MEMBERS"])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (!rows?.length) return [];
+  const authorIds = [...new Set(rows.map((r) => r.author_id))];
+  const authorMap = await getAuthorMap(supabase, authorIds);
+  return rows.map((r) => ({
+    ...rowToPost(r),
+    author: authorMap.get(r.author_id) ?? placeholderUser(r.author_id),
+    reactionsByCurrentUser: { prayed: false, withYou: false },
+    reactionCounts: { prayed: 0, withYou: 0 },
+  })) as PostWithAuthor[];
+}
+
 export type ListFeedPostsPageParams = {
   currentUserId: string | null;
   scope: "ALL" | "FOLLOWING";

@@ -94,29 +94,42 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
   return (
     <header className="border-b border-theme-border/60 bg-theme-surface sticky top-0 z-20 shrink-0" role="banner">
       <div className="flex items-center justify-between gap-2 px-4 py-3 max-w-[100vw]">
-        <CellahLogo className="text-[17px] shrink-0" />
-        <nav className="flex items-center gap-3 flex-wrap justify-end" aria-label="Main navigation">
-          <Link href="/search" className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Search">
+        <Link href="/home" aria-label="Cellah 홈으로">
+          <CellahLogo className="text-[17px] shrink-0" />
+        </Link>
+        <nav className="flex items-center gap-2 flex-wrap justify-end" aria-label="Main navigation">
+          <Link href="/search" className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="검색">
             <SearchIcon className="w-5 h-5" />
           </Link>
           {user && (
             <>
               <Link
-                href="/messages"
-                className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
-                aria-label="Messages"
+                href="/write"
+                className="inline-flex items-center gap-1 rounded-lg bg-theme-primary px-3 py-1.5 text-[13px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
               >
-                Messages
+                ✏️ 글쓰기
+              </Link>
+              <Link
+                href="/messages"
+                className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
+                aria-label="메시지"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
               </Link>
               <Link
                 href="/notifications"
-                className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded inline-flex items-center gap-1.5"
-                aria-label={displayCount > 0 ? `Notifications, ${displayCount} unread` : "Notifications"}
+                className="relative p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
+                aria-label={displayCount > 0 ? `알림 ${displayCount}개` : "알림"}
               >
-                Notifications
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
                 {displayCount > 0 && (
-                  <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-theme-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-theme-primary tabular-nums">
-                    {displayCount > 99 ? "99+" : displayCount > 9 ? "9+" : displayCount}
+                  <span className="absolute -top-0.5 -right-0.5 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold text-white tabular-nums">
+                    {displayCount > 9 ? "9+" : displayCount}
                   </span>
                 )}
               </Link>
@@ -127,36 +140,29 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               {process.env.NODE_ENV !== "production" && (
                 <span className="text-[10px] text-theme-muted mr-1" aria-hidden>auth=yes {user.id.slice(0, 6)}</span>
               )}
-              <span className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary" aria-label={user.name ? `Welcome, ${user.name}` : "Welcome"}>
-                {user.name || "Welcome"}
-              </span>
               {isAdmin && (
-                <>
-                  <Link href="/admin" className="text-[15px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Admin Console">
-                    Admin
-                  </Link>
-                  <a href="/api/debug/auth" target="_blank" rel="noopener noreferrer" className="text-[15px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Debug auth">
-                    Debug
-                  </a>
-                </>
+                <Link href="/admin" className="text-[13px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+                  Admin
+                </Link>
               )}
+              <Link
+                href="/settings"
+                className="inline-flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
+                aria-label="설정"
+              >
+                {user.name || "설정"}
+              </Link>
               <form action={logoutAction} className="inline">
-                <button type="submit" className="text-[15px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
-                  Sign out
+                <button type="submit" className="text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
+                  로그아웃
                 </button>
               </form>
             </>
           ) : (
-            <Link href="/onboarding" className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
-              Sign in
+            <Link href="/login" className="rounded-lg bg-theme-primary px-3 py-1.5 text-[13px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2">
+              로그인
             </Link>
           )}
-          {user && (
-            <Link href="/bookmarks" className="text-[15px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="Saved posts">
-              Saved
-            </Link>
-          )}
-          <Link href="/write" className="text-[15px] font-medium text-theme-primary hover:text-theme-accent">Write</Link>
         </nav>
       </div>
     </header>

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
-type TabKey = "home" | "connect" | "cell" | "profile";
+type TabKey = "home" | "explore" | "cells" | "prayer" | "profile";
 
 type Tab = {
   key: TabKey;
@@ -13,54 +13,24 @@ type Tab = {
 };
 
 const BASE_TABS: Tab[] = [
-  {
-    key: "home",
-    href: "/feed?scope=FOLLOWING",
-    label: "Home",
-    icon: "🏠",
-  },
-  {
-    key: "connect",
-    href: "/feed?scope=ALL",
-    label: "Connect",
-    icon: "🌐",
-  },
-  {
-    key: "cell",
-    href: "/cell",
-    label: "Cell",
-    icon: "💬",
-  },
-  {
-    key: "profile",
-    href: "/me",
-    label: "Profile",
-    icon: "👤",
-  },
+  { key: "home",    href: "/home",    label: "홈",     icon: "🏠" },
+  { key: "explore", href: "/explore", label: "탐색",   icon: "🔍" },
+  { key: "cells",   href: "/cells",   label: "셀",     icon: "💬" },
+  { key: "prayer",  href: "/prayer",  label: "기도",   icon: "🙏" },
+  { key: "profile", href: "/me",      label: "프로필", icon: "👤" },
 ];
 
-function isActive(tab: Tab, pathname: string, search: URLSearchParams): boolean {
-  if (tab.key === "home" && pathname === "/feed") {
-    const scope = search.get("scope");
-    return scope === "FOLLOWING" || scope === null;
-  }
-  if (tab.key === "connect" && pathname === "/feed") {
-    const scope = search.get("scope");
-    return scope === "ALL";
-  }
-  if (tab.key === "cell") {
-    return pathname.startsWith("/cell");
-  }
-  if (tab.key === "profile") {
-    return pathname === "/me" || pathname.startsWith("/profile/");
-  }
+function isActive(tab: Tab, pathname: string): boolean {
+  if (tab.key === "home") return pathname === "/home" || pathname === "/feed";
+  if (tab.key === "explore") return pathname === "/explore" || pathname === "/search";
+  if (tab.key === "cells") return pathname.startsWith("/cells") || pathname.startsWith("/cell");
+  if (tab.key === "prayer") return pathname.startsWith("/prayer");
+  if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
   return false;
 }
 
 export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
   const pathname = usePathname() || "/";
-  const searchParams = useSearchParams();
-  const search = searchParams ?? new URLSearchParams();
 
   const TABS = BASE_TABS.map((tab) =>
     tab.key === "profile" ? { ...tab, href: profileHref } : tab
@@ -73,7 +43,7 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
     >
       <ul className="flex items-stretch justify-around px-2 py-1.5">
         {TABS.map((tab) => {
-          const active = isActive(tab, pathname, search);
+          const active = isActive(tab, pathname);
           return (
             <li key={tab.key} className="flex-1">
               <Link
@@ -96,4 +66,3 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
     </nav>
   );
 }
-
