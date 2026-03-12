@@ -5,13 +5,13 @@ import { ProfileCrowTab } from "./_components/ProfileCrowTab";
 import { ProfileSpiritualTab } from "./_components/ProfileSpiritualTab";
 import {
   getProfileWithError,
-  getCurrentUser,
   listPostsByAuthorId,
   listFollowerIds,
   listFollowingIds,
 } from "@/lib/data/repository";
 import { isBlocked, isMuted } from "@/lib/data/repository";
 import { getAuthUserId } from "@/lib/auth/session";
+import { listSpiritualNotes } from "@/lib/data/spiritualRepository";
 import type { PostCategory } from "@/lib/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -23,29 +23,47 @@ export default async function ProfilePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; section?: string }>;
 }) {
-  const [{ id }, { tab }] = await Promise.all([params, searchParams]);
-  const activeTab = (tab === "contents" || tab === "crow" || tab === "spiritual")
-    ? tab
-    : "posts";
+  const [{ id }, { tab, section: sectionParam }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
+
+  const activeTab =
+    tab === "contents" || tab === "crow" || tab === "spiritual"
+      ? tab
+      : "posts";
+  const spiritualSection: "prayer" | "life" =
+    sectionParam === "life" ? "life" : "prayer";
 
   const currentUserId = await getAuthUserId();
+  const isOwnProfile = currentUserId === id;
+
+  // Only fetch spiritual notes when viewing own spiritual tab
+  const shouldFetchSpiritual =
+    activeTab === "spiritual" && isOwnProfile && !!currentUserId;
 
   const [
     { user, errorMessage },
-    currentUser,
     posts,
     followerIds,
     followingIds,
     viewerFollowingIds,
+    prayerNotes,
+    lifeNotes,
   ] = await Promise.all([
     getProfileWithError(id),
-    currentUserId ? getCurrentUser() : Promise.resolve(null),
     listPostsByAuthorId(id),
     listFollowerIds(id),
     listFollowingIds(id),
     currentUserId ? listFollowingIds(currentUserId) : Promise.resolve([]),
+    shouldFetchSpiritual
+      ? listSpiritualNotes(currentUserId!, "prayer")
+      : Promise.resolve([]),
+    shouldFetchSpiritual
+      ? listSpiritualNotes(currentUserId!, "life")
+      : Promise.resolve([]),
   ]);
 
   if (!user) {
@@ -65,7 +83,6 @@ export default async function ProfilePage({
   const muted = currentUserId ? isMuted(currentUserId, id) : false;
   const following = currentUserId ? viewerFollowingIds.includes(user.id) : false;
 
-  // 탭별 게시글 분류
   const contentPosts = posts.filter((p) =>
     CONTENT_CATEGORIES.includes(p.category as PostCategory)
   );
@@ -101,15 +118,15 @@ export default async function ProfilePage({
         />
       )}
       {activeTab === "crow" && (
-        <ProfileCrowTab
-          profileId={user.id}
-          currentUserId={currentUserId}
-        />
+        <ProfileCrowTab profileId={user.id} currentUserId={currentUserId} />
       )}
       {activeTab === "spiritual" && (
         <ProfileSpiritualTab
           profileId={user.id}
           isOwnProfile={currentUserId === user.id}
+          prayerNotes={prayerNotes}
+          lifeNotes={lifeNotes}
+          section={spiritualSection}
         />
       )}
     </ProfileShell>
