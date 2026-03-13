@@ -7,10 +7,8 @@ export const metadata: Metadata = {
     "Get in touch with the CSM community operators. Email, report a concern, or request access.",
 };
 
-const FALLBACK_EMAIL = "contact@example.com"; // TODO: replace with real default or remove when CONTACT_EMAIL is always set
-
 function getContactEmail(): string {
-  return process.env.CONTACT_EMAIL ?? FALLBACK_EMAIL;
+  return process.env.CONTACT_EMAIL ?? "dndnjsrud123@naver.com";
 }
 
 export default function ContactPage() {

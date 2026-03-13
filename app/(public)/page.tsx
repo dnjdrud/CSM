@@ -223,8 +223,6 @@ function LandingKo() {
         <p className="mt-6 text-sm text-gray-500">
           <Link href="/principles" className="hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">원칙</Link>
           {" · "}
-          <Link href="/support" className="hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">지원</Link>
-          {" · "}
           <Link href="/contact" className="hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">문의</Link>
         </p>
       </section>
@@ -459,8 +457,6 @@ function LandingEn() {
         </nav>
         <p className="mt-6 text-sm text-gray-500">
           <Link href="/principles" className="hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">Principles</Link>
-          {" · "}
-          <Link href="/support" className="hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">Support</Link>
           {" · "}
           <Link href="/contact" className="hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded">Contact</Link>
         </p>

@@ -3,8 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import { addComment, deleteComment, updateComment, deletePost, updatePost, toggleCommentLike, getCommentById } from "@/lib/data/repository";
+import { addComment, deleteComment, updateComment, deletePost, updatePost, toggleCommentLike, getCommentById, searchPeople } from "@/lib/data/repository";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
+import type { User } from "@/lib/domain/types";
+
+export async function searchMentionUsersAction(q: string): Promise<Pick<User, "id" | "name" | "username">[]> {
+  const session = await getSession();
+  if (!session || !q.trim()) return [];
+  const results = await searchPeople({ q: q.trim(), viewerId: session.userId });
+  return results.slice(0, 8).map((u) => ({ id: u.id, name: u.name, username: u.username ?? null }));
+}
 
 export async function addCommentAction(
   postId: string,

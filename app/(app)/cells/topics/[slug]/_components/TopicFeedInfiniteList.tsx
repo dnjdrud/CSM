@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar } from "@/components/ui/Avatar";
 import type { PostWithAuthor } from "@/lib/domain/types";
 import type { CellTopic } from "@/lib/cells/topics";
@@ -54,6 +55,13 @@ function CellPostCard({ post, topicColor }: { post: PostWithAuthor; topicColor: 
         <p className="text-[14px] text-theme-text leading-relaxed line-clamp-4 whitespace-pre-wrap group-hover:text-theme-primary/90 transition-colors pl-[38px]">
           {post.content}
         </p>
+        {Array.isArray(post.mediaUrls) && post.mediaUrls.length > 0 && post.mediaUrls[0] && (
+          <div className="mt-2 pl-[38px]">
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+              <Image src={post.mediaUrls[0]} alt="첨부 사진" fill className="object-contain" unoptimized />
+            </div>
+          </div>
+        )}
       </Link>
 
       {/* 태그 */}

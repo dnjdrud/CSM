@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useTransition, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { translations, DEFAULT_LOCALE, LOCALE_COOKIE, type Locale, type Translations } from "./translations";
 
 interface LanguageContextValue {
@@ -26,12 +27,14 @@ export function LanguageProvider({
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   function setLocale(next: Locale) {
     // persist to cookie (1 year)
     document.cookie = `${LOCALE_COOKIE}=${next};path=/;max-age=31536000;SameSite=Lax`;
     startTransition(() => {
       setLocaleState(next);
+      router.refresh(); // re-render server components with new locale
     });
   }
 
