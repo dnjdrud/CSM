@@ -9,15 +9,60 @@ type TabKey = "home" | "mission" | "cells" | "contents" | "profile";
 type Tab = {
   key: TabKey;
   href: string;
-  icon: string;
+  Icon: React.ComponentType<{ className?: string }>;
 };
 
+function HomeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9,22 9,12 15,12 15,22" />
+    </svg>
+  );
+}
+
+function CellsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function ContentsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polygon points="23 7 16 12 23 17 23 7" />
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+  );
+}
+
+function MissionIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 const BASE_TABS: Tab[] = [
-  { key: "home",     href: "/home",     icon: "🏠" },
-  { key: "cells",    href: "/cells",    icon: "💬" },
-  { key: "contents", href: "/contents", icon: "🎬" },
-  { key: "mission",  href: "/mission",  icon: "🌍" },
-  { key: "profile",  href: "/me",       icon: "👤" },
+  { key: "home",     href: "/home",     Icon: HomeIcon },
+  { key: "cells",    href: "/cells",    Icon: CellsIcon },
+  { key: "contents", href: "/contents", Icon: ContentsIcon },
+  { key: "mission",  href: "/mission",  Icon: MissionIcon },
+  { key: "profile",  href: "/me",       Icon: ProfileIcon },
 ];
 
 function isActive(tab: Tab, pathname: string): boolean {
@@ -64,7 +109,7 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
                 }`}
               >
                 <span aria-hidden className="text-lg leading-none">
-                  {tab.icon}
+                  <tab.Icon className="w-5 h-5" />
                 </span>
                 <span>{labels[tab.key]}</span>
               </Link>
