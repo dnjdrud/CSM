@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { logoutAction } from "@/app/actions/auth";
 import { CellahLogo } from "@/components/CellahLogo";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useT } from "@/lib/i18n";
 
 export type HeaderUser = { id: string; name: string; isAdmin: boolean; role?: string } | null;
 
@@ -15,7 +17,6 @@ const EVENT_NOTIFICATION_READ = "csm:notification-read";
 
 type HeaderProps = {
   user: HeaderUser;
-  /** Initial unread count from server; updated by polling and read-all event. */
   initialUnreadCount?: number;
 };
 
@@ -28,8 +29,8 @@ function SearchIcon({ className }: { className?: string }) {
   );
 }
 
-/** Single top bar for all screen sizes. */
 export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
+  const t = useT();
   const isAdmin = user?.isAdmin === true;
   const [unreadCount, setUnreadCount] = useState(user ? initialUnreadCount : 0);
   const lastCountRef = useRef(unreadCount);
@@ -98,7 +99,8 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
           <CellahLogo className="text-[17px] shrink-0" />
         </Link>
         <nav className="flex items-center gap-2 flex-wrap justify-end" aria-label="Main navigation">
-          <Link href="/search" className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label="검색">
+          <LanguageSwitcher />
+          <Link href="/search" className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label={t.common.search}>
             <SearchIcon className="w-5 h-5" />
           </Link>
           {user && (
@@ -107,12 +109,12 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                 href="/write"
                 className="inline-flex items-center gap-1 rounded-lg bg-theme-primary px-3 py-1.5 text-[13px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
               >
-                ✏️ 글쓰기
+                {t.header.write}
               </Link>
               <Link
                 href="/messages"
                 className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
-                aria-label="메시지"
+                aria-label={t.header.messages}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -121,7 +123,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               <Link
                 href="/notifications"
                 className="relative p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
-                aria-label={displayCount > 0 ? `알림 ${displayCount}개` : "알림"}
+                aria-label={displayCount > 0 ? `${t.header.notifications} ${displayCount}` : t.header.notifications}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -142,25 +144,25 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               )}
               {isAdmin && (
                 <Link href="/admin" className="text-[13px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
-                  Admin
+                  {t.header.admin}
                 </Link>
               )}
               <Link
                 href="/settings"
                 className="inline-flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
-                aria-label="설정"
+                aria-label={t.header.settings}
               >
-                {user.name || "설정"}
+                {user.name || t.header.settings}
               </Link>
               <form action={logoutAction} className="inline">
                 <button type="submit" className="text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
-                  로그아웃
+                  {t.header.logout}
                 </button>
               </form>
             </>
           ) : (
             <Link href="/login" className="rounded-lg bg-theme-primary px-3 py-1.5 text-[13px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2">
-              로그인
+              {t.header.login}
             </Link>
           )}
         </nav>

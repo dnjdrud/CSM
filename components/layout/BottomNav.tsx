@@ -2,22 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
 type TabKey = "home" | "mission" | "cells" | "contents" | "profile";
 
 type Tab = {
   key: TabKey;
   href: string;
-  label: string;
   icon: string;
 };
 
 const BASE_TABS: Tab[] = [
-  { key: "home",     href: "/home",     label: "홈",     icon: "🏠" },
-  { key: "cells",    href: "/cells",    label: "셀",     icon: "💬" },
-  { key: "contents", href: "/contents", label: "컨텐츠", icon: "🎬" },
-  { key: "mission",  href: "/mission",  label: "선교",   icon: "🌍" },
-  { key: "profile",  href: "/me",       label: "프로필", icon: "👤" },
+  { key: "home",     href: "/home",     icon: "🏠" },
+  { key: "cells",    href: "/cells",    icon: "💬" },
+  { key: "contents", href: "/contents", icon: "🎬" },
+  { key: "mission",  href: "/mission",  icon: "🌍" },
+  { key: "profile",  href: "/me",       icon: "👤" },
 ];
 
 function isActive(tab: Tab, pathname: string): boolean {
@@ -31,10 +31,19 @@ function isActive(tab: Tab, pathname: string): boolean {
 
 export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
   const pathname = usePathname() || "/";
+  const t = useT();
 
   const TABS = BASE_TABS.map((tab) =>
     tab.key === "profile" ? { ...tab, href: profileHref } : tab
   );
+
+  const labels: Record<TabKey, string> = {
+    home: t.nav.home,
+    cells: t.nav.cells,
+    contents: t.nav.contents,
+    mission: t.nav.mission,
+    profile: t.nav.profile,
+  };
 
   return (
     <nav
@@ -57,7 +66,7 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
                 <span aria-hidden className="text-lg leading-none">
                   {tab.icon}
                 </span>
-                <span>{tab.label}</span>
+                <span>{labels[tab.key]}</span>
               </Link>
             </li>
           );

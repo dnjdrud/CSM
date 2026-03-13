@@ -4,25 +4,27 @@ import { TimelineContainer } from "@/components/TimelineContainer";
 import { Avatar } from "@/components/ui/Avatar";
 import { ROLE_DISPLAY } from "@/lib/domain/types";
 import { redirect } from "next/navigation";
+import { LanguageSettingRow } from "@/components/layout/LanguageSettingRow";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "설정 – Cellah" };
 
-const SETTINGS_ITEMS = [
-  { href: "/settings/profile", icon: "👤", label: "프로필 수정", desc: "이름, 소개, 사진 변경" },
-  { href: "/settings/account", icon: "🔐", label: "계정 관리", desc: "이메일, 계정 삭제" },
-  { href: "/settings/notifications", icon: "🔔", label: "알림 설정", desc: "알림 종류 및 빈도 설정" },
-  { href: "/bookmarks", icon: "🔖", label: "저장한 게시글", desc: "북마크한 게시글 모아보기" },
-] as const;
-
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
+  const [user, t] = await Promise.all([getCurrentUser(), getServerT()]);
   if (!user) redirect("/login");
+
+  const SETTINGS_ITEMS = [
+    { href: "/settings/profile", icon: "👤", label: t.settings.profile, desc: t.settings.profileDesc },
+    { href: "/settings/account", icon: "🔐", label: t.settings.account, desc: t.settings.accountDesc },
+    { href: "/settings/notifications", icon: "🔔", label: t.settings.notificationsLabel, desc: t.settings.notificationsDesc },
+    { href: "/bookmarks", icon: "🔖", label: t.settings.bookmarks, desc: t.settings.bookmarksDesc },
+  ] as const;
 
   return (
     <TimelineContainer>
       <div className="px-4 py-6 space-y-6">
-        <h1 className="text-xl font-semibold text-theme-text">설정</h1>
+        <h1 className="text-xl font-semibold text-theme-text">{t.settings.title}</h1>
 
         {/* Profile summary */}
         <Link
@@ -55,6 +57,7 @@ export default async function SettingsPage() {
                 </Link>
               </li>
             ))}
+            <LanguageSettingRow />
           </ul>
         </nav>
 
@@ -66,17 +69,16 @@ export default async function SettingsPage() {
           <span className="text-xl shrink-0" aria-hidden>📓</span>
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-medium text-theme-text">My Space</p>
-            <p className="text-[12px] text-theme-muted">기도노트, 묵상 일기</p>
+            <p className="text-[12px] text-theme-muted">{t.settings.notificationsDesc}</p>
           </div>
           <span className="text-theme-muted shrink-0">›</span>
         </Link>
 
-        {/* Profile link */}
         <Link
           href={`/profile/${user.id}`}
           className="block text-center text-[13px] text-theme-primary hover:opacity-80 py-1"
         >
-          내 프로필 보기 →
+          {t.profile.edit} →
         </Link>
       </div>
     </TimelineContainer>

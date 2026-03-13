@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { cookies } from "next/headers";
 import { HeaderWrapper } from "@/common";
 import { RightContextPanel } from "@/components/RightContextPanel";
 import { ToastProvider } from "@/components/ui/Toast";
+import { LanguageProvider } from "@/lib/i18n";
+import { LOCALE_COOKIE, type Locale } from "@/lib/i18n/translations";
 import Link from "next/link";
 import { BottomNavWrapper } from "@/components/layout/BottomNavWrapper";
+import { FooterLinks } from "@/components/layout/FooterLinks";
 
 export const metadata: Metadata = {
   title: "Cellah — Haven for Digital Exodus",
@@ -12,13 +16,17 @@ export const metadata: Metadata = {
     "A minimal space for contemplation and connection. No noise, no algorithms. Selah's rest in the digital age.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const rawLocale = cookieStore.get(LOCALE_COOKIE)?.value;
+  const initialLocale: Locale = rawLocale === "en" || rawLocale === "ko" ? rawLocale : "ko";
+
   return (
-    <html lang="en">
+    <html lang={initialLocale}>
       <body className="min-h-screen flex flex-col bg-theme-bg text-theme-text">
         <a
           href="#main-content"
@@ -27,21 +35,17 @@ export default function RootLayout({
           Skip to main content
         </a>
         <ToastProvider>
-          <HeaderWrapper />
-          <div className="flex flex-1 min-h-0 md:flex-row">
-            <main className="flex flex-1 min-w-0 flex justify-center pb-16" id="main-content">
-              {children}
-            </main>
-            <RightContextPanel />
-          </div>
-          <BottomNavWrapper />
-          <footer className="shrink-0 border-t border-theme-border py-4 px-4 text-center text-sm text-theme-muted">
-            <Link href="/privacy" className="hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">Privacy</Link>
-            {" · "}
-            <Link href="/terms" className="hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">Terms</Link>
-            {" · "}
-            <Link href="/contact" className="hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">Contact</Link>
-          </footer>
+          <LanguageProvider initialLocale={initialLocale}>
+            <HeaderWrapper />
+            <div className="flex flex-1 min-h-0 md:flex-row">
+              <main className="flex flex-1 min-w-0 flex justify-center pb-16" id="main-content">
+                {children}
+              </main>
+              <RightContextPanel />
+            </div>
+            <BottomNavWrapper />
+            <FooterLinks />
+          </LanguageProvider>
         </ToastProvider>
       </body>
     </html>

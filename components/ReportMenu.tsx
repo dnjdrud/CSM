@@ -3,13 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { reportPostAction, reportCommentAction } from "@/app/actions/report";
-
-const REPORT_REASONS = [
-  { value: "spam", label: "Spam" },
-  { value: "harmful", label: "Harmful or unsafe" },
-  { value: "harassment", label: "Harassment" },
-  { value: "other", label: "Other" },
-] as const;
+import { useT } from "@/lib/i18n";
 
 export function ReportMenu({
   targetType,
@@ -22,11 +16,19 @@ export function ReportMenu({
   commentId?: string;
   onReported?: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<string>("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const REPORT_REASONS = [
+    { value: "spam", label: t.report.reasons.spam },
+    { value: "harmful", label: t.report.reasons.harmful },
+    { value: "harassment", label: t.report.reasons.harassment },
+    { value: "other", label: t.report.reasons.other },
+  ] as const;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +48,7 @@ export function ReportMenu({
       router.refresh();
       onReported?.();
     } else {
-      setError(result.error ?? "Failed to submit report");
+      setError(result.error ?? t.report.submitError);
     }
   }
 
@@ -59,7 +61,7 @@ export function ReportMenu({
         aria-expanded={open}
         aria-haspopup="true"
       >
-        Report
+        {t.report.button}
       </button>
       {open && (
         <>
@@ -76,7 +78,7 @@ export function ReportMenu({
                 </p>
               )}
               <label htmlFor="report-reason" className="block text-sm font-medium text-gray-800 mb-2">
-                Reason
+                {t.report.reasonLabel}
               </label>
               <select
                 id="report-reason"
@@ -85,7 +87,7 @@ export function ReportMenu({
                 className="block w-full rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-800 focus:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-700"
                 required
               >
-                <option value="">Select…</option>
+                <option value="">{t.report.selectPlaceholder}</option>
                 {REPORT_REASONS.map((r) => (
                   <option key={r.value} value={r.value}>
                     {r.label}
@@ -98,14 +100,14 @@ export function ReportMenu({
                   disabled={pending}
                   className="rounded bg-gray-800 px-2 py-1 text-sm font-medium text-gray-50 hover:bg-gray-700 disabled:opacity-40"
                 >
-                  Submit
+                  {t.report.submit}
                 </button>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   className="rounded border border-gray-200 px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t.report.cancel}
                 </button>
               </div>
             </form>

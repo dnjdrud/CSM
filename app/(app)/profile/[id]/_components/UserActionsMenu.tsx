@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleMuteAction, toggleBlockAction } from "../actions";
 import { reportUserAction } from "@/app/actions/report";
+import { useT } from "@/lib/i18n";
 
 export function UserActionsMenu({
   targetUserId,
@@ -16,6 +17,7 @@ export function UserActionsMenu({
   isMuted: boolean;
   isBlocked: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -85,7 +87,7 @@ export function UserActionsMenu({
               disabled={pending}
               className="block w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-inset disabled:opacity-50"
             >
-              {isMuted ? "Unmute user" : "Mute user"}
+              {isMuted ? t.userMenu.unmute : t.userMenu.mute}
             </button>
             <button
               type="button"
@@ -93,7 +95,7 @@ export function UserActionsMenu({
               disabled={pending}
               className="block w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-inset disabled:opacity-50"
             >
-              {isBlocked ? "Unblock user" : "Block user"}
+              {isBlocked ? t.userMenu.unblock : t.userMenu.block}
             </button>
             <hr className="my-1 border-gray-100" />
             {!showReportForm ? (
@@ -102,24 +104,24 @@ export function UserActionsMenu({
                 onClick={() => setShowReportForm(true)}
                 className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-inset"
               >
-                신고하기
+                {t.userMenu.report}
               </button>
             ) : (
               <div className="px-3 py-2 space-y-2">
                 {reportStatus === "done" ? (
-                  <p className="text-xs text-green-600 font-medium">신고가 접수되었습니다.</p>
+                  <p className="text-xs text-green-600 font-medium">{t.userMenu.reportSuccess}</p>
                 ) : (
                   <>
-                    <p className="text-xs font-medium text-gray-700">{targetUserName} 신고</p>
+                    <p className="text-xs font-medium text-gray-700">{targetUserName} {t.userMenu.reportTitle}</p>
                     <textarea
                       rows={2}
                       value={reportReason}
                       onChange={(e) => setReportReason(e.target.value)}
-                      placeholder="신고 사유 (선택)"
+                      placeholder={t.userMenu.reportPlaceholder}
                       className="w-full rounded border border-gray-200 px-2 py-1 text-xs resize-none focus:outline-none focus:border-gray-400"
                     />
                     {reportStatus === "error" && (
-                      <p className="text-xs text-red-600">신고 제출에 실패했습니다.</p>
+                      <p className="text-xs text-red-600">{t.userMenu.reportError}</p>
                     )}
                     <div className="flex gap-2">
                       <button
@@ -128,14 +130,14 @@ export function UserActionsMenu({
                         disabled={pending}
                         className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
                       >
-                        {pending ? "제출 중…" : "신고 제출"}
+                        {pending ? `${t.common.loading}` : t.userMenu.reportSubmit}
                       </button>
                       <button
                         type="button"
                         onClick={() => { setShowReportForm(false); setReportStatus("idle"); setReportReason(""); }}
                         className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
                       >
-                        취소
+                        {t.common.cancel}
                       </button>
                     </div>
                   </>
