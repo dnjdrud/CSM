@@ -14,7 +14,7 @@ export default async function AdminSystemLogsPage({
   });
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="">
       <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
         System Logs
       </h1>

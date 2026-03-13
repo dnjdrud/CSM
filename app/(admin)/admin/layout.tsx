@@ -12,7 +12,9 @@ export default async function AdminLayout({
     <div className="flex min-h-[calc(100vh-4rem)]">
       <AdminSidebar />
       <main className="flex-1 overflow-auto">
-        {children}
+        <div className="mx-auto w-full max-w-2xl px-4 py-6">
+          {children}
+        </div>
       </main>
     </div>
   );

@@ -29,7 +29,7 @@ export default async function AdminDebugPage() {
   const diagnostics = await runDiagnostics();
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="">
       <h1 className="text-xl font-semibold text-theme-text">Session &amp; profile debug</h1>
       <p className="mt-1 text-sm text-theme-muted">Admin-only. Use this to verify auth and profile resolution.</p>
 

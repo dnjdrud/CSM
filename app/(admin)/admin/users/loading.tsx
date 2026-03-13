@@ -4,7 +4,7 @@ import { AdminTableSkeleton } from "../_components/AdminTableSkeleton";
 
 export default function AdminUsersLoading() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="">
       <Skeleton className="h-8 w-24" />
       <Skeleton className="mt-2 h-4 w-72 max-w-full" />
       <div className="mt-6 flex gap-2">

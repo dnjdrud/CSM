@@ -22,7 +22,7 @@ export default async function AdminSignupRequestsPage({ searchParams }: Props) {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="">
       <div>
         <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
           Signup requests

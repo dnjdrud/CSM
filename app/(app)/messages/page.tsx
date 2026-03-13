@@ -5,6 +5,7 @@ import { TimelineContainer } from "@/components/TimelineContainer";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatRelativeTime } from "@/lib/utils/time";
+import { UserSearch } from "./_components/UserSearch";
 
 export default async function MessagesPage() {
   const currentUser = await getCurrentUser();
@@ -16,6 +17,8 @@ export default async function MessagesPage() {
     <TimelineContainer>
       <div className="px-4 py-6">
         <h1 className="text-[17px] font-semibold text-theme-text tracking-tight mb-4">메시지</h1>
+
+        <UserSearch />
 
         {conversations.length === 0 ? (
           <EmptyState

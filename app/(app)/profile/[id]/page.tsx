@@ -122,7 +122,6 @@ export default async function ProfilePage({
       followerCount={followerIds.length}
       followingCount={followingIds.length}
       subscriberCount={crowSubscriberCount}
-      isSubscribed={viewerIsSubscribed}
     >
       {activeTab === "posts" && (
         <ProfilePostsTab

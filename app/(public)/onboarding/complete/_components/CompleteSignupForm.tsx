@@ -48,36 +48,41 @@ export function CompleteSignupForm({ token, request }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const step1Valid = password.length >= 8 && password === confirmPassword;
-  const step2Valid = name.trim().length > 0;
+  const step1Valid = password.length >= 8 && password === confirmPassword && username.trim().length > 0;
+  const step2Valid = name.trim().length > 0 && denomination.trim().length > 0 && faithYears.trim().length > 0;
+  const step3Valid = church.trim().length > 0;
 
   function handleNext() {
     setError(null);
     if (step === 1) {
+      if (!username.trim()) { setError("사용자 이름을 입력해 주세요."); return; }
       if (password.length < 8) { setError("비밀번호는 8자 이상이어야 합니다."); return; }
       if (password !== confirmPassword) { setError("비밀번호가 일치하지 않습니다."); return; }
       setStep(2);
     } else if (step === 2) {
       if (!name.trim()) { setError("이름을 입력해 주세요."); return; }
+      if (!denomination.trim()) { setError("교단을 선택해 주세요."); return; }
+      if (!faithYears.trim()) { setError("신앙 연수를 입력해 주세요."); return; }
       setStep(3);
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!step1Valid || !step2Valid || pending) return;
+    if (!step1Valid || !step2Valid || !step3Valid || pending) return;
+    if (!church.trim()) { setError("섬기는 교회를 입력해 주세요."); return; }
     setPending(true);
     setError(null);
     const result = await completeSignupAction({
       token,
       password,
-      username: username.trim() || undefined,
+      username: username.trim(),
       name: name.trim(),
       role,
-      church: church.trim() || undefined,
+      church: church.trim(),
       bio: bio.trim() || undefined,
       affiliation: affiliation.trim() || undefined,
-      denomination: denomination.trim() || undefined,
+      denomination: denomination.trim(),
       faithYears: faithYears ? Number(faithYears) : undefined,
     });
     setPending(false);
@@ -123,7 +128,7 @@ export function CompleteSignupForm({ token, request }: Props) {
               </div>
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-800">
-                  사용자 이름 <span className="text-gray-500 font-normal">(선택)</span>
+                  사용자 이름 <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="username"
@@ -202,7 +207,7 @@ export function CompleteSignupForm({ token, request }: Props) {
               </div>
               <div>
                 <label htmlFor="denomination" className="block text-sm font-medium text-gray-800">
-                  교단 <span className="text-gray-500 font-normal">(선택)</span>
+                  교단 <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="denomination"
@@ -210,7 +215,7 @@ export function CompleteSignupForm({ token, request }: Props) {
                   onChange={(e) => setDenomination(e.target.value)}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                 >
-                  <option value="">선택 안 함</option>
+                  <option value="" disabled>교단을 선택해 주세요</option>
                   {DENOMINATIONS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
@@ -218,7 +223,7 @@ export function CompleteSignupForm({ token, request }: Props) {
               </div>
               <div>
                 <label htmlFor="faithYears" className="block text-sm font-medium text-gray-800">
-                  신앙 연수 <span className="text-gray-500 font-normal">(선택)</span>
+                  신앙 연수 <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="faithYears"
@@ -239,7 +244,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             <>
               <div>
                 <label htmlFor="church" className="block text-sm font-medium text-gray-800">
-                  교회 <span className="text-gray-500 font-normal">(선택)</span>
+                  섬기는 교회 <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="church"
@@ -305,7 +310,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             ) : (
               <button
                 type="submit"
-                disabled={pending}
+                disabled={pending || !step3Valid}
                 className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {pending ? "계정 생성 중…" : "가입 완료"}

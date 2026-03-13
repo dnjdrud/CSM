@@ -13,7 +13,7 @@ export default async function AdminUsersPage({ searchParams }: Props) {
   const users = await listUsers({ query: q, adminId });
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="">
       <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
         Users
       </h1>

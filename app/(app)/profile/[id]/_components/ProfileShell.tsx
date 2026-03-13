@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { User } from "@/lib/domain/types";
 import { ROLE_DISPLAY } from "@/lib/domain/types";
 import { Avatar } from "@/components/ui/Avatar";
-import { SubscribeButton } from "@/components/ui/SubscribeButton";
 import { ProfileTabs } from "./ProfileTabs";
 import { ProfileFollowButton } from "./ProfileFollowButton";
 import { UserActionsMenu } from "./UserActionsMenu";
@@ -20,7 +19,6 @@ type Props = {
   followerCount: number;
   followingCount: number;
   subscriberCount?: number;
-  isSubscribed?: boolean;
   children: React.ReactNode;
 };
 
@@ -34,7 +32,6 @@ export function ProfileShell({
   followerCount,
   followingCount,
   subscriberCount = 0,
-  isSubscribed = false,
   children,
 }: Props) {
   const t = useT();
@@ -56,6 +53,13 @@ export function ProfileShell({
               {currentUserId && !isOwnProfile && (
                 <>
                   <ProfileFollowButton profileId={user.id} following={following} />
+                  <Link
+                    href={`/messages/${user.id}`}
+                    className="text-[13px] font-medium px-3 py-1.5 rounded-xl border border-theme-border bg-theme-surface text-theme-text hover:border-theme-primary/50 transition-all"
+                    aria-label="다이렉트 메시지 보내기"
+                  >
+                    DM
+                  </Link>
                   <UserActionsMenu
                     targetUserId={user.id}
                     targetUserName={user.name}
@@ -128,17 +132,6 @@ export function ProfileShell({
             )}
           </div>
 
-          {!isOwnProfile && (
-            <div className="mb-4">
-              <SubscribeButton
-                creatorId={user.id}
-                initialIsSubscribed={isSubscribed}
-                initialCount={subscriberCount}
-                isLoggedIn={!!currentUserId}
-                variant="full"
-              />
-            </div>
-          )}
         </section>
 
         <div className="sticky top-0 z-10 bg-theme-surface border-b border-theme-border">

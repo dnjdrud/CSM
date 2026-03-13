@@ -308,6 +308,22 @@ export function PostCard({
         </div>
       )}
 
+      {post.youtubeUrl && (() => {
+        const ytMatch = post.youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+        const videoId = ytMatch?.[1];
+        return videoId ? (
+          <div className="mt-3 relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+            <iframe
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title="YouTube video"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0"
+            />
+          </div>
+        ) : null;
+      })()}
+
       {Array.isArray(post.tags) && post.tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Topics">
           {post.tags.map((tag) => (

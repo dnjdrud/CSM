@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function AdminDashboardLoading() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="">
       <Skeleton className="h-8 w-32" />
       <Skeleton className="mt-2 h-4 w-80 max-w-full" />
       <div className="mt-8 grid gap-6 sm:grid-cols-3">

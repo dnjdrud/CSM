@@ -35,7 +35,7 @@ export default async function AdminModerationPage() {
   userList.forEach(({ id, user }) => users.set(id, user));
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
+    <div className="">
       <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
         Moderation
       </h1>

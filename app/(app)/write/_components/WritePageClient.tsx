@@ -158,12 +158,12 @@ type ImageUploadState =
   | { status: "done"; previewUrl: string; url: string }
   | { status: "error"; previewUrl?: string; message: string };
 
-function ImageUploader({ onUrl }: { onUrl: (url: string | null) => void }) {
+function ImageUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => void; onUploading?: (v: boolean) => void }) {
   const t = useT();
   const [state, setState] = useState<ImageUploadState>({ status: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const allowed = ["image/jpeg", "image/png", "image/webp"];
@@ -176,17 +176,33 @@ function ImageUploader({ onUrl }: { onUrl: (url: string | null) => void }) {
       return;
     }
     const previewUrl = URL.createObjectURL(file);
-    setState({ status: "preview", file, previewUrl });
-    onUrl(null);
-  }
-
-  async function handleUpload() {
-    if (state.status !== "preview") return;
-    const { file, previewUrl } = state;
     setState({ status: "uploading", previewUrl });
+    onUrl(null);
+    onUploading?.(true);
     const fd = new FormData();
     fd.append("file", file);
     const result = await uploadPostImageAction(fd);
+    onUploading?.(false);
+    if ("error" in result) {
+      setState({ status: "error", previewUrl, message: result.error });
+      onUrl(null);
+    } else {
+      setState({ status: "done", previewUrl, url: result.url });
+      onUrl(result.url);
+    }
+  }
+
+  async function handleRetry() {
+    if (state.status !== "error" || !("previewUrl" in state) || !state.previewUrl) return;
+    const previewUrl = state.previewUrl;
+    setState({ status: "uploading", previewUrl });
+    onUploading?.(true);
+    const file = inputRef.current?.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    const result = await uploadPostImageAction(fd);
+    onUploading?.(false);
     if ("error" in result) {
       setState({ status: "error", previewUrl, message: result.error });
       onUrl(null);
@@ -248,13 +264,8 @@ function ImageUploader({ onUrl }: { onUrl: (url: string | null) => void }) {
       {state.status === "error" && !state.previewUrl && (
         <p className="mt-1 text-[12px] text-red-500">{state.message}</p>
       )}
-      {state.status === "preview" && (
-        <button type="button" onClick={handleUpload} className="mt-2 w-full py-2 rounded-lg bg-theme-primary/10 text-theme-primary text-[13px] font-medium hover:bg-theme-primary/20 transition-colors">
-          {t.write.uploadPhoto}
-        </button>
-      )}
       {state.status === "error" && state.previewUrl && (
-        <button type="button" onClick={handleUpload} className="mt-2 w-full py-2 rounded-lg bg-theme-primary/10 text-theme-primary text-[13px] font-medium hover:bg-theme-primary/20 transition-colors">
+        <button type="button" onClick={handleRetry} className="mt-2 w-full py-2 rounded-lg bg-theme-primary/10 text-theme-primary text-[13px] font-medium hover:bg-theme-primary/20 transition-colors">
           {t.write.retry}
         </button>
       )}
@@ -275,7 +286,6 @@ function ComposeForm({
 }) {
   const t = useT();
   const router = useRouter();
-  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [youtubeWarning, setYoutubeWarning] = useState(false);
@@ -290,6 +300,7 @@ function ComposeForm({
     return "";
   });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -323,7 +334,6 @@ function ComposeForm({
     const allTags = [...new Set([...extraTags, ...userTags])].slice(0, 5);
 
     const result = await composePostAction({
-      title: title.trim() || undefined,
       content,
       category: postType.category,
       visibility: "MEMBERS",
@@ -438,17 +448,6 @@ function ComposeForm({
         )}
 
         <div>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t.write.titlePlaceholder}
-            maxLength={100}
-            className="w-full text-[15px] font-medium border-0 border-b border-theme-border px-0 py-2 bg-transparent text-theme-text placeholder:text-theme-muted focus:outline-none focus:border-theme-primary"
-          />
-        </div>
-
-        <div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -459,7 +458,7 @@ function ComposeForm({
           />
         </div>
 
-        {postType.showImageUpload && <ImageUploader onUrl={setImageUrl} />}
+        {postType.showImageUpload && <ImageUploader onUrl={setImageUrl} onUploading={setImageUploading} />}
 
         <div>
           <label className="block text-[12px] font-medium text-theme-muted mb-1">
@@ -480,10 +479,10 @@ function ComposeForm({
 
         <button
           type="submit"
-          disabled={submitting || !content.trim()}
+          disabled={submitting || imageUploading || !content.trim()}
           className="w-full py-3 rounded-xl text-[15px] font-semibold bg-theme-primary text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
-          {submitting ? t.write.publishing : t.write.publish}
+          {submitting ? t.write.publishing : imageUploading ? "사진 업로드 중…" : t.write.publish}
         </button>
       </form>
     </div>

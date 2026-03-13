@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useT } from "@/lib/i18n";
 
-type TabKey = "home" | "mission" | "contents" | "profile";
+type TabKey = "home" | "cells" | "mission" | "contents" | "profile";
 
 type Tab = {
   key: TabKey;
@@ -41,6 +41,17 @@ function MissionIcon({ className }: { className?: string }) {
   );
 }
 
+function CellsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
 function ProfileIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -52,6 +63,7 @@ function ProfileIcon({ className }: { className?: string }) {
 
 const BASE_TABS: Tab[] = [
   { key: "home",     href: "/home",     Icon: HomeIcon },
+  { key: "cells",    href: "/cells",    Icon: CellsIcon },
   { key: "contents", href: "/contents", Icon: ContentsIcon },
   { key: "mission",  href: "/mission",  Icon: MissionIcon },
   { key: "profile",  href: "/me",       Icon: ProfileIcon },
@@ -59,6 +71,7 @@ const BASE_TABS: Tab[] = [
 
 function isActive(tab: Tab, pathname: string): boolean {
   if (tab.key === "home") return pathname === "/home" || pathname === "/feed";
+  if (tab.key === "cells") return pathname.startsWith("/cells");
   if (tab.key === "mission") return pathname.startsWith("/mission") || pathname.startsWith("/missions") || pathname.startsWith("/missionary");
   if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology");
   if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
@@ -75,6 +88,7 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
 
   const labels: Record<TabKey, string> = {
     home: t.nav.home,
+    cells: t.nav.cells,
     contents: t.nav.contents,
     mission: t.nav.mission,
     profile: t.nav.profile,

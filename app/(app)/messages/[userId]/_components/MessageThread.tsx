@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { DirectMessage, User } from "@/lib/domain/types";
 import { Avatar } from "@/components/ui/Avatar";
 import { formatRelativeTime } from "@/lib/utils/time";
-import { sendMessageAction, markConversationReadAction } from "../../actions";
+import { sendMessageAction, markConversationReadAction, pollNewMessagesAction } from "../../actions";
 
 type MessageWithSender = DirectMessage & { sender: User };
 
@@ -24,6 +24,9 @@ export function MessageThread({
   const [isPending, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const latestCreatedAtRef = useRef<string>(
+    initialMessages.length > 0 ? initialMessages[initialMessages.length - 1].createdAt : new Date(0).toISOString()
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,6 +35,35 @@ export function MessageThread({
   useEffect(() => {
     markConversationReadAction(partner.id);
   }, [partner.id]);
+
+  // Poll for new messages every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const newRows = await pollNewMessagesAction(partner.id, latestCreatedAtRef.current);
+      if (!newRows.length) return;
+      setMessages((prev) => {
+        const existingIds = new Set(prev.map((m) => m.id));
+        const toAdd = newRows
+          .filter((r) => !existingIds.has(r.id))
+          .map((r): MessageWithSender => ({
+            id: r.id,
+            senderId: r.senderId,
+            recipientId: r.recipientId,
+            content: r.content,
+            createdAt: r.createdAt,
+            sender: r.senderId === partner.id
+              ? partner
+              : { id: currentUserId, name: "나", role: "LAY", createdAt: r.createdAt },
+          }));
+        if (!toAdd.length) return prev;
+        const last = toAdd[toAdd.length - 1];
+        latestCreatedAtRef.current = last.createdAt;
+        return [...prev, ...toAdd];
+      });
+      markConversationReadAction(partner.id);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [partner.id, partner, currentUserId]);
 
   function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +90,7 @@ export function MessageThread({
         setMessages((prev) =>
           prev.map((m) => (m.id === optimistic.id ? { ...result.message!, sender: optimistic.sender } : m))
         );
+        latestCreatedAtRef.current = result.message.createdAt;
       }
     });
   }
