@@ -23,15 +23,6 @@ export function PrayerInfiniteList({
   const [error, setError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Sync when server re-renders (e.g. after new prayer post)
-  useEffect(() => {
-    if (initialItems[0]?.id !== items[0]?.id) {
-      setItems(initialItems);
-      setNextCursorStr(initialNextCursorStr);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialItems, initialNextCursorStr]);
-
   const loadMore = useCallback(async () => {
     if (!nextCursorStr || loading) return;
     setLoading(true);

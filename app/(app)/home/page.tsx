@@ -8,16 +8,16 @@ import {
   isMuted,
   getBookmarkedPostIds,
   getTodaysDailyPrayer,
+  listPrayerRequests,
 } from "@/lib/data/repository";
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
-import { HOME_FEED_CATEGORIES } from "@/lib/domain/types";
+import { HOME_FEED_CATEGORIES, PRAYER_CATEGORY_LABELS } from "@/lib/domain/types";
 import { TimelineContainer } from "@/components/TimelineContainer";
 import { FeedComposer } from "@/app/(app)/feed/_components/FeedComposer";
 import { SuggestedPeople } from "@/app/(app)/feed/_components/SuggestedPeople";
 import { HomeTabs } from "./_components/HomeTabs";
 import { HomeInfiniteList } from "./_components/HomeInfiniteList";
-import { PrayerInfiniteList } from "./_components/PrayerInfiniteList";
 import type { HomeTab } from "./_components/HomeTabs";
 import { getRoleUX } from "@/lib/config/roleUX";
 import { getServerT, getServerLocale } from "@/lib/i18n/server";
@@ -189,27 +189,17 @@ async function PrayerTabContent({
   currentUser: Awaited<ReturnType<typeof getCurrentUser>>;
 }) {
   const t = await getServerT();
-  const [firstPage, followingIds] = await Promise.all([
-    listFeedPostsPage({
-      currentUserId: currentUser?.id ?? null,
-      scope: "FOLLOWING",
-      limit: FEED_PAGE_SIZE,
-      cursor: null,
-      includeCategories: ["PRAYER"],
-    }),
-    currentUser ? listFollowingIds(currentUser.id) : Promise.resolve([]),
-  ]);
+  const followingIds = currentUser
+    ? await listFollowingIds(currentUser.id)
+    : [];
 
-  const isFollowingFn = (followerId: string, followingId: string) =>
-    followerId === currentUser?.id && followingIds.includes(followingId);
+  const userIds = currentUser
+    ? [...new Set([currentUser.id, ...followingIds])]
+    : null;
 
-  const visibleItems = currentUser
-    ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId)) return false;
-        if (isMuted(currentUser.id, post.authorId)) return false;
-        return canViewPost(post, currentUser, isFollowingFn);
-      })
-    : firstPage.items;
+  const prayers = userIds
+    ? await listPrayerRequests({ viewerId: currentUser?.id, userIds, limit: 30 })
+    : [];
 
   return (
     <div>
@@ -225,18 +215,56 @@ async function PrayerTabContent({
         </Link>
       </div>
 
-      {firstPage.error ? (
-        <div className="mx-4 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {t.home.prayerError} {firstPage.error}
+      {prayers.length === 0 ? (
+        <div className="px-4 py-12 text-center space-y-3">
+          <span className="text-4xl" aria-hidden>🙏</span>
+          <p className="text-[15px] font-medium text-theme-text">기도 제목이 없습니다</p>
+          <p className="text-[14px] text-theme-muted leading-relaxed">
+            팔로우한 사람들이 올린 기도 제목이 여기 표시됩니다.
+          </p>
+          <Link
+            href="/prayer"
+            className="inline-block mt-2 text-[13px] text-theme-primary hover:opacity-80"
+          >
+            전체 기도 게시판 보기 →
+          </Link>
         </div>
       ) : (
-        <PrayerInfiniteList
-          initialItems={visibleItems}
-          initialNextCursorStr={
-            firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null
-          }
-          currentUserId={currentUser?.id ?? null}
-        />
+        <div className="divide-y divide-theme-border/60">
+          {prayers.map((prayer) => {
+            const initial = prayer.author?.name?.charAt(0) ?? "?";
+            return (
+              <Link key={prayer.id} href={`/prayer/${prayer.id}`} className="block px-4 py-4 hover:bg-theme-surface-2/40 transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-full bg-theme-primary/20 flex items-center justify-center text-theme-primary font-semibold text-sm shrink-0">
+                    {initial}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[13px] font-medium text-theme-text">{prayer.author?.name ?? "알 수 없음"}</span>
+                      <span className="text-[11px] bg-theme-primary/10 text-theme-primary px-2 py-0.5 rounded-full">
+                        {PRAYER_CATEGORY_LABELS[prayer.category]}
+                      </span>
+                      {prayer.answeredAt && (
+                        <span className="text-[11px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">✓ 응답</span>
+                      )}
+                      <span className="text-[12px] text-theme-muted ml-auto">
+                        {new Date(prayer.createdAt).toLocaleDateString("ko-KR")}
+                      </span>
+                    </div>
+                    <p className="text-[14px] text-theme-text mt-1 line-clamp-2 leading-relaxed">{prayer.content}</p>
+                    <p className="text-[12px] text-theme-muted mt-1.5">🙏 {prayer.intercessorCount ?? 0}명이 기도했습니다</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+          <div className="px-4 py-3 text-center">
+            <Link href="/prayer" className="text-[13px] text-theme-primary hover:opacity-80">
+              전체 기도 게시판 보기 →
+            </Link>
+          </div>
+        </div>
       )}
     </div>
   );

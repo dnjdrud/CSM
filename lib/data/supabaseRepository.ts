@@ -1213,6 +1213,8 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 const USERS_SELECT_FULL = "id, name, role, bio, affiliation, created_at, deactivated_at, denomination, faith_years, username, church, support_url, avatar_url";
+// Fallback when denomination/faith_years columns don't exist yet — still returns username, church, support_url
+const USERS_SELECT_NO_NEW_COLS = "id, name, role, bio, affiliation, created_at, deactivated_at, username, church, support_url, avatar_url";
 const USERS_SELECT_MINIMAL = "id, name, role, bio, affiliation, created_at";
 
 function isColumnError(msg: string): boolean {
@@ -1228,6 +1230,13 @@ export async function getUserByIdWithError(id: string): Promise<{ user: User | n
   data = full.data as typeof data;
   error = full.error;
   if (error && isColumnError(error.message)) {
+    // denomination/faith_years may not exist — try without them but keep username, church, support_url
+    const mid = await supabase.from("users").select(USERS_SELECT_NO_NEW_COLS).eq("id", id).single();
+    data = mid.data as typeof data;
+    error = mid.error;
+  }
+  if (error && isColumnError(error.message)) {
+    // Last resort: minimal columns
     const fallback = await supabase.from("users").select(USERS_SELECT_MINIMAL).eq("id", id).single();
     data = fallback.data ? { ...fallback.data, deactivated_at: null } : null;
     error = fallback.error;
@@ -2165,6 +2174,7 @@ function rowToPrayerRequest(r: {
 export async function listPrayerRequests(opts: {
   limit?: number;
   userId?: string | null; // filter to specific user's requests
+  userIds?: string[] | null; // filter to multiple users (e.g. followed users)
   viewerId?: string | null;
   onlyAnswered?: boolean;
 } = {}): Promise<PrayerRequest[]> {
@@ -2179,6 +2189,7 @@ export async function listPrayerRequests(opts: {
     .limit(limit);
 
   if (opts.userId) q = q.eq("user_id", opts.userId);
+  if (opts.userIds && opts.userIds.length > 0) q = q.in("user_id", opts.userIds);
   if (opts.onlyAnswered) q = q.not("answered_at", "is", null);
 
   const { data, error } = await q;

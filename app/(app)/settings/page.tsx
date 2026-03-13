@@ -74,6 +74,20 @@ export default async function SettingsPage() {
           <span className="text-theme-muted shrink-0">›</span>
         </Link>
 
+        {user.role === "ADMIN" && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-theme-border bg-theme-surface hover:bg-theme-surface-2/50 transition-colors"
+          >
+            <span className="text-xl shrink-0" aria-hidden>🛡️</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-medium text-theme-text">관리자 페이지</p>
+              <p className="text-[12px] text-theme-muted">사용자 관리, 콘텐츠 관리</p>
+            </div>
+            <span className="text-theme-muted shrink-0">›</span>
+          </Link>
+        )}
+
         <Link
           href={`/profile/${user.id}`}
           className="block text-center text-[13px] text-theme-primary hover:opacity-80 py-1"
