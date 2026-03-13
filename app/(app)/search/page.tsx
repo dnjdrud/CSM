@@ -1,11 +1,14 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { getCurrentUser } from "@/lib/data/repository";
-import { searchPosts, searchPeople, searchTags } from "@/lib/data/repository";
+import { searchPosts, searchPeople, searchTags, listFeedPostsPage } from "@/lib/data/repository";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { TimelineContainer } from "@/components/TimelineContainer";
+import { PostCard } from "@/components/PostCard";
 import { SearchTabs } from "./_components/SearchTabs";
 import { SearchResults, type SearchTab } from "./_components/SearchResults";
 import { SearchForm } from "./_components/SearchForm";
+
+export const dynamic = "force-dynamic";
 
 const VALID_TABS: SearchTab[] = ["posts", "people", "tags"];
 
@@ -29,6 +32,7 @@ export default async function SearchPage({
   let posts: Awaited<ReturnType<typeof searchPosts>> = [];
   let people: Awaited<ReturnType<typeof searchPeople>> = [];
   let tags: string[] = [];
+  let recentPosts: Awaited<ReturnType<typeof listFeedPostsPage>>["items"] = [];
 
   if (currentUser && (q || (tab === "people" && (role || denomination)))) {
     const [postsResult, peopleResult, tagsResult] = await Promise.all([
@@ -39,38 +43,54 @@ export default async function SearchPage({
     posts = postsResult;
     people = peopleResult;
     tags = tagsResult;
+  } else if (currentUser && !q) {
+    const result = await listFeedPostsPage({
+      currentUserId: currentUser.id,
+      scope: "ALL",
+      limit: 7,
+    });
+    recentPosts = result.items;
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link
-        href="/feed"
-        className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded mb-6 inline-block"
-      >
-        ← 피드로 돌아가기
-      </Link>
-      <h1 className="text-2xl font-serif font-normal text-gray-800 tracking-tight">
-        검색
-      </h1>
-      <p className="mt-2 text-gray-600 font-sans text-sm">
-        포스트, 사람, 주제를 찾아보세요.
-      </p>
-
-      <Suspense fallback={
-        <div className="mt-4 flex gap-2">
-          <Skeleton className="h-10 flex-1 rounded-md" />
-          <Skeleton className="h-10 w-24 rounded-md" />
-        </div>
-      }>
-        <SearchForm initialQ={q} initialTab={tab} initialRole={role} initialDenomination={denomination} />
-      </Suspense>
-
-      <div className="mt-6">
-        <Suspense fallback={<div className="flex gap-6 border-b border-gray-200 pb-3"><div className="h-4 w-12 rounded bg-gray-100 animate-pulse" /><div className="h-4 w-14 rounded bg-gray-100 animate-pulse" /><div className="h-4 w-10 rounded bg-gray-100 animate-pulse" /></div>}>
-          <SearchTabs currentTab={tab} />
+    <TimelineContainer>
+      <div className="px-4 pt-5 pb-4 border-b border-theme-border">
+        <h1 className="text-[17px] font-semibold text-theme-text mb-3">검색</h1>
+        <Suspense fallback={
+          <div className="flex gap-2">
+            <Skeleton className="h-10 flex-1 rounded-md" />
+            <Skeleton className="h-10 w-16 rounded-md" />
+          </div>
+        }>
+          <SearchForm initialQ={q} initialTab={tab} initialRole={role} initialDenomination={denomination} />
         </Suspense>
-        <SearchResults tab={tab} q={q} posts={posts} people={people} tags={tags} />
       </div>
-    </div>
+
+      {!q && recentPosts.length > 0 && (
+        <div>
+          <div className="px-4 pt-4 pb-2">
+            <p className="text-[12px] font-semibold text-theme-muted uppercase tracking-wide">최신 게시글</p>
+          </div>
+          <ul className="list-none p-0" role="list">
+            {recentPosts.map((post) => (
+              <li key={post.id}>
+                <PostCard post={post} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {q && (
+        <div>
+          <div className="sticky top-0 z-10 bg-theme-surface border-b border-theme-border px-4 pt-3">
+            <Suspense fallback={<div className="flex gap-4 pb-3"><div className="h-4 w-12 rounded bg-theme-border animate-pulse" /><div className="h-4 w-14 rounded bg-theme-border animate-pulse" /></div>}>
+              <SearchTabs currentTab={tab} />
+            </Suspense>
+          </div>
+          <SearchResults tab={tab} q={q} posts={posts} people={people} tags={tags} />
+        </div>
+      )}
+    </TimelineContainer>
   );
 }

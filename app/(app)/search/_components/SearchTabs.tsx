@@ -22,17 +22,17 @@ export function SearchTabs({ currentTab }: { currentTab: SearchTab }) {
   }
 
   return (
-    <nav className="flex gap-6 border-b border-gray-200" aria-label="Search tabs">
+    <nav className="flex gap-6" aria-label="Search tabs">
       {TABS.map(({ value, label }) => (
         <button
           key={value}
           type="button"
           onClick={() => setTab(value)}
           aria-current={currentTab === value ? "true" : undefined}
-          className={`pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded-t -mb-px ${
+          className={`pb-3 text-[13px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded-t -mb-px ${
             currentTab === value
-              ? "text-gray-800 border-b-2 border-gray-800"
-              : "text-gray-500 hover:text-gray-700"
+              ? "text-theme-text border-b-2 border-theme-primary"
+              : "text-theme-muted hover:text-theme-text"
           }`}
         >
           {label}

@@ -56,7 +56,7 @@ export function SearchForm({
     router.push(`/search?${next.toString()}`);
   }
 
-  const selectCls = "w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 text-sm focus:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-700";
+  const selectCls = "w-full rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-theme-text text-sm focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary";
   const hasFilters = !!(role || denomination);
 
   return (
@@ -70,30 +70,30 @@ export function SearchForm({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="포스트, 사람, 주제 검색…"
-            className="flex-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 text-sm placeholder:text-gray-500 focus:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-700"
+            className="flex-1 rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-theme-text text-sm placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
             aria-describedby="search-hint"
           />
           <button
             type="submit"
-            className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+            className="rounded-md bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
           >
             검색
           </button>
         </div>
-        <p id="search-hint" className="mt-1.5 text-xs text-gray-500">
+        <p id="search-hint" className="mt-1.5 text-xs text-theme-muted">
           키워드로 검색합니다.
         </p>
       </div>
 
       {tab === "people" && (
         <details open={hasFilters} className="group">
-          <summary className="cursor-pointer list-none text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded">
+          <summary className="cursor-pointer list-none text-xs font-medium text-theme-muted hover:text-theme-text flex items-center gap-1 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary rounded">
             <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
               <path d="M6 3l4 5-4 5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             필터
             {hasFilters && (
-              <span className="ml-1 rounded-full bg-gray-800 text-white text-[10px] px-1.5 py-0.5">적용됨</span>
+              <span className="ml-1 rounded-full bg-theme-primary text-white text-[10px] px-1.5 py-0.5">적용됨</span>
             )}
           </summary>
           <div className="mt-2 grid grid-cols-2 gap-2">
@@ -120,7 +120,7 @@ export function SearchForm({
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-2 text-xs text-gray-400 hover:text-gray-600 underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded"
+              className="mt-2 text-xs text-theme-muted hover:text-theme-text underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary rounded"
             >
               필터 초기화
             </button>

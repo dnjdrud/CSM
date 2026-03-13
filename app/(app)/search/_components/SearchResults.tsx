@@ -57,27 +57,27 @@ export function SearchResults({ tab, q, posts, people, tags }: SearchResultsProp
           <li key={user.id}>
             <Link
               href={`/profile/${user.id}`}
-              className="block rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+              className="block rounded-xl border border-theme-border bg-theme-surface-2/50 px-4 py-3 hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="font-medium text-gray-900 text-[14px]">
+                  <span className="font-medium text-theme-text text-[14px]">
                     <Highlight text={user.name} query={q} />
                   </span>
-                  <span className="text-gray-500 text-[12px] ml-2">{ROLE_DISPLAY[user.role]}</span>
+                  <span className="text-theme-muted text-[12px] ml-2">{ROLE_DISPLAY[user.role]}</span>
                   {user.affiliation && (
-                    <p className="mt-0.5 text-[13px] text-gray-600 truncate">
+                    <p className="mt-0.5 text-[13px] text-theme-text truncate">
                       <Highlight text={user.affiliation} query={q} />
                     </p>
                   )}
                   {user.bio && (
-                    <p className="mt-0.5 text-[12px] text-gray-400 line-clamp-1">
+                    <p className="mt-0.5 text-[12px] text-theme-muted line-clamp-1">
                       <Highlight text={user.bio} query={q} />
                     </p>
                   )}
                 </div>
                 {user.supportUrl && (
-                  <span className="shrink-0 text-[11px] text-gray-400 mt-0.5">🙌 후원</span>
+                  <span className="shrink-0 text-[11px] text-theme-muted mt-0.5">🙌 후원</span>
                 )}
               </div>
             </Link>
