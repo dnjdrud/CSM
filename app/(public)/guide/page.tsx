@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TimelineContainer } from "@/components/TimelineContainer";
 import { getServerLocale } from "@/lib/i18n/server";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "이용방법 – Cellah" };
 
 export default async function GuidePage() {

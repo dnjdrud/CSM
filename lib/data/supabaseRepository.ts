@@ -56,7 +56,7 @@ import { tokenize, sortByScore } from "@/lib/search";
 const SEARCH_MAX = 30;
 
 /** Feed select: only columns that exist in current DB. */
-const POSTS_FEED_SELECT = "id, author_id, category, content, visibility, tags, created_at" as const;
+const POSTS_FEED_SELECT = "id, author_id, category, content, visibility, tags, created_at, youtube_url, media_urls" as const;
 
 function isColumnOrSchemaError(message: string): boolean {
   const m = String(message).toLowerCase();

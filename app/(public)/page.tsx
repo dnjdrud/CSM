@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getServerLocale } from "@/lib/i18n/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const locale = await getServerLocale();
   const isKo = locale !== "en";
