@@ -110,7 +110,21 @@ export function resetRepository(): void {
   persistAll();
 }
 
-/** Current user: Supabase auth + public.users only. Returns null when not logged in or no profile. */
+/**
+ * Current user: session → users row only. Returns null when not logged in or no profile.
+ *
+ * 성능 개선 포인트:
+ * - 기존 코드는 매 요청마다 ensureProfile()를 실행했음.
+ *   ensureProfile은 내부적으로 users 테이블에 upsert를 시도하는 쓰기 연산으로,
+ *   일반 페이지 요청에서 불필요한 DB 왕복을 유발했음.
+ * - ensureProfile은 인증 직후(verify-magic, onboarding)에만 실행되어야 함.
+ *   session.ts의 getSession() 비쿠키 경로에서 이미 ensureProfile을 호출하므로
+ *   여기서 중복 실행할 필요 없음.
+ * - 일반 페이지 요청은 쿠키 → admin client read 2단계로 완료.
+ *
+ * TODO: Next.js `cache()` / React `cache()` wrapping 고려 — 같은 요청 내
+ *   여러 Server Component가 getCurrentUser()를 각자 호출할 때 중복 쿼리를 방지.
+ */
 export async function getCurrentUser(): Promise<User | null> {
   if (!useSupabaseAuth()) return null;
   try {
@@ -119,15 +133,10 @@ export async function getCurrentUser(): Promise<User | null> {
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
     if (!user?.id) return null;
-    // Use admin client to bypass RLS entirely — eliminates auth.uid() issues
-    // and ensures we always read the row regardless of RLS policy state.
+    // Admin client bypasses RLS — no auth.uid() dependency, always resolves the row.
     const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
     const admin = getSupabaseAdmin();
     const queryClient = admin ?? supabase;
-
-    // Ensure profile row exists (idempotent). Must run before query so the row is there.
-    const { ensureProfile } = await import("@/lib/auth/ensureProfile");
-    await ensureProfile({ userId: user.id, email: user.email ?? null });
 
     const { data: row } = await queryClient
       .from("users")
@@ -146,6 +155,27 @@ export async function getCurrentUser(): Promise<User | null> {
     };
   } catch {
     return null;
+  }
+}
+
+/**
+ * 인증 직후(온보딩/verify-magic) 등 프로필 행이 없을 수 있는 시점에만 호출.
+ * 일반 페이지 요청에서 getCurrentUser() 대신 이 함수를 직접 쓰지 말 것.
+ * session.ts의 getSession() 비쿠키 경로가 이미 ensureProfile을 실행하므로
+ * 대부분의 경우 이 함수는 불필요함.
+ */
+export async function ensureCurrentUserProfile(): Promise<void> {
+  if (!useSupabaseAuth()) return;
+  try {
+    const { supabaseServer } = await import("@/lib/supabase/server");
+    const supabase = await supabaseServer();
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
+    if (!user?.id) return;
+    const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+    await ensureProfile({ userId: user.id, email: user.email ?? null });
+  } catch {
+    // non-critical: best-effort
   }
 }
 

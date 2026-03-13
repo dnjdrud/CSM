@@ -326,14 +326,18 @@ async function getAuthorMap(supabase: Awaited<ReturnType<typeof supabaseServer>>
   }
 }
 
-/** Fetch comment counts per post in one query. Returns map postId -> count. */
+/**
+ * Fetch comment counts per post — single query, only post_id column (minimal row size).
+ * Aggregated in JS because PostgREST GROUP BY requires a custom RPC.
+ * For high-traffic feeds, replace with:
+ *   SELECT post_id, COUNT(*) FROM comments WHERE post_id = ANY($1) GROUP BY post_id
+ */
 async function getCommentCountsByPostIds(
   supabase: Awaited<ReturnType<typeof supabaseServer>>,
   postIds: string[]
 ): Promise<Map<string, number>> {
-  const map = new Map<string, number>();
-  postIds.forEach((id) => map.set(id, 0));
-  if (postIds.length === 0) return map;
+  if (postIds.length === 0) return new Map();
+  const map = new Map<string, number>(postIds.map((id) => [id, 0]));
   const { data: rows } = await supabase
     .from("comments")
     .select("post_id")
@@ -344,14 +348,20 @@ async function getCommentCountsByPostIds(
   return map;
 }
 
-/** Fetch reaction counts per post in one query. Returns map postId -> { prayed, withYou }. */
+/**
+ * Fetch reaction counts per post — single query, post_id + type only (minimal row size).
+ * Aggregated in JS because PostgREST GROUP BY requires a custom RPC.
+ * For high-traffic feeds, replace with:
+ *   SELECT post_id, type, COUNT(*) FROM reactions WHERE post_id = ANY($1) GROUP BY post_id, type
+ */
 async function getReactionCountsByPostIds(
   supabase: Awaited<ReturnType<typeof supabaseServer>>,
   postIds: string[]
 ): Promise<Map<string, { prayed: number; withYou: number }>> {
-  const map = new Map<string, { prayed: number; withYou: number }>();
-  postIds.forEach((id) => map.set(id, { prayed: 0, withYou: 0 }));
-  if (postIds.length === 0) return map;
+  if (postIds.length === 0) return new Map();
+  const map = new Map<string, { prayed: number; withYou: number }>(
+    postIds.map((id) => [id, { prayed: 0, withYou: 0 }])
+  );
   const { data: rows } = await supabase
     .from("reactions")
     .select("post_id, type")
@@ -363,6 +373,70 @@ async function getReactionCountsByPostIds(
     else if (r.type === "WITH_YOU") cur.withYou += 1;
   });
   return map;
+}
+
+/** Shared row shape for posts selected with POSTS_FEED_SELECT. */
+type FeedPostRow = {
+  id: string;
+  author_id: string;
+  category: string;
+  content: string;
+  visibility: string;
+  tags: string[] | null;
+  created_at: string | null;
+  youtube_url?: string | null;
+  media_urls?: string[] | null;
+};
+
+/**
+ * Shared post hydration: resolves authors, reaction counts, and optionally comment counts
+ * for a batch of post rows — replacing the repeated Promise.all + per-post loop pattern.
+ *
+ * Key optimization: reactionsByCurrentUser is built in O(m) with a single Set pass
+ * instead of the previous O(n×m) reactionRows.filter() call per post.
+ * All sub-queries run in parallel via Promise.all.
+ */
+async function hydratePostRows(
+  supabase: Awaited<ReturnType<typeof supabaseServer>>,
+  rows: FeedPostRow[],
+  currentUserId: string | null,
+  opts: { includeCommentCounts?: boolean } = {}
+): Promise<PostWithAuthor[]> {
+  if (rows.length === 0) return [];
+  const authorIds = [...new Set(rows.map((r) => r.author_id))];
+  const postIds = rows.map((r) => r.id);
+
+  const [authorMap, reactionCountsMap, commentCountsMap, { data: reactionRows }] =
+    await Promise.all([
+      getAuthorMap(supabase, authorIds),
+      getReactionCountsByPostIds(supabase, postIds),
+      opts.includeCommentCounts
+        ? getCommentCountsByPostIds(supabase, postIds)
+        : Promise.resolve(new Map<string, number>()),
+      currentUserId
+        ? supabase
+            .from("reactions")
+            .select("post_id, type")
+            .in("post_id", postIds)
+            .eq("user_id", currentUserId)
+        : { data: [] as { post_id: string; type: string }[] },
+    ]);
+
+  // O(m) single pass — build Sets for prayed/withYou instead of filter() per post.
+  const prayedPosts = new Set<string>();
+  const withYouPosts = new Set<string>();
+  (reactionRows ?? []).forEach((r: { post_id: string; type: string }) => {
+    if (r.type === "PRAYED") prayedPosts.add(r.post_id);
+    else if (r.type === "WITH_YOU") withYouPosts.add(r.post_id);
+  });
+
+  return rows.map((r) => ({
+    ...rowToPost(r),
+    author: authorMap.get(r.author_id) ?? placeholderUser(r.author_id),
+    reactionsByCurrentUser: { prayed: prayedPosts.has(r.id), withYou: withYouPosts.has(r.id) },
+    reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
+    ...(opts.includeCommentCounts ? { commentCount: commentCountsMap.get(r.id) ?? 0 } : {}),
+  })) as PostWithAuthor[];
 }
 
 export async function listFeedPosts(options: {
@@ -412,31 +486,8 @@ export async function listFeedPosts(options: {
     return [];
   }
   if (!rows?.length) return [];
-  const authorIds = [...new Set(rows.map((r) => r.author_id))];
-  const postIds = rows.map((r) => r.id);
-  const [authorMap, reactionCountsMap, { data: reactionRows }] = await Promise.all([
-    getAuthorMap(supabase, authorIds),
-    getReactionCountsByPostIds(supabase, postIds),
-    uid ? supabase.from("reactions").select("post_id, user_id, type").in("post_id", postIds).eq("user_id", uid) : { data: [] },
-  ]);
-  const reactionsByPost = new Map<string, { prayed: boolean; withYou: boolean }>();
-  rows.forEach((p) => {
-    const userReactions = uid && reactionRows ? reactionRows.filter((r) => r.post_id === p.id && r.user_id === uid) : [];
-    reactionsByPost.set(p.id, {
-      prayed: userReactions.some((r) => r.type === "PRAYED"),
-      withYou: userReactions.some((r) => r.type === "WITH_YOU"),
-    });
-  });
-  return rows.map((r) => {
-    const post = rowToPost(r);
-    const author = authorMap.get(r.author_id) ?? placeholderUser(r.author_id);
-    return {
-      ...post,
-      author,
-      reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-    } as PostWithAuthor;
-  });
+  // hydratePostRows: resolves authors + reactions in parallel, O(m) reactionsByPost build.
+  return hydratePostRows(supabase, rows as FeedPostRow[], uid);
 }
 
 /** Fetch today's Daily Prayer post (has daily-prayer tag, most recent today KST). */
@@ -510,6 +561,19 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
   const uid = params.currentUserId ?? null;
   const limit = Math.min(Math.max(params.limit || 20, 1), 100);
 
+  // Resolve following IDs ONCE before the retry loop.
+  // Previously this was inside runQuery() which can be called up to 3 times on column errors
+  // — meaning follows could be fetched 3× per page load.
+  let authorIds: string[] | null = null;
+  if (params.scope === "FOLLOWING" && uid) {
+    const { data: followRows } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", uid);
+    const followingIds = (followRows ?? []).map((r: { following_id: string }) => r.following_id);
+    authorIds = [...new Set([uid, ...followingIds])];
+  }
+
   const useHidden = hasHiddenAtColumn !== false;
   const runQuery = async (selectColumns: string = POSTS_FEED_SELECT) => {
     let q = supabase
@@ -519,12 +583,7 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
       .order("id", { ascending: false })
       .limit(limit + 1);
     if (useHidden) q = q.is("hidden_at", null);
-    if (params.scope === "FOLLOWING" && uid) {
-      const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
-      const followingIds = (followRows ?? []).map((r) => r.following_id);
-      const authorIds = [...new Set([uid, ...followingIds])];
-      q = q.in("author_id", authorIds);
-    }
+    if (authorIds) q = q.in("author_id", authorIds);
     if (params.excludeCategories && params.excludeCategories.length > 0) {
       q = q.not("category", "in", `(${params.excludeCategories.join(",")})`);
     }
@@ -557,37 +616,12 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
   }
   if (!rows?.length) return { items: [], nextCursor: null };
 
-  type FeedPostRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null; youtube_url?: string | null; media_urls?: string[] | null };
-  const normalizedRows: FeedPostRow[] = (rows ?? []) as unknown as FeedPostRow[];
+  const normalizedRows = (rows ?? []) as unknown as FeedPostRow[];
   const hasMore = normalizedRows.length > limit;
   const pageRows = hasMore ? normalizedRows.slice(0, limit) : normalizedRows;
-  const authorIds = [...new Set(pageRows.map((r) => r.author_id))];
-  const postIds = pageRows.map((r) => r.id);
-  const [authorMap, reactionCountsMap, commentCountsMap, { data: reactionRows }] = await Promise.all([
-    getAuthorMap(supabase, authorIds),
-    getReactionCountsByPostIds(supabase, postIds),
-    getCommentCountsByPostIds(supabase, postIds),
-    uid ? supabase.from("reactions").select("post_id, user_id, type").in("post_id", postIds).eq("user_id", uid) : { data: [] },
-  ]);
-  const reactionsByPost = new Map<string, { prayed: boolean; withYou: boolean }>();
-  pageRows.forEach((p) => {
-    const userReactions = uid && reactionRows ? reactionRows.filter((r) => r.post_id === p.id && r.user_id === uid) : [];
-    reactionsByPost.set(p.id, {
-      prayed: userReactions.some((r) => r.type === "PRAYED"),
-      withYou: userReactions.some((r) => r.type === "WITH_YOU"),
-    });
-  });
-  const items = pageRows.map((r) => {
-    const post = rowToPost(r);
-    const author = authorMap.get(r.author_id) ?? placeholderUser(r.author_id);
-    return {
-      ...post,
-      author,
-      reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-      reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-      commentCount: commentCountsMap.get(r.id) ?? 0,
-    } as PostWithAuthor;
-  });
+
+  // hydratePostRows: parallel author + reaction resolution, O(m) reactionsByPost build.
+  const items = await hydratePostRows(supabase, pageRows, uid, { includeCommentCounts: true });
 
   const nextCursor: { createdAt: string; id: string } | null =
     hasMore && pageRows.length > 0
@@ -1146,25 +1180,7 @@ export async function listPostsByAuthorId(authorId: string): Promise<PostWithAut
     .eq("author_id", authorId)
     .order("created_at", { ascending: false });
   if (!rows?.length) return [];
-  const authorMap = await getAuthorMap(supabase, [authorId]);
-  const author = authorMap.get(authorId);
-  if (!author) return [];
-  const postIds = rows.map((r) => r.id);
-  const [reactionCountsMap, { data: reactionRows }] = await Promise.all([
-    getReactionCountsByPostIds(supabase, postIds),
-    supabase.from("reactions").select("post_id, type").in("post_id", postIds).eq("user_id", uid ?? ""),
-  ]);
-  const reactionsByPost = new Map<string, { prayed: boolean; withYou: boolean }>();
-  rows.forEach((p) => {
-    const userReactions = uid ? (reactionRows ?? []).filter((r) => r.post_id === p.id) : [];
-    reactionsByPost.set(p.id, { prayed: userReactions.some((r) => r.type === "PRAYED"), withYou: userReactions.some((r) => r.type === "WITH_YOU") });
-  });
-  return rows.map((r) => ({
-    ...rowToPost(r),
-    author,
-    reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-    reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-  })) as PostWithAuthor[];
+  return hydratePostRows(supabase, rows as FeedPostRow[], uid);
 }
 
 export async function listPostsByAuthorIdPaged(params: {
@@ -1375,36 +1391,13 @@ export async function listBookmarks(userId: string, limit = 50): Promise<PostWit
     .select(POSTS_FEED_SELECT)
     .in("id", postIds);
   if (!rows?.length) return [];
-  const authorIds = [...new Set(rows.map((r) => r.author_id))];
-  const [authorMap, reactionCountsMap, commentCountsMap, { data: reactionRows }] = await Promise.all([
-    getAuthorMap(supabase, authorIds),
-    getReactionCountsByPostIds(supabase, postIds),
-    getCommentCountsByPostIds(supabase, postIds),
-    supabase.from("reactions").select("post_id, type").in("post_id", postIds).eq("user_id", userId),
-  ]);
-  const reactionsByPost = new Map<string, { prayed: boolean; withYou: boolean }>();
-  rows.forEach((p) => {
-    const userReactions = (reactionRows ?? []).filter((r) => r.post_id === p.id);
-    reactionsByPost.set(p.id, {
-      prayed: userReactions.some((r) => r.type === "PRAYED"),
-      withYou: userReactions.some((r) => r.type === "WITH_YOU"),
-    });
-  });
-  const postMap = new Map(rows.map((r) => [r.id, r]));
+  // hydratePostRows resolves authors + reactions in parallel with O(m) reactionsByPost build.
+  // Re-order result to match bookmark insertion order (most recently bookmarked first).
+  const hydrated = await hydratePostRows(supabase, rows as FeedPostRow[], userId, { includeCommentCounts: true });
+  const hydratedMap = new Map(hydrated.map((p) => [p.id, p]));
   return bookmarkRows
-    .map((b) => {
-      const r = postMap.get(b.post_id);
-      if (!r) return null;
-      const author = authorMap.get(r.author_id) ?? placeholderUser(r.author_id);
-      return {
-        ...rowToPost(r),
-        author,
-        reactionsByCurrentUser: reactionsByPost.get(r.id) ?? { prayed: false, withYou: false },
-        reactionCounts: reactionCountsMap.get(r.id) ?? { prayed: 0, withYou: 0 },
-        commentCount: commentCountsMap.get(r.id) ?? 0,
-      } as PostWithAuthor;
-    })
-    .filter((x): x is PostWithAuthor => x != null);
+    .map((b) => hydratedMap.get(b.post_id))
+    .filter((p): p is PostWithAuthor => p != null);
 }
 
 export async function getBookmarkedPostIds(userId: string, postIds: string[]): Promise<string[]> {
