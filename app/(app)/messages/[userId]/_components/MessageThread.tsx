@@ -72,20 +72,20 @@ export function MessageThread({
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 shrink-0">
-        <Link href="/messages" className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-theme-border shrink-0">
+        <Link href="/messages" className="text-sm text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary rounded">
           ←
         </Link>
-        <Link href={`/profile/${partner.id}`} className="flex items-center gap-2 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded">
+        <Link href={`/profile/${partner.id}`} className="flex items-center gap-2 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary rounded">
           <Avatar name={partner.name} src={partner.avatarUrl} size="sm" className="h-8 w-8" />
-          <span className="font-medium text-gray-900 text-[15px]">{partner.name}</span>
+          <span className="font-medium text-theme-text text-[15px]">{partner.name}</span>
         </Link>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
-          <p className="text-center text-sm text-gray-400 mt-8">대화를 시작해보세요</p>
+          <p className="text-center text-sm text-theme-muted mt-8">대화를 시작해보세요</p>
         )}
         {messages.map((msg) => {
           const isMine = msg.senderId === currentUserId;
@@ -96,13 +96,13 @@ export function MessageThread({
                 <div
                   className={`px-3 py-2 rounded-2xl text-[14px] leading-6 whitespace-pre-wrap break-words ${
                     isMine
-                      ? "bg-gray-800 text-white rounded-br-sm"
-                      : "bg-gray-100 text-gray-900 rounded-bl-sm"
+                      ? "bg-theme-primary text-white rounded-br-sm"
+                      : "bg-theme-surface-2 text-theme-text rounded-bl-sm"
                   }`}
                 >
                   {msg.content}
                 </div>
-                <time className="text-[11px] text-gray-400">
+                <time className="text-[11px] text-theme-muted">
                   {formatRelativeTime(new Date(msg.createdAt))}
                 </time>
               </div>
@@ -113,8 +113,8 @@ export function MessageThread({
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="shrink-0 px-4 pb-4 pt-2 border-t border-gray-200">
-        {error && <p className="text-xs text-red-600 mb-2">{error}</p>}
+      <form onSubmit={handleSend} className="shrink-0 px-4 pb-4 pt-2 border-t border-theme-border">
+        {error && <p className="text-xs text-theme-danger mb-2">{error}</p>}
         <div className="flex gap-2 items-end">
           <textarea
             ref={inputRef}
@@ -124,12 +124,12 @@ export function MessageThread({
             rows={1}
             placeholder="메시지 입력… (Enter로 전송)"
             disabled={isPending}
-            className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-400 focus:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-700 resize-none min-h-[2.5rem] max-h-32 disabled:opacity-50"
+            className="flex-1 rounded-xl border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary resize-none min-h-[2.5rem] max-h-32 disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={isPending || !content.trim()}
-            className="rounded-xl bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-50 shrink-0"
+            className="rounded-xl bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 disabled:opacity-50 shrink-0"
           >
             전송
           </button>

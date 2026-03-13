@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useT } from "@/lib/i18n";
 
-type TabKey = "home" | "mission" | "cells" | "contents" | "profile";
+type TabKey = "home" | "mission" | "contents" | "profile";
 
 type Tab = {
   key: TabKey;
@@ -21,13 +21,6 @@ function HomeIcon({ className }: { className?: string }) {
   );
 }
 
-function CellsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
 
 function ContentsIcon({ className }: { className?: string }) {
   return (
@@ -59,7 +52,6 @@ function ProfileIcon({ className }: { className?: string }) {
 
 const BASE_TABS: Tab[] = [
   { key: "home",     href: "/home",     Icon: HomeIcon },
-  { key: "cells",    href: "/cells",    Icon: CellsIcon },
   { key: "contents", href: "/contents", Icon: ContentsIcon },
   { key: "mission",  href: "/mission",  Icon: MissionIcon },
   { key: "profile",  href: "/me",       Icon: ProfileIcon },
@@ -68,7 +60,6 @@ const BASE_TABS: Tab[] = [
 function isActive(tab: Tab, pathname: string): boolean {
   if (tab.key === "home") return pathname === "/home" || pathname === "/feed";
   if (tab.key === "mission") return pathname.startsWith("/mission") || pathname.startsWith("/missions") || pathname.startsWith("/missionary");
-  if (tab.key === "cells") return pathname.startsWith("/cells") || pathname.startsWith("/cell");
   if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology");
   if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
   return false;
@@ -84,7 +75,6 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
 
   const labels: Record<TabKey, string> = {
     home: t.nav.home,
-    cells: t.nav.cells,
     contents: t.nav.contents,
     mission: t.nav.mission,
     profile: t.nav.profile,

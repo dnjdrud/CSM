@@ -380,7 +380,7 @@ export async function listFeedPosts(options: {
     authorIdsForFollowing = [...new Set([uid, ...followingIds])];
   }
 
-  type FeedRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null };
+  type FeedRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null; youtube_url?: string | null; media_urls?: string[] | null };
   let rows: FeedRow[] | null = null;
   let error: { message: string } | null = null;
 
@@ -557,7 +557,7 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
   }
   if (!rows?.length) return { items: [], nextCursor: null };
 
-  type FeedPostRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null };
+  type FeedPostRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null; youtube_url?: string | null; media_urls?: string[] | null };
   const normalizedRows: FeedPostRow[] = (rows ?? []) as unknown as FeedPostRow[];
   const hasMore = normalizedRows.length > limit;
   const pageRows = hasMore ? normalizedRows.slice(0, limit) : normalizedRows;

@@ -110,7 +110,7 @@ function TypePicker({
 }) {
   const t = useT();
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="px-4 py-6">
       <h1 className="text-[18px] font-semibold text-theme-text mb-1">
         {t.write.typePickerTitle}
       </h1>
@@ -341,7 +341,7 @@ function ComposeForm({
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="px-4 py-6">
       <div className="flex items-center gap-3 mb-5">
         <button type="button" onClick={onBack} className="text-[13px] text-theme-muted hover:text-theme-text">
           {t.write.back}

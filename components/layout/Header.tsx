@@ -47,6 +47,15 @@ function PencilIcon({ className }: { className?: string }) {
   );
 }
 
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
 function UserCircleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -153,6 +162,11 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
 
           {user && (
             <>
+              {/* Direct Messages */}
+              <Link href="/messages" className={iconBtn} aria-label="다이렉트 메시지">
+                <SendIcon className="w-5 h-5" />
+              </Link>
+
               {/* Write */}
               <Link
                 href="/write"
