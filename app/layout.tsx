@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { HeaderWrapper } from "@/common";
-import { RightContextPanel } from "@/components/RightContextPanel";
 import { ToastProvider } from "@/components/ui/Toast";
 import { LanguageProvider } from "@/lib/i18n";
 import { LOCALE_COOKIE, type Locale } from "@/lib/i18n/translations";
@@ -41,7 +40,6 @@ export default async function RootLayout({
               <main className="flex flex-1 min-w-0 flex justify-center pb-16" id="main-content">
                 {children}
               </main>
-              <RightContextPanel />
             </div>
             <BottomNavWrapper />
             <FooterLinks />
