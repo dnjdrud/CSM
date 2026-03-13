@@ -10,7 +10,7 @@ export interface Translations {
   };
   header: {
     write: string; messages: string; notifications: string; admin: string;
-    settings: string; logout: string; login: string; search: string; langSwitch: string; profile: string;
+    settings: string; logout: string; login: string; search: string; langSwitch: string; profile: string; guide: string;
   };
   footer: { privacy: string; terms: string; contact: string };
   nav: { home: string; cells: string; contents: string; mission: string; profile: string };
@@ -93,7 +93,7 @@ const ko: Translations = {
   },
   header: {
     write: "✏️ 글쓰기", messages: "메시지", notifications: "알림", admin: "관리자",
-    settings: "설정", logout: "로그아웃", login: "로그인", search: "검색", langSwitch: "EN", profile: "프로필",
+    settings: "설정", logout: "로그아웃", login: "로그인", search: "검색", langSwitch: "EN", profile: "프로필", guide: "이용방법",
   },
   footer: { privacy: "개인정보처리방침", terms: "이용약관", contact: "문의" },
   nav: { home: "홈", cells: "셀", contents: "컨텐츠", mission: "선교", profile: "프로필" },
@@ -194,7 +194,7 @@ const en: Translations = {
   },
   header: {
     write: "✏️ Write", messages: "Messages", notifications: "Notifications", admin: "Admin",
-    settings: "Settings", logout: "Log out", login: "Log in", search: "Search", langSwitch: "한", profile: "Profile",
+    settings: "Settings", logout: "Log out", login: "Log in", search: "Search", langSwitch: "한", profile: "Profile", guide: "How to Use",
   },
   footer: { privacy: "Privacy", terms: "Terms", contact: "Contact" },
   nav: { home: "Home", cells: "Cells", contents: "Contents", mission: "Mission", profile: "Profile" },
