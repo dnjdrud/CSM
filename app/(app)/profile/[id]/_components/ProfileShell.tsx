@@ -42,7 +42,7 @@ export function ProfileShell({
 
   return (
     <div className="bg-theme-bg min-h-full">
-      <div className="mx-auto w-full max-w-2xl min-h-screen border-x border-theme-border bg-theme-surface">
+      <div className="mx-auto w-full max-w-2xl min-h-screen md:border-x border-theme-border bg-theme-surface">
 
         <section className="px-4 pt-4 pb-0">
           <div className="flex items-center justify-between gap-2 mb-3">

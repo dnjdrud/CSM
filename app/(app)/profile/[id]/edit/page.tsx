@@ -23,7 +23,7 @@ export default async function ProfileEditPage({
   if (currentUserId !== id) redirect(`/profile/${id}`);
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center gap-3">
         <Link
           href={`/profile/${id}`}

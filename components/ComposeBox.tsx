@@ -3,26 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
-import { CATEGORY_LABELS } from "@/lib/domain/types";
 import { useToast } from "@/components/ui/Toast";
+import { useT } from "@/lib/i18n";
 
-const PLACEHOLDER = "기도, 묵상, 혹은 조용한 나눔을 적어보세요…";
 const CONTENT_MAX_LENGTH = 10000;
 const SOFT_LIMIT = 1000;
-
-const CATEGORIES: { value: PostCategory; label: string }[] = [
-  { value: "PRAYER", label: CATEGORY_LABELS.PRAYER },
-  { value: "DEVOTIONAL", label: CATEGORY_LABELS.DEVOTIONAL },
-  { value: "MINISTRY", label: CATEGORY_LABELS.MINISTRY },
-  { value: "TESTIMONY", label: CATEGORY_LABELS.TESTIMONY },
-];
-
-const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
-  { value: "MEMBERS", label: "멤버 공개" },
-  { value: "PUBLIC", label: "전체 공개" },
-  { value: "FOLLOWERS", label: "팔로워 공개" },
-  { value: "PRIVATE", label: "나만 보기" },
-];
 
 export type ComposePostActionParams = {
   content: string;
@@ -36,20 +21,19 @@ export type ComposePostAction = (params: ComposePostActionParams) => Promise<{ o
 type ComposeBoxProps = {
   composePostAction: ComposePostAction;
   defaultExpanded?: boolean;
-  defaultMoreOptions?: boolean;
   redirectOnSuccess?: string;
 };
 
 export function ComposeBox({
   composePostAction,
   defaultExpanded = false,
-  defaultMoreOptions = false,
   redirectOnSuccess,
 }: ComposeBoxProps) {
+  const t = useT();
   const router = useRouter();
   const [content, setContent] = useState("");
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [category, setCategory] = useState<PostCategory>("PRAYER");
+  const [category, setCategory] = useState<PostCategory>("GENERAL");
   const [visibility, setVisibility] = useState<Visibility>("MEMBERS");
   const [tagsInput, setTagsInput] = useState("");
   const [pending, setPending] = useState(false);
@@ -58,13 +42,29 @@ export function ComposeBox({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const toast = useToast();
 
+  const isKo = t.common.save === "저장";
+
+  const CATEGORIES: { value: PostCategory; label: string }[] = [
+    { value: "GENERAL",   label: isKo ? "일상" : "Daily" },
+    { value: "DEVOTIONAL", label: isKo ? "묵상" : "Devotional" },
+    { value: "MINISTRY",  label: isKo ? "사역 나눔" : "Ministry" },
+    { value: "TESTIMONY", label: isKo ? "간증" : "Testimony" },
+  ];
+
+  const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
+    { value: "MEMBERS",   label: isKo ? "멤버 공개" : "Members only" },
+    { value: "PUBLIC",    label: isKo ? "전체 공개" : "Public" },
+    { value: "FOLLOWERS", label: isKo ? "팔로워 공개" : "Followers" },
+    { value: "PRIVATE",   label: isKo ? "나만 보기" : "Only me" },
+  ];
+
   const trimmed = content.trim();
   const canPost = trimmed.length > 0 && trimmed.length <= CONTENT_MAX_LENGTH && !pending;
 
   const tags = tagsInput
     ? tagsInput
         .split(",")
-        .map((t) => t.trim().toLowerCase())
+        .map((tag) => tag.trim().toLowerCase())
         .filter(Boolean)
         .slice(0, 5)
     : [];
@@ -84,7 +84,7 @@ export function ComposeBox({
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!canPost) return;
     setErrorMessage(null);
@@ -99,7 +99,7 @@ export function ComposeBox({
     if (result.ok) {
       setContent("");
       setJustPosted(true);
-      toast.show("게시되었습니다.");
+      toast.show(isKo ? "게시되었습니다." : "Posted.");
       setTimeout(() => {
         setJustPosted(false);
         setExpanded(false);
@@ -107,7 +107,7 @@ export function ComposeBox({
         if (redirectOnSuccess) router.push(redirectOnSuccess);
       }, 1200);
     } else {
-      const err = result.error ?? "문제가 발생했습니다. 다시 시도해 주세요.";
+      const err = result.error ?? (isKo ? "문제가 발생했습니다. 다시 시도해 주세요." : "Something went wrong. Please try again.");
       setErrorMessage(err);
       toast.error(err);
     }
@@ -115,6 +115,14 @@ export function ComposeBox({
 
   const showToolbar = expanded;
   const showPostButton = trimmed.length > 0 || justPosted;
+  const placeholder = isKo ? "묵상, 일상, 간증을 나눠보세요…" : "Share a reflection, daily moment, or testimony…";
+  const postLabel = isKo ? "나누기" : "Post";
+  const postingLabel = isKo ? "게시 중…" : "Posting…";
+  const postedLabel = isKo ? "게시됨" : "Posted";
+  const categoryLabel = isKo ? "카테고리" : "Category";
+  const visibilityLabel = isKo ? "공개 범위" : "Visibility";
+  const tagsLabel = isKo ? "태그 (선택, 최대 5개)" : "Tags (optional, max 5)";
+  const tagsPlaceholder = isKo ? "예: 묵상, 일상" : "e.g. devotional, daily";
 
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-theme-border border-b bg-theme-surface shadow-soft transition-[border-color] duration-200">
@@ -125,7 +133,7 @@ export function ComposeBox({
           onChange={(e) => { setContent(e.target.value); setErrorMessage(null); }}
           onFocus={() => setExpanded(true)}
           onKeyDown={handleKeyDown}
-          placeholder={PLACEHOLDER}
+          placeholder={placeholder}
           rows={expanded ? 5 : 2}
           maxLength={CONTENT_MAX_LENGTH}
           className="block w-full resize-none rounded-lg border border-theme-border bg-theme-surface-2/80 px-3 py-2.5 text-[15px] leading-7 text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:bg-theme-surface focus:outline-none focus:ring-1 focus:ring-theme-primary transition-[min-height,border-color] duration-300 ease-out min-h-[4.5rem]"
@@ -142,8 +150,8 @@ export function ComposeBox({
             aria-label="Post options"
           >
             <div>
-              <span className="text-xs font-medium text-theme-muted">공개 범위</span>
-              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="공개 범위">
+              <span className="text-xs font-medium text-theme-muted">{visibilityLabel}</span>
+              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label={visibilityLabel}>
                 {VISIBILITY_OPTIONS.map(({ value, label }) => (
                   <label key={value} className="flex items-center gap-1.5 cursor-pointer">
                     <input
@@ -153,7 +161,7 @@ export function ComposeBox({
                       checked={visibility === value}
                       onChange={() => setVisibility(value)}
                       className="rounded-full border-theme-border text-theme-text focus:ring-theme-primary"
-                      aria-label={`공개 범위: ${label}`}
+                      aria-label={`${visibilityLabel}: ${label}`}
                     />
                     <span className="text-theme-text">{label}</span>
                   </label>
@@ -161,8 +169,8 @@ export function ComposeBox({
               </div>
             </div>
             <div>
-              <span className="text-xs font-medium text-theme-muted">카테고리</span>
-              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label="카테고리">
+              <span className="text-xs font-medium text-theme-muted">{categoryLabel}</span>
+              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label={categoryLabel}>
                 {CATEGORIES.map(({ value, label }) => (
                   <label key={value} className="flex items-center gap-1.5 cursor-pointer">
                     <input
@@ -172,7 +180,7 @@ export function ComposeBox({
                       checked={category === value}
                       onChange={() => setCategory(value)}
                       className="rounded-full border-theme-border text-theme-text focus:ring-theme-primary"
-                      aria-label={`카테고리: ${label}`}
+                      aria-label={`${categoryLabel}: ${label}`}
                     />
                     <span className="text-theme-text">{label}</span>
                   </label>
@@ -181,16 +189,16 @@ export function ComposeBox({
             </div>
             <div>
               <label htmlFor="compose-tags" className="text-xs font-medium text-neutral-600">
-                태그 (선택, 최대 5개)
+                {tagsLabel}
               </label>
               <input
                 id="compose-tags"
                 type="text"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="예: 기도, 일상"
+                placeholder={tagsPlaceholder}
                 className="mt-1 block w-full rounded-lg border border-theme-border bg-theme-surface px-2.5 py-1.5 text-[15px] text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
-                aria-label="태그, 선택, 최대 5개"
+                aria-label={tagsLabel}
               />
             </div>
           </div>
@@ -217,9 +225,9 @@ export function ComposeBox({
                   type="submit"
                   disabled={!canPost && !justPosted}
                   className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg bg-theme-primary px-5 py-3 text-[14px] font-medium text-white transition-colors duration-200 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:transform-none"
-                  aria-label={justPosted ? "게시됨" : pending ? "게시 중" : "나누기"}
+                  aria-label={justPosted ? postedLabel : pending ? postingLabel : postLabel}
                 >
-                  {justPosted ? "게시됨" : pending ? "게시 중…" : "나누기"}
+                  {justPosted ? postedLabel : pending ? postingLabel : postLabel}
                 </button>
               </div>
             </>

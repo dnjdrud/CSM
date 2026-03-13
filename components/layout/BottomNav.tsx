@@ -95,14 +95,14 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
       className="fixed bottom-0 inset-x-0 z-30 border-t border-theme-border/70 bg-theme-surface/95 backdrop-blur-sm shrink-0"
       aria-label="Primary tabs"
     >
-      <ul className="flex items-stretch justify-around px-2 py-1.5">
+      <ul className="flex items-stretch justify-evenly px-2 py-1.5">
         {TABS.map((tab) => {
           const active = isActive(tab, pathname);
           return (
             <li key={tab.key} className="flex-1">
               <Link
                 href={tab.href}
-                className={`flex flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[11px] ${
+                className={`flex w-full flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[11px] ${
                   active
                     ? "text-theme-primary font-medium"
                     : "text-theme-muted hover:text-theme-text"
