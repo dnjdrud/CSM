@@ -1260,7 +1260,7 @@ export async function restoreUser(userId: string): Promise<{ ok: boolean; error?
   return { ok: true };
 }
 
-/** Update own profile fields. Uses user's own session (RLS allows self-update). */
+/** Update own profile fields. Uses admin client to bypass RLS (caller must verify identity). */
 export async function updateUserProfile(
   userId: string,
   data: {
@@ -1275,7 +1275,8 @@ export async function updateUserProfile(
     supportUrl?: string | null;
   }
 ): Promise<{ ok: true } | { error: string }> {
-  const supabase = await supabaseServer();
+  const admin = getSupabaseAdmin();
+  const client = admin ?? (await supabaseServer());
   const update: Record<string, unknown> = {};
   if (data.name !== undefined) update.name = data.name.trim() || undefined;
   if ("username" in data) update.username = data.username?.trim() || null;
@@ -1287,8 +1288,9 @@ export async function updateUserProfile(
   if (data.role !== undefined) update.role = data.role;
   if ("supportUrl" in data) update.support_url = data.supportUrl?.trim() || null;
   if (Object.keys(update).length === 0) return { ok: true };
-  const { error } = await supabase.from("users").update(update).eq("id", userId);
+  const { error } = await client.from("users").update(update).eq("id", userId);
   if (error) {
+    console.error("[updateUserProfile] error", error.message, "update", JSON.stringify(update));
     if (/unique|duplicate/i.test(error.message)) return { error: "이 사용자 이름은 이미 사용 중입니다." };
     return { error: error.message };
   }

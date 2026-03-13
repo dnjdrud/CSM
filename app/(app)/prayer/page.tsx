@@ -28,7 +28,6 @@ export default async function PrayerPage() {
           </div>
           <nav className="flex gap-4 mt-3 text-[13px]">
             <span className="font-medium text-theme-primary border-b-2 border-theme-primary pb-0.5">전체</span>
-            {user && <Link href="/prayer/my" className="text-theme-muted hover:text-theme-text">내 기도</Link>}
             <Link href="/prayer/chains" className="text-theme-muted hover:text-theme-text">기도 체인</Link>
           </nav>
         </div>

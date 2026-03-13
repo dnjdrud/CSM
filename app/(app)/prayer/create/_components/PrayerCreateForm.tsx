@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PRAYER_CATEGORY_LABELS } from "@/lib/domain/types";
 import type { PrayerCategory } from "@/lib/domain/types";
-import { createPrayerRequestAction } from "../actions";
+import { createPrayerRequestActionProxy } from "../actions";
 
 const VISIBILITY_LABELS: Record<string, string> = {
   PUBLIC: "전체 공개",
@@ -40,7 +40,7 @@ export function PrayerCreateForm() {
     fd.append("visibility", visibility);
 
     try {
-      await createPrayerRequestAction(fd);
+      await createPrayerRequestActionProxy(fd);
       // createPrayerRequestAction calls redirect() on success, so this line won't be reached
     } catch (e) {
       // redirect() throws internally in Next.js — re-throw it so the router handles it

@@ -50,7 +50,7 @@ export default function WritePageClient({
     { category: "PRAYER", label: t.write.postTypes.prayer.label, icon: "🙏", description: t.write.postTypes.prayer.description, placeholder: t.write.postTypes.prayer.placeholder },
     { category: "CELL", label: t.write.postTypes.cell.label, icon: "💬", description: t.write.postTypes.cell.description, placeholder: t.write.postTypes.cell.placeholder, showCellTopic: true, showImageUpload: true },
     { category: "CONTENT", label: t.write.postTypes.content.label, icon: "🎬", description: t.write.postTypes.content.description, placeholder: t.write.postTypes.content.placeholder, showYoutubeUrl: true, showImageUpload: true },
-    { category: "MISSION", label: t.write.postTypes.mission.label, icon: "🌍", description: t.write.postTypes.mission.description, placeholder: t.write.postTypes.mission.placeholder, showMissionCountry: true },
+    { category: "MISSION", label: t.write.postTypes.mission.label, icon: "🌍", description: t.write.postTypes.mission.description, placeholder: t.write.postTypes.mission.placeholder, showMissionCountry: true, showYoutubeUrl: true, showImageUpload: true },
     { category: "TESTIMONY", label: t.write.postTypes.testimony.label, icon: "✨", description: t.write.postTypes.testimony.description, placeholder: t.write.postTypes.testimony.placeholder },
     { category: "REQUEST", label: t.write.postTypes.request.label, icon: "📬", description: t.write.postTypes.request.description, placeholder: t.write.postTypes.request.placeholder, showRequestType: true },
   ];
@@ -317,6 +317,10 @@ function ComposeForm({
       setError(t.write.requestTypeRequired);
       return;
     }
+    if (postType.showMissionCountry && !missionCountry) {
+      setError("선교 국가는 필수 선택 항목입니다.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
 
@@ -390,7 +394,7 @@ function ComposeForm({
         {postType.showMissionCountry && (
           <div>
             <label className="block text-[12px] font-medium text-theme-muted mb-1">
-              {t.write.missionCountryLabel}
+              {t.write.missionCountryLabel} <span className="font-normal text-red-500">*</span>
             </label>
             <select
               value={missionCountry}

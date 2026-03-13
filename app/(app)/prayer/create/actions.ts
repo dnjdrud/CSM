@@ -1,2 +1,6 @@
 "use server";
-export { createPrayerRequestAction } from "../actions";
+
+export async function createPrayerRequestActionProxy(formData: FormData): Promise<void> {
+  const { createPrayerRequestAction } = await import("../actions");
+  return createPrayerRequestAction(formData);
+}

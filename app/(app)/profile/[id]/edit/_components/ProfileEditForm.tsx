@@ -44,23 +44,45 @@ export function ProfileEditForm({ user }: Props) {
     setPending(true);
     setError(null);
     setSaved(false);
-    const result = await updateProfileAction({
-      name: name.trim(),
-      username: username.trim() || null,
-      role,
-      denomination: denomination.trim() || null,
-      faithYears: faithYears ? Number(faithYears) : null,
-      church: church.trim() || null,
-      affiliation: affiliation.trim() || null,
-      bio: bio.trim() || null,
-      supportUrl: supportUrl.trim() || null,
-    });
-    setPending(false);
-    if ("ok" in result && result.ok) {
-      setSaved(true);
-      router.refresh();
-    } else if ("error" in result) {
-      setError(result.error);
+    try {
+      // Build payload carefully: only include optional fields if user originally had
+      // a value (so they can clear it) OR if they typed something new. This prevents
+      // accidentally clearing fields that weren't returned by the DB query fallback.
+      type Payload = Parameters<typeof updateProfileAction>[0];
+      const payload: Payload = { name: name.trim(), role };
+
+      const usernameVal = username.trim() || null;
+      if (user.username !== undefined || usernameVal !== null) payload.username = usernameVal;
+
+      const bioVal = bio.trim() || null;
+      if (user.bio !== undefined || bioVal !== null) payload.bio = bioVal;
+
+      const affiliationVal = affiliation.trim() || null;
+      if (user.affiliation !== undefined || affiliationVal !== null) payload.affiliation = affiliationVal;
+
+      const churchVal = church.trim() || null;
+      if (user.church !== undefined || churchVal !== null) payload.church = churchVal;
+
+      const denominationVal = denomination.trim() || null;
+      if (user.denomination !== undefined || denominationVal !== null) payload.denomination = denominationVal;
+
+      const faithYearsVal = faithYears ? Number(faithYears) : null;
+      if (user.faithYears !== undefined || faithYearsVal !== null) payload.faithYears = faithYearsVal;
+
+      const supportUrlVal = supportUrl.trim() || null;
+      if (user.supportUrl !== undefined || supportUrlVal !== null) payload.supportUrl = supportUrlVal;
+
+      const result = await updateProfileAction(payload);
+      if ("ok" in result && result.ok) {
+        setSaved(true);
+        router.refresh();
+      } else if ("error" in result) {
+        setError(result.error);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "저장에 실패했습니다.");
+    } finally {
+      setPending(false);
     }
   }
 

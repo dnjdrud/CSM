@@ -217,17 +217,12 @@ async function PrayerTabContent({
         <p className="text-[12px] text-theme-muted">
           {t.home.followingPrayerSubtitle}
         </p>
-        <div className="flex items-center gap-3">
-          <Link href="/prayer/my" className="text-[12px] text-theme-muted hover:text-theme-text">
-            {t.home.myPrayers}
-          </Link>
-          <Link
-            href="/prayer/create"
-            className="text-[12px] font-medium text-theme-primary hover:opacity-80"
-          >
-            {t.home.addPrayer}
-          </Link>
-        </div>
+        <Link
+          href="/prayer/create"
+          className="text-[12px] font-medium text-theme-primary hover:opacity-80"
+        >
+          {t.home.addPrayer}
+        </Link>
       </div>
 
       {firstPage.error ? (

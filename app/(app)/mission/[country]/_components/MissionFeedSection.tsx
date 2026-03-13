@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar } from "@/components/ui/Avatar";
+import { YouTubeEmbed } from "@/components/content/YouTubeEmbed";
 import type { PostWithAuthor } from "@/lib/domain/types";
 import type { MissionCountry } from "@/lib/mission/countries";
 
@@ -43,6 +45,20 @@ function MissionPostCard({ post }: { post: PostWithAuthor }) {
           {post.content}
         </p>
       </Link>
+
+      {post.youtubeUrl && (
+        <div className="mt-2 pl-[38px] rounded-xl overflow-hidden">
+          <YouTubeEmbed url={post.youtubeUrl} mode="player" />
+        </div>
+      )}
+
+      {!post.youtubeUrl && Array.isArray(post.mediaUrls) && post.mediaUrls.length > 0 && post.mediaUrls[0] && (
+        <div className="mt-2 pl-[38px]">
+          <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+            <Image src={post.mediaUrls[0]} alt="첨부 사진" fill className="object-contain" unoptimized />
+          </div>
+        </div>
+      )}
 
       {Array.isArray(post.tags) && post.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2 pl-[38px]">

@@ -46,6 +46,30 @@ export async function addCommentAction(
     await addComment(payload);
     revalidatePath(`/post/${postId}`);
     revalidatePath("/feed");
+
+    // Fire mention notifications for @name / @username patterns
+    const mentionMatches = [...new Set(trimmed.match(/@([^\s@,!?.]+)/g) ?? [])];
+    if (mentionMatches.length > 0) {
+      try {
+        const { notifyMentioned } = await import("@/lib/notifications/events");
+        const { supabaseServer } = await import("@/lib/supabase/server");
+        const supabase = await supabaseServer();
+        for (const mention of mentionMatches.slice(0, 5)) {
+          const q = mention.slice(1); // strip @
+          const { data: matched } = await supabase
+            .from("users")
+            .select("id")
+            .or(`username.ilike.${q},name.ilike.${q}`)
+            .limit(3);
+          for (const u of matched ?? []) {
+            await notifyMentioned({ recipientId: u.id, actorId: session.userId, postId });
+          }
+        }
+      } catch {
+        // mention notifications are best-effort
+      }
+    }
+
     return { ok: true };
   } catch (e) {
     console.error(

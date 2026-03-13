@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser, getPrayerRequestById, listPrayerIntercessions } from "@/lib/data/repository";
 import { PRAYER_CATEGORY_LABELS } from "@/lib/domain/types";
-import { intercedeAction, removeIntercedeAction, markAnsweredAction, deletePrayerRequestAction } from "../actions";
+import { intercedeAction, removeIntercedeAction, markAnsweredAction } from "../actions";
+import { DeletePrayerButton } from "./_components/DeletePrayerButton";
 
 export const dynamic = "force-dynamic";
 
@@ -27,15 +28,7 @@ export default async function PrayerDetailPage({ params }: { params: Promise<{ i
         {/* Header */}
         <div className="px-4 py-4 border-b border-theme-border flex items-center justify-between">
           <Link href="/prayer" className="text-[12px] text-theme-muted hover:text-theme-primary">← 기도</Link>
-          {isOwner && (
-            <form action={deletePrayerRequestAction}>
-              <input type="hidden" name="id" value={prayer.id} />
-              <button type="submit" className="text-[12px] text-red-500 hover:text-red-700"
-                onClick={(e) => { if (!confirm("삭제하시겠습니까?")) e.preventDefault(); }}>
-                삭제
-              </button>
-            </form>
-          )}
+          {isOwner && <DeletePrayerButton prayerRequestId={prayer.id} />}
         </div>
 
         {/* Prayer content */}
