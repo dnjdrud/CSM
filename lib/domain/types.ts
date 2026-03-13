@@ -259,6 +259,7 @@ export interface ConversationPreview {
 export type ModerationActionType =
   | "REPORT_POST"
   | "REPORT_COMMENT"
+  | "REPORT_USER"
   | "BLOCK_USER"
   | "MUTE_USER";
 
@@ -274,7 +275,7 @@ export interface ModerationAction {
 }
 
 /** Moderation report (DB: public.moderation_reports). */
-export type ModerationReportType = "REPORT_POST" | "REPORT_COMMENT";
+export type ModerationReportType = "REPORT_POST" | "REPORT_COMMENT" | "REPORT_USER";
 
 export type ModerationReportStatus = "OPEN" | "RESOLVED";
 

@@ -1408,7 +1408,7 @@ export async function getBookmarkedPostIds(userId: string, postIds: string[]): P
 }
 
 export async function createReport(params: {
-  type: "REPORT_POST" | "REPORT_COMMENT";
+  type: "REPORT_POST" | "REPORT_COMMENT" | "REPORT_USER";
   reporterId: string;
   postId?: string;
   commentId?: string;

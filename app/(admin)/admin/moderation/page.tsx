@@ -15,6 +15,12 @@ function formatDate(iso: string) {
   });
 }
 
+const TYPE_LABEL: Record<string, string> = {
+  REPORT_POST: "게시글",
+  REPORT_COMMENT: "댓글",
+  REPORT_USER: "유저",
+};
+
 export default async function AdminModerationPage() {
   const reports = await listOpenReports();
   const userIds = new Set<string>();
@@ -57,7 +63,15 @@ export default async function AdminModerationPage() {
             <tbody>
               {reports.map((r) => (
                 <tr key={r.id} className="border-b border-gray-100">
-                  <td className="py-3 pr-4 text-gray-800">{r.type}</td>
+                  <td className="py-3 pr-4">
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                      r.type === "REPORT_USER" ? "bg-orange-50 text-orange-700" :
+                      r.type === "REPORT_POST" ? "bg-blue-50 text-blue-700" :
+                      "bg-gray-100 text-gray-600"
+                    }`}>
+                      {TYPE_LABEL[r.type] ?? r.type}
+                    </span>
+                  </td>
                   <td className="py-3 pr-4 text-gray-600">{r.reason ?? "—"}</td>
                   <td className="py-3 pr-4">
                     <Link

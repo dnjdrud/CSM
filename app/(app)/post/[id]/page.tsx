@@ -43,8 +43,10 @@ export default async function PostPage({
     );
   }
 
-  const allComments = await listCommentsByPostId(id);
-  const comments = currentUser
+  const allowComments = post.category !== "PRAYER";
+
+  const allComments = allowComments ? await listCommentsByPostId(id) : [];
+  const comments = allowComments && currentUser
     ? allComments.filter(
         (c) =>
           !isBlocked(currentUser.id, c.authorId) && !isMuted(currentUser.id, c.authorId)
@@ -71,6 +73,7 @@ export default async function PostPage({
           postId={post.id}
           currentUserId={currentUser?.id ?? null}
           comments={comments}
+          allowComments={allowComments}
         />
       </article>
     </TimelineContainer>

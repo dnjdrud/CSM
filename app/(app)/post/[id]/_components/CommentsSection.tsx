@@ -10,19 +10,26 @@ type Props = {
   postId: string;
   currentUserId: string | null;
   comments: CommentWithAuthor[];
+  allowComments?: boolean;
 };
 
-export async function CommentsSection({ postId, currentUserId, comments }: Props) {
+export async function CommentsSection({ postId, currentUserId, comments, allowComments = true }: Props) {
   const commentIds = comments.map((c) => c.id);
   const likeData = await getCommentLikeCounts(commentIds, currentUserId);
 
   return (
     <section className="mt-8 pt-6 border-t border-gray-200" aria-labelledby="comments-heading">
       <h2 id="comments-heading" className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-4">
-        Comments
+        {allowComments ? "Comments" : "기도 응원"}
       </h2>
 
-      {currentUserId && (
+      {!allowComments && (
+        <p className="mb-4 text-[13px] text-gray-400 italic">
+          기도 게시글에는 댓글을 달 수 없습니다. 반응으로 함께 기도해주세요.
+        </p>
+      )}
+
+      {allowComments && currentUserId && (
         <form
           action={addCommentFormAction}
           className="mb-4 space-y-2"
@@ -49,7 +56,7 @@ export async function CommentsSection({ postId, currentUserId, comments }: Props
       <div className="mt-4">
         <CommentsLive
           postId={postId}
-          currentUserId={currentUserId}
+          currentUserId={allowComments ? currentUserId : null}
           initialComments={comments}
           likeData={likeData}
         />

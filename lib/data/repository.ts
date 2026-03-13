@@ -818,7 +818,7 @@ export function createModerationAction(action: Omit<ModerationAction, "id" | "cr
 
 /** Create a moderation report (Supabase: public.moderation_reports; memory: createModerationAction). */
 export async function createReport(params: {
-  type: "REPORT_POST" | "REPORT_COMMENT";
+  type: "REPORT_POST" | "REPORT_COMMENT" | "REPORT_USER";
   reporterId: string;
   postId?: string;
   commentId?: string;

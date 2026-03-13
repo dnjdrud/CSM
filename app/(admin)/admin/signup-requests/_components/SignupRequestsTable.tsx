@@ -22,9 +22,23 @@ function formatDate(iso: string | null): string {
   }
 }
 
-type Props = { requests: SignupRequest[] };
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: "대기",
+  APPROVED: "승인",
+  REJECTED: "거절",
+  COMPLETED: "완료",
+};
 
-export function SignupRequestsTable({ requests }: Props) {
+const STATUS_COLOR: Record<string, string> = {
+  PENDING: "text-yellow-700 bg-yellow-50",
+  APPROVED: "text-blue-700 bg-blue-50",
+  REJECTED: "text-red-700 bg-red-50",
+  COMPLETED: "text-green-700 bg-green-50",
+};
+
+type Props = { requests: SignupRequest[]; readOnly?: boolean };
+
+export function SignupRequestsTable({ requests, readOnly = false }: Props) {
   const router = useRouter();
   const toast = useToast();
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -79,7 +93,10 @@ export function SignupRequestsTable({ requests }: Props) {
             <th className="text-left py-2 pr-4 font-medium text-gray-700">Role</th>
             <th className="text-left py-2 pr-4 font-medium text-gray-700">Church</th>
             <th className="text-left py-2 pr-4 font-medium text-gray-700">Submitted</th>
-            <th className="text-left py-2 font-medium text-gray-700">Actions</th>
+            {!readOnly && <th className="text-left py-2 pr-4 font-medium text-gray-700">Reviewed</th>}
+            <th className="text-left py-2 font-medium text-gray-700">
+              {readOnly ? "Status" : "Actions"}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -90,33 +107,43 @@ export function SignupRequestsTable({ requests }: Props) {
               <td className="py-2 pr-4 text-gray-700">{ROLE_DISPLAY[r.role] ?? r.role}</td>
               <td className="py-2 pr-4 text-gray-700">{r.church ?? "—"}</td>
               <td className="py-2 pr-4 text-gray-600">{formatDate(r.createdAt)}</td>
+              {!readOnly && (
+                <td className="py-2 pr-4 text-gray-600">{formatDate(r.reviewedAt ?? null)}</td>
+              )}
               <td className="py-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleApprove(r.id)}
-                    disabled={pendingId !== null}
-                    className="rounded-md bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-                  >
-                    {pendingId === r.id ? "Approving…" : "Approve"}
-                  </button>
-                  <span className="text-gray-400">|</span>
-                  <input
-                    type="text"
-                    placeholder="Reject note (optional)"
-                    value={rejectNote[r.id] ?? ""}
-                    onChange={(e) => setRejectNote((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                    className="w-40 rounded border border-gray-200 px-2 py-1 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleReject(r.id)}
-                    disabled={pendingId !== null}
-                    className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    {pendingId === r.id ? "Rejecting…" : "Reject"}
-                  </button>
-                </div>
+                {readOnly ? (
+                  <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium ${STATUS_COLOR[r.status] ?? "text-gray-600 bg-gray-100"}`}>
+                    {STATUS_LABEL[r.status] ?? r.status}
+                    {r.reviewNote ? ` — ${r.reviewNote}` : ""}
+                  </span>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleApprove(r.id)}
+                      disabled={pendingId !== null}
+                      className="rounded-md bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                    >
+                      {pendingId === r.id ? "Approving…" : "Approve"}
+                    </button>
+                    <span className="text-gray-400">|</span>
+                    <input
+                      type="text"
+                      placeholder="Reject note (optional)"
+                      value={rejectNote[r.id] ?? ""}
+                      onChange={(e) => setRejectNote((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                      className="w-40 rounded border border-gray-200 px-2 py-1 text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleReject(r.id)}
+                      disabled={pendingId !== null}
+                      className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {pendingId === r.id ? "Rejecting…" : "Reject"}
+                    </button>
+                  </div>
+                )}
               </td>
             </tr>
           ))}

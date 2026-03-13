@@ -282,3 +282,60 @@ export async function createDailyPrayer(adminId: string, customContent?: string)
 
   return { postId: row.id, reused: false };
 }
+
+export interface AdminPostRow {
+  id: string;
+  authorId: string;
+  authorName: string;
+  category: string;
+  content: string;
+  visibility: string;
+  createdAt: string;
+  hiddenAt: string | null;
+  hiddenBy: string | null;
+}
+
+export async function listAdminPosts(params: {
+  category?: string;
+  hiddenOnly?: boolean;
+  limit?: number;
+}): Promise<AdminPostRow[]> {
+  const supabase = await supabaseServer();
+  let q = supabase
+    .from("posts")
+    .select("id, author_id, category, content, visibility, created_at, hidden_at, hidden_by, users!posts_author_id_fkey(name)")
+    .order("created_at", { ascending: false })
+    .limit(params.limit ?? 100);
+
+  if (params.category) {
+    q = q.eq("category", params.category);
+  }
+  if (params.hiddenOnly) {
+    q = q.not("hidden_at", "is", null);
+  }
+
+  const { data: rows } = await q;
+  return (rows ?? []).map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    authorId: r.author_id as string,
+    authorName: (r.users as { name: string | null } | null)?.name ?? "Unknown",
+    category: r.category as string,
+    content: (r.content as string ?? "").slice(0, 120),
+    visibility: r.visibility as string,
+    createdAt: r.created_at as string,
+    hiddenAt: r.hidden_at as string | null,
+    hiddenBy: r.hidden_by as string | null,
+  }));
+}
+
+export async function unhidePost(adminId: string, postId: string): Promise<void> {
+  const supabase = await supabaseServer();
+  await supabase.from("posts").update({ hidden_at: null, hidden_by: null }).eq("id", postId);
+  await logAdminAction({
+    actorId: adminId,
+    action: ADMIN_ACTION.UNHIDE_POST,
+    targetType: AUDIT_TARGET_TYPE.POST,
+    targetId: postId,
+    metadata: {},
+  });
+}
