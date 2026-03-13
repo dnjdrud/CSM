@@ -6,7 +6,6 @@ import {
   MISSION_REGIONS,
   groupByRegion,
 } from "@/lib/mission/countries";
-import { WorldMapSelector } from "./_components/WorldMapSelector";
 
 export const metadata = { title: "선교 – Cellah" };
 export const dynamic = "force-dynamic";
@@ -25,11 +24,6 @@ export default async function MissionPage() {
           <p className="text-[13px] text-theme-muted mt-0.5 leading-relaxed">
             국가를 선택해 해당 나라의 선교 소식을 확인하세요
           </p>
-        </div>
-
-        {/* World Map */}
-        <div className="px-3">
-          <WorldMapSelector />
         </div>
 
         {/* Region-organized country grid */}

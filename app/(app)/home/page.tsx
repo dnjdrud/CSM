@@ -20,14 +20,15 @@ import { HomeInfiniteList } from "./_components/HomeInfiniteList";
 import { PrayerInfiniteList } from "./_components/PrayerInfiniteList";
 import type { HomeTab } from "./_components/HomeTabs";
 import { getRoleUX } from "@/lib/config/roleUX";
+import { getServerT, getServerLocale } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "홈 – Cellah" };
 
 const FEED_PAGE_SIZE = 20;
 
-function getTodayLabel(): string {
-  return new Date().toLocaleDateString("ko-KR", {
+function getTodayLabel(locale: string): string {
+  return new Date().toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
     month: "long",
     day: "numeric",
     weekday: "long",
@@ -47,7 +48,6 @@ export default async function HomePage({
     <TimelineContainer>
       <h1 className="sr-only">홈</h1>
 
-      {/* Feed / Prayer 탭 바 */}
       <Suspense fallback={<div className="h-12 border-b border-theme-border" />}>
         <HomeTabs activeTab={activeTab} />
       </Suspense>
@@ -68,6 +68,7 @@ async function FeedTabContent({
 }: {
   currentUser: Awaited<ReturnType<typeof getCurrentUser>>;
 }) {
+  const t = await getServerT();
   const [dailyPrayer, firstPage, followingIds] = await Promise.all([
     getTodaysDailyPrayer(),
     listFeedPostsPage({
@@ -100,10 +101,8 @@ async function FeedTabContent({
 
   return (
     <div>
-      {/* 오늘의 기도 배너 — Prayer 탭 진입 유도 */}
       <DailyPrayerBanner dailyPrayer={dailyPrayer} />
 
-      {/* 글쓰기 + 역할별 CTA */}
       {currentUser && (
         <div className="border-b border-theme-border/60 px-4 py-3 space-y-2">
           <p className="text-[12px] text-theme-muted">
@@ -113,17 +112,15 @@ async function FeedTabContent({
         </div>
       )}
 
-      {/* 팔로우 0명일 때 추천 사람 */}
       {currentUser && followingIds.length === 0 && (
         <Suspense fallback={null}>
           <SuggestedPeople currentUserId={currentUser.id} role={currentUser.role} />
         </Suspense>
       )}
 
-      {/* 피드 목록 */}
       {firstPage.error ? (
         <div className="mx-4 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          피드를 불러올 수 없습니다. {firstPage.error}
+          {t.home.feedError} {firstPage.error}
         </div>
       ) : (
         <HomeInfiniteList
@@ -142,15 +139,18 @@ async function FeedTabContent({
 
 /* ─────────────────────────────── Daily Prayer Banner ── */
 
-function DailyPrayerBanner({
+async function DailyPrayerBanner({
   dailyPrayer,
 }: {
   dailyPrayer: { id: string; content: string } | null;
 }) {
+  const t = await getServerT();
+  const locale = await getServerLocale();
+
   return (
     <div className="border-b border-theme-border/60 bg-gradient-to-b from-theme-surface-2/40 to-transparent px-4 py-4">
       <p className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-2">
-        {getTodayLabel()}
+        {getTodayLabel(locale)}
       </p>
       {dailyPrayer ? (
         <Link href={`/post/${dailyPrayer.id}`} className="block group">
@@ -158,13 +158,13 @@ function DailyPrayerBanner({
             <span className="text-xl shrink-0 mt-0.5" aria-hidden>🙏</span>
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-theme-text group-hover:text-theme-primary transition-colors">
-                오늘의 기도
+                {t.home.dailyPrayer}
               </p>
               <p className="text-[14px] text-theme-text leading-relaxed line-clamp-2 mt-0.5">
                 {dailyPrayer.content}
               </p>
               <p className="text-[12px] text-theme-primary mt-1.5 font-medium">
-                함께 기도하기 →
+                {t.home.prayTogether}
               </p>
             </div>
           </div>
@@ -173,7 +173,7 @@ function DailyPrayerBanner({
         <Link href="/home?tab=prayer" className="flex items-center gap-3 group">
           <span className="text-xl shrink-0" aria-hidden>🙏</span>
           <p className="text-[14px] text-theme-muted group-hover:text-theme-primary transition-colors">
-            기도 게시판 보기 →
+            {t.home.viewPrayerBoard}
           </p>
         </Link>
       )}
@@ -188,6 +188,7 @@ async function PrayerTabContent({
 }: {
   currentUser: Awaited<ReturnType<typeof getCurrentUser>>;
 }) {
+  const t = await getServerT();
   const [firstPage, followingIds] = await Promise.all([
     listFeedPostsPage({
       currentUserId: currentUser?.id ?? null,
@@ -212,27 +213,26 @@ async function PrayerTabContent({
 
   return (
     <div>
-      {/* 기도 제목 쓰기 / 내 기도 제목 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border/60 bg-theme-surface-2/30">
         <p className="text-[12px] text-theme-muted">
-          팔로우한 사람들의 기도 제목
+          {t.home.followingPrayerSubtitle}
         </p>
         <div className="flex items-center gap-3">
           <Link href="/prayer/my" className="text-[12px] text-theme-muted hover:text-theme-text">
-            내 기도
+            {t.home.myPrayers}
           </Link>
           <Link
             href="/prayer/create"
             className="text-[12px] font-medium text-theme-primary hover:opacity-80"
           >
-            + 기도 제목
+            {t.home.addPrayer}
           </Link>
         </div>
       </div>
 
       {firstPage.error ? (
         <div className="mx-4 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          기도 제목을 불러올 수 없습니다. {firstPage.error}
+          {t.home.prayerError} {firstPage.error}
         </div>
       ) : (
         <PrayerInfiniteList

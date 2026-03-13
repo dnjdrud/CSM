@@ -8,6 +8,7 @@ import { SubscribeButton } from "@/components/ui/SubscribeButton";
 import { ProfileTabs } from "./ProfileTabs";
 import { ProfileFollowButton } from "./ProfileFollowButton";
 import { UserActionsMenu } from "./UserActionsMenu";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   user: User;
@@ -18,9 +19,7 @@ type Props = {
   postsCount: number;
   followerCount: number;
   followingCount: number;
-  /** 타인 프로필 전용: 구독자 수 */
   subscriberCount?: number;
-  /** 타인 프로필 전용: 현재 유저가 구독 중인지 */
   isSubscribed?: boolean;
   children: React.ReactNode;
 };
@@ -38,21 +37,20 @@ export function ProfileShell({
   isSubscribed = false,
   children,
 }: Props) {
+  const t = useT();
   const isOwnProfile = currentUserId === user.id;
 
   return (
     <div className="bg-theme-bg min-h-full">
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="mx-auto w-full max-w-2xl min-h-screen border-x border-theme-border bg-theme-surface">
 
-        {/* 프로필 헤더 */}
         <section className="px-4 pt-4 pb-0">
-          {/* 상단 액션 바 */}
           <div className="flex items-center justify-between gap-2 mb-3">
             <Link
               href="/home"
               className="text-[13px] text-theme-muted hover:text-theme-text transition-colors"
             >
-              ← 홈
+              {t.profilePage.backHome}
             </Link>
             <div className="flex items-center gap-2">
               {currentUserId && !isOwnProfile && (
@@ -71,20 +69,14 @@ export function ProfileShell({
                   href="/settings/profile"
                   className="text-[13px] font-medium px-3 py-1.5 rounded-xl border border-theme-border bg-theme-surface text-theme-text hover:border-theme-primary/50 transition-all"
                 >
-                  프로필 수정
+                  {t.profilePage.editProfile}
                 </Link>
               )}
             </div>
           </div>
 
-          {/* 아바타 + 기본 정보 */}
           <div className="flex items-start gap-4 mb-3">
-            <Avatar
-              name={user.name}
-              src={user.avatarUrl}
-              size="md"
-              className="shrink-0"
-            />
+            <Avatar name={user.name} src={user.avatarUrl} size="md" className="shrink-0" />
             <div className="min-w-0 flex-1 space-y-1">
               <h1 className="text-[18px] font-bold text-theme-text leading-tight">
                 {user.name}
@@ -100,14 +92,12 @@ export function ProfileShell({
             </div>
           </div>
 
-          {/* bio */}
           {user.bio && (
             <p className="text-[14px] text-theme-text leading-relaxed whitespace-pre-wrap mb-3">
               {user.bio}
             </p>
           )}
 
-          {/* affiliation / 신앙연수 */}
           {(user.affiliation || user.faithYears != null) && (
             <div className="flex flex-wrap gap-x-3 text-[12px] text-theme-muted mb-3">
               {user.affiliation && <span>{user.affiliation}</span>}
@@ -115,38 +105,29 @@ export function ProfileShell({
             </div>
           )}
 
-          {/* 팔로워 / 팔로잉 / 게시글 수 */}
           <div className="flex items-center gap-5 text-[13px] text-theme-muted mb-3">
             <span>
               <strong className="text-theme-text font-semibold">{postsCount}</strong>{" "}
-              게시글
+              {t.profile.posts}
             </span>
-            <Link
-              href={`/profile/${user.id}/followers`}
-              className="hover:text-theme-text transition-colors"
-            >
+            <Link href={`/profile/${user.id}/followers`} className="hover:text-theme-text transition-colors">
               <strong className="text-theme-text font-semibold">{followerCount}</strong>{" "}
-              팔로워
+              {t.profile.followers}
             </Link>
-            <Link
-              href={`/profile/${user.id}/following`}
-              className="hover:text-theme-text transition-colors"
-            >
+            <Link href={`/profile/${user.id}/following`} className="hover:text-theme-text transition-colors">
               <strong className="text-theme-text font-semibold">{followingCount}</strong>{" "}
-              팔로잉
+              {t.profile.following}
             </Link>
-            {/* 구독자 수 (까마귀) */}
             {subscriberCount > 0 && (
               <span>
                 <strong className="text-theme-text font-semibold">
                   {subscriberCount.toLocaleString()}
                 </strong>{" "}
-                까마귀
+                {t.profilePage.crowTab}
               </span>
             )}
           </div>
 
-          {/* 타인 프로필: 까마귀 되기 버튼 */}
           {!isOwnProfile && (
             <div className="mb-4">
               <SubscribeButton
@@ -160,12 +141,10 @@ export function ProfileShell({
           )}
         </section>
 
-        {/* 탭 */}
         <div className="sticky top-0 z-10 bg-theme-surface border-b border-theme-border">
           <ProfileTabs profileId={user.id} />
         </div>
 
-        {/* 탭 콘텐츠 */}
         <div>{children}</div>
       </div>
     </div>

@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
 export type ProfileTabKey = "posts" | "contents" | "crow" | "spiritual";
 
-const TABS: { value: ProfileTabKey; label: string; icon: string }[] = [
-  { value: "posts",     label: "게시글", icon: "📝" },
-  { value: "contents",  label: "콘텐츠", icon: "🎬" },
-  { value: "crow",      label: "까마귀", icon: "🐦" },
-  { value: "spiritual", label: "영성",   icon: "✝️" },
-];
-
 export function ProfileTabs({ profileId }: { profileId: string }) {
+  const t = useT();
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get("tab") as ProfileTabKey) ?? "posts";
 
+  const TABS: { value: ProfileTabKey; label: string; icon: string }[] = [
+    { value: "posts",     label: t.profilePage.postsTab,    icon: "📝" },
+    { value: "contents",  label: t.profilePage.contentsTab, icon: "🎬" },
+    { value: "crow",      label: t.profilePage.crowTab,     icon: "🐦" },
+    { value: "spiritual", label: t.profilePage.spiritualTab, icon: "✝️" },
+  ];
+
   return (
-    <nav className="flex border-b border-theme-border" aria-label="프로필 탭">
+    <nav className="flex border-b border-theme-border" aria-label={t.profilePage.postsTab}>
       {TABS.map(({ value, label, icon }) => {
         const href =
           value === "posts"
@@ -34,9 +36,7 @@ export function ProfileTabs({ profileId }: { profileId: string }) {
                 : "border-transparent text-theme-muted hover:text-theme-text hover:border-theme-border"
             }`}
           >
-            <span className="text-[16px] leading-none" aria-hidden>
-              {icon}
-            </span>
+            <span className="text-[16px] leading-none" aria-hidden>{icon}</span>
             {label}
           </Link>
         );

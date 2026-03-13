@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PostCard } from "@/components/PostCard";
 import type { PostWithAuthor } from "@/lib/domain/types";
+import { getServerT } from "@/lib/i18n/server";
 
 type Props = {
   posts: PostWithAuthor[];
@@ -9,11 +10,13 @@ type Props = {
   isOwnProfile: boolean;
 };
 
-export function ProfilePostsTab({ posts, currentUserId, blocked, isOwnProfile }: Props) {
+export async function ProfilePostsTab({ posts, currentUserId, blocked, isOwnProfile }: Props) {
+  const t = await getServerT();
+
   if (blocked) {
     return (
       <div className="px-4 py-12 text-center text-[14px] text-theme-muted">
-        이 사용자를 차단했습니다.
+        {t.profilePage.blocked}
       </div>
     );
   }
@@ -23,14 +26,14 @@ export function ProfilePostsTab({ posts, currentUserId, blocked, isOwnProfile }:
       <div className="px-4 py-16 text-center space-y-3">
         <span className="text-4xl" aria-hidden>📝</span>
         <p className="text-[15px] font-medium text-theme-text">
-          {isOwnProfile ? "아직 작성한 글이 없습니다" : "아직 게시글이 없습니다"}
+          {isOwnProfile ? t.profilePage.noOwnPosts : t.profilePage.noPosts}
         </p>
         {isOwnProfile && (
           <Link
             href="/write"
             className="inline-block text-[13px] text-theme-primary hover:opacity-80 font-medium"
           >
-            첫 글 작성하기 →
+            {t.profilePage.writeFirst} →
           </Link>
         )}
       </div>

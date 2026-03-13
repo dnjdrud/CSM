@@ -1,17 +1,19 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useT } from "@/lib/i18n";
 
 export type HomeTab = "feed" | "prayer";
 
-const TABS: { key: HomeTab; label: string; icon: string }[] = [
-  { key: "feed",   label: "피드",  icon: "✦" },
-  { key: "prayer", label: "기도",  icon: "🙏" },
-];
-
 export function HomeTabs({ activeTab }: { activeTab: HomeTab }) {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const TABS: { key: HomeTab; label: string; icon: string }[] = [
+    { key: "feed",   label: t.home.feedTab,   icon: "✦" },
+    { key: "prayer", label: t.home.prayerTab, icon: "🙏" },
+  ];
 
   function setTab(tab: HomeTab) {
     const next = new URLSearchParams(searchParams);
@@ -27,7 +29,7 @@ export function HomeTabs({ activeTab }: { activeTab: HomeTab }) {
   return (
     <div
       role="tablist"
-      aria-label="홈 탭"
+      aria-label={t.home.feedTab}
       className="flex border-b border-theme-border sticky top-0 z-10 bg-theme-surface/95 backdrop-blur-sm"
     >
       {TABS.map((tab) => {

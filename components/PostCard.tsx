@@ -18,14 +18,22 @@ import { PostActionsMenu } from "@/app/(app)/post/[id]/_components/PostActionsMe
 import { FollowButton } from "@/components/FollowButton";
 import { useClientSession } from "@/lib/auth/useClientSession";
 import { ReactorsModal } from "@/components/ReactorsModal";
+import { useT } from "@/lib/i18n";
 
-function relativeTime(iso: string): string {
+function relativeTime(iso: string, locale: string): string {
   const d = new Date(iso);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffM = Math.floor(diffMs / 60000);
   const diffH = Math.floor(diffMs / 3600000);
   const diffD = Math.floor(diffMs / 86400000);
+  if (locale === "en") {
+    if (diffM < 1) return "just now";
+    if (diffM < 60) return `${diffM}m`;
+    if (diffH < 24) return `${diffH}h`;
+    if (diffD < 7) return `${diffD}d`;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
   if (diffM < 1) return "방금";
   if (diffM < 60) return `${diffM}분`;
   if (diffH < 24) return `${diffH}시간`;
@@ -38,7 +46,9 @@ type CommentWithAuthor = Comment & { author: User };
 type AddCommentAction = (postId: string, content: string, parentId?: string) => Promise<{ ok: boolean; error?: string }>;
 type DeleteCommentAction = (commentId: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
 type UpdateCommentAction = (commentId: string, content: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
+
 function ShareButton({ postId }: { postId: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   async function handleCopy() {
     const url = `${window.location.origin}/post/${postId}`;
@@ -61,8 +71,8 @@ function ShareButton({ postId }: { postId: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      aria-label="링크 복사"
-      title={copied ? "복사됨!" : "링크 복사"}
+      aria-label={t.postCard.shareLink}
+      title={copied ? t.postCard.copied : t.postCard.shareLink}
       className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-transparent bg-transparent px-2 py-2 text-theme-muted transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2"
     >
       {copied ? (
@@ -100,7 +110,6 @@ export function PostCard({
   post: PostWithAuthor;
   currentUserId?: string | null;
   compact?: boolean;
-  /** When set, show Follow button for post author (feed only). */
   initialFollowing?: boolean;
   initialBookmarked?: boolean;
   onToggleReaction?: (postId: string, type: ReactionType) => Promise<{ ok?: boolean; reacted?: boolean } | void>;
@@ -113,6 +122,7 @@ export function PostCard({
   deletePostAction?: DeletePostAction;
   updatePostAction?: UpdatePostAction;
 }) {
+  const t = useT();
   const router = useRouter();
   const { userId: clientUserId } = useClientSession();
   const effectiveUserId = currentUserId ?? clientUserId;
@@ -130,9 +140,12 @@ export function PostCard({
   const canReact = Boolean(onToggleReaction);
   const canCommentInline = Boolean(getCommentsForPost && effectiveUserId != null);
   const isDailyPrayer =
-    post.isDailyPrayer === true || post.tags?.some((t) => t.toLowerCase() === "daily-prayer");
+    post.isDailyPrayer === true || post.tags?.some((tag) => tag.toLowerCase() === "daily-prayer");
   const isTestimony = post.category === "TESTIMONY";
   const shouldClamp = compact && post.content.split("\n").length > CONTENT_CLAMP_LINES;
+
+  // Detect locale from t (ko has Korean strings)
+  const locale = t.common.save === "저장" ? "ko" : "en";
 
   const loadComments = useCallback(async () => {
     if (!getCommentsForPost) return;
@@ -166,23 +179,14 @@ export function PostCard({
     const prevCounts = counts;
     setResponses((prev) => ({ ...prev, prayed: !prev.prayed }));
     setCounts((prev) => ({ ...prev, prayed: turningOn ? prev.prayed + 1 : Math.max(0, prev.prayed - 1) }));
-    if (turningOn) {
-      setJustActivated("prayed");
-      setTimeout(() => setJustActivated(null), 320);
-    }
+    if (turningOn) { setJustActivated("prayed"); setTimeout(() => setJustActivated(null), 320); }
     try {
       const result = await onToggleReaction(post.id, "PRAYED");
-      if (result && result.ok === false) {
-        setResponses(prevResponses);
-        setCounts(prevCounts);
-      } else {
-        router.refresh();
-      }
-    } catch {
-      setResponses(prevResponses);
-      setCounts(prevCounts);
-    }
+      if (result && result.ok === false) { setResponses(prevResponses); setCounts(prevCounts); }
+      else router.refresh();
+    } catch { setResponses(prevResponses); setCounts(prevCounts); }
   }
+
   async function handleWithYou() {
     if (!onToggleReaction) return;
     const turningOn = !responses.withYou;
@@ -190,22 +194,12 @@ export function PostCard({
     const prevCounts = counts;
     setResponses((prev) => ({ ...prev, withYou: !prev.withYou }));
     setCounts((prev) => ({ ...prev, withYou: turningOn ? prev.withYou + 1 : Math.max(0, prev.withYou - 1) }));
-    if (turningOn) {
-      setJustActivated("withYou");
-      setTimeout(() => setJustActivated(null), 320);
-    }
+    if (turningOn) { setJustActivated("withYou"); setTimeout(() => setJustActivated(null), 320); }
     try {
       const result = await onToggleReaction(post.id, "WITH_YOU");
-      if (result && result.ok === false) {
-        setResponses(prevResponses);
-        setCounts(prevCounts);
-      } else {
-        router.refresh();
-      }
-    } catch {
-      setResponses(prevResponses);
-      setCounts(prevCounts);
-    }
+      if (result && result.ok === false) { setResponses(prevResponses); setCounts(prevCounts); }
+      else router.refresh();
+    } catch { setResponses(prevResponses); setCounts(prevCounts); }
   }
 
   async function handleBookmark() {
@@ -215,9 +209,7 @@ export function PostCard({
     try {
       const result = await onToggleBookmark(post.id);
       if (result && result.ok === false) setBookmarked(prev);
-    } catch {
-      setBookmarked(prev);
-    }
+    } catch { setBookmarked(prev); }
   }
 
   async function openReactorsModal(type: "PRAYED" | "WITH_YOU") {
@@ -232,22 +224,16 @@ export function PostCard({
     <Card
       role="article"
       data-post-id={post.id}
-      className={
-        isDailyPrayer && !isTestimony
-          ? "border-theme-accent/30 bg-theme-surface-2/30"
-          : undefined
-      }
+      className={isDailyPrayer && !isTestimony ? "border-theme-accent/30 bg-theme-surface-2/30" : undefined}
     >
       <CardContent className="py-4 px-4 sm:px-5">
       {isTestimony && (
         <div className="mb-2">
-          <Badge variant="testimony">간증</Badge>
+          <Badge variant="testimony">{t.postCard.testimony}</Badge>
         </div>
       )}
       {isDailyPrayer && !isTestimony && (
-        <p className="mb-2 text-[12px] text-theme-muted">
-          오늘의 기도
-        </p>
+        <p className="mb-2 text-[12px] text-theme-muted">{t.postCard.dailyPrayer}</p>
       )}
 
       <header className="flex items-start gap-3">
@@ -260,9 +246,7 @@ export function PostCard({
             >
               {post.author.name}
             </Link>
-            <span className="text-[12px] text-theme-muted">
-              {ROLE_DISPLAY[post.author.role]}
-            </span>
+            <span className="text-[12px] text-theme-muted">{ROLE_DISPLAY[post.author.role]}</span>
             {post.author.affiliation && (
               <span className="text-[12px] text-theme-muted truncate" title={post.author.affiliation}>
                 · {post.author.affiliation}
@@ -271,7 +255,7 @@ export function PostCard({
           </div>
           <div className="mt-0.5 flex items-center gap-1.5">
             <time dateTime={post.createdAt} className="text-[11px] text-theme-muted">
-              {relativeTime(post.createdAt)}
+              {relativeTime(post.createdAt, locale)}
             </time>
             {post.visibility === "PRIVATE" && (
               <span className="text-[11px] text-theme-muted" title="나만 보기" aria-label="비공개">🔒</span>
@@ -293,11 +277,7 @@ export function PostCard({
             />
           )}
           {!isAuthor && effectiveUserId != null && initialFollowing !== undefined && (
-            <FollowButton
-              followingId={post.authorId}
-              initialFollowing={initialFollowing}
-              compact
-            />
+            <FollowButton followingId={post.authorId} initialFollowing={initialFollowing} compact />
           )}
         </div>
       </header>
@@ -312,7 +292,7 @@ export function PostCard({
               href={`/post/${post.id}`}
               className="mt-1 inline-block text-xs font-medium text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
             >
-              더 보기
+              {t.postCard.readMore}
             </Link>
           </>
         ) : (
@@ -324,13 +304,7 @@ export function PostCard({
 
       {Array.isArray(post.mediaUrls) && post.mediaUrls.length > 0 && post.mediaUrls[0] && (
         <div className="mt-3 relative w-full aspect-video rounded-xl overflow-hidden bg-black">
-          <Image
-            src={post.mediaUrls[0]}
-            alt="첨부 사진"
-            fill
-            className="object-contain"
-            unoptimized
-          />
+          <Image src={post.mediaUrls[0]} alt={t.postCard.photoAlt} fill className="object-contain" unoptimized />
         </div>
       )}
 
@@ -361,21 +335,19 @@ export function PostCard({
               className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "prayed" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.prayed ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
             >
               <span aria-hidden>🙏</span>
-              기도했어요
+              {t.reactions.prayed}
               {counts.prayed > 0 && (
                 getReactorsAction ? (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openReactorsModal("PRAYED"); }}
                     className="ml-1 tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
-                    aria-label={`${counts.prayed}명이 기도했습니다. 클릭하여 목록 보기`}
+                    aria-label={`${counts.prayed} prayed`}
                   >
                     {counts.prayed}
                   </button>
                 ) : (
-                  <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.prayed} prayed`}>
-                    {counts.prayed}
-                  </span>
+                  <span className="ml-1 tabular-nums text-theme-muted">{counts.prayed}</span>
                 )
               )}
             </button>
@@ -385,21 +357,19 @@ export function PostCard({
               className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "withYou" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.withYou ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
             >
               <span aria-hidden>🤍</span>
-              함께해요
+              {t.reactions.withYou}
               {counts.withYou > 0 && (
                 getReactorsAction ? (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openReactorsModal("WITH_YOU"); }}
                     className="ml-1 tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
-                    aria-label={`${counts.withYou}명이 함께합니다. 클릭하여 목록 보기`}
+                    aria-label={`${counts.withYou} with you`}
                   >
                     {counts.withYou}
                   </button>
                 ) : (
-                  <span className="ml-1 tabular-nums text-theme-muted" aria-label={`${counts.withYou} with you`}>
-                    {counts.withYou}
-                  </span>
+                  <span className="ml-1 tabular-nums text-theme-muted">{counts.withYou}</span>
                 )
               )}
             </button>
@@ -414,11 +384,9 @@ export function PostCard({
             className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${commentsOpen ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
           >
             <span aria-hidden>💬</span>
-            댓글
+            {t.postCard.comment}
             {commentCount > 0 && (
-              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`댓글 ${commentCount}개`}>
-                {commentCount}
-              </span>
+              <span className="ml-1 tabular-nums text-theme-muted">{commentCount}</span>
             )}
           </button>
         ) : (
@@ -427,11 +395,9 @@ export function PostCard({
             className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2"
           >
             <span aria-hidden>💬</span>
-            댓글
+            {t.postCard.comment}
             {commentCount > 0 && (
-              <span className="ml-1 tabular-nums text-theme-muted" aria-label={`댓글 ${commentCount}개`}>
-                {commentCount}
-              </span>
+              <span className="ml-1 tabular-nums text-theme-muted">{commentCount}</span>
             )}
           </Link>
         )}
@@ -440,7 +406,7 @@ export function PostCard({
           <button
             type="button"
             onClick={handleBookmark}
-            aria-label={bookmarked ? "북마크 해제" : "북마크 추가"}
+            aria-label={bookmarked ? t.postCard.unbookmark : t.postCard.bookmark}
             className={`ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-transparent bg-transparent px-2 py-2 transition-colors duration-200 hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${bookmarked ? "text-theme-text" : "text-theme-muted"}`}
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -453,59 +419,32 @@ export function PostCard({
       {getCommentsForPost && commentsOpen && (
         <div id={`comments-${post.id}`} className="mt-4 border-t border-theme-border pt-4 pb-2">
           <h3 className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-3">
-            댓글
+            {t.postCard.comment}
           </h3>
           <div className="pl-3 sm:pl-4 text-[13px] leading-6 text-theme-text">
           {commentsLoading && comments === null ? (
             <>
               {canCommentInline && (
-                <CommentForm
-                  postId={post.id}
-                  onSuccess={handleCommentSuccess}
-                  addCommentAction={addCommentActionProp}
-                />
+                <CommentForm postId={post.id} onSuccess={handleCommentSuccess} addCommentAction={addCommentActionProp} />
               )}
               <div className="mt-4">
-                <CommentList
-                  comments={[]}
-                  postId={post.id}
-                  currentUserId={effectiveUserId}
-                  loading
-                  onCommentDeleted={() => loadComments()}
-                  onCommentUpdated={() => loadComments()}
-                  deleteCommentAction={deleteCommentActionProp}
-                  updateCommentAction={updateCommentActionProp}
-                  addCommentAction={addCommentActionProp}
-                />
+                <CommentList comments={[]} postId={post.id} currentUserId={effectiveUserId} loading onCommentDeleted={() => loadComments()} onCommentUpdated={() => loadComments()} deleteCommentAction={deleteCommentActionProp} updateCommentAction={updateCommentActionProp} addCommentAction={addCommentActionProp} />
               </div>
             </>
           ) : (
             <>
               {canCommentInline && (
-                <CommentForm
-                  postId={post.id}
-                  onSuccess={handleCommentSuccess}
-                  addCommentAction={addCommentActionProp}
-                />
+                <CommentForm postId={post.id} onSuccess={handleCommentSuccess} addCommentAction={addCommentActionProp} />
               )}
               {!canCommentInline && effectiveUserId === null && (
                 <p className="mb-3 text-theme-muted text-[13px]">
                   <Link href={`/post/${post.id}`} className="underline hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent rounded">
-                    댓글을 달려면 로그인하세요
+                    {t.postCard.commentLogin}
                   </Link>
                 </p>
               )}
               <div className="mt-4">
-                <CommentList
-                  comments={comments ?? []}
-                  postId={post.id}
-                  currentUserId={effectiveUserId}
-                  onCommentDeleted={() => loadComments()}
-                  onCommentUpdated={() => loadComments()}
-                  deleteCommentAction={deleteCommentActionProp}
-                  updateCommentAction={updateCommentActionProp}
-                  addCommentAction={addCommentActionProp}
-                />
+                <CommentList comments={comments ?? []} postId={post.id} currentUserId={effectiveUserId} onCommentDeleted={() => loadComments()} onCommentUpdated={() => loadComments()} deleteCommentAction={deleteCommentActionProp} updateCommentAction={updateCommentActionProp} addCommentAction={addCommentActionProp} />
               </div>
             </>
           )}

@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { uploadAvatarAction } from "../../actions";
-import { FEATURES } from "@/lib/config/features";
 
 type Props = {
   currentAvatarUrl?: string | null;
@@ -24,8 +23,6 @@ export function AvatarUpload({ currentAvatarUrl, name }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  if (!FEATURES.AVATAR_UPLOAD) return null;
 
   const displaySrc = preview ?? currentAvatarUrl ?? null;
 

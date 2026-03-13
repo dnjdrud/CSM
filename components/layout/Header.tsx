@@ -29,11 +29,41 @@ function SearchIcon({ className }: { className?: string }) {
   );
 }
 
+function BellIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function UserCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="10" r="3" />
+      <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
+    </svg>
+  );
+}
+
 export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
   const t = useT();
   const isAdmin = user?.isAdmin === true;
   const [unreadCount, setUnreadCount] = useState(user ? initialUnreadCount : 0);
   const lastCountRef = useRef(unreadCount);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const fetchCount = useCallback(async () => {
     if (!user) return;
@@ -90,82 +120,136 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
     };
   }, []);
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
+
   const displayCount = user ? unreadCount : 0;
+  const iconBtn = "p-2 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-surface-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-1";
 
   return (
     <header className="border-b border-theme-border/60 bg-theme-surface sticky top-0 z-20 shrink-0" role="banner">
-      <div className="flex items-center justify-between gap-2 px-4 py-3 max-w-[100vw]">
+      <div className="flex items-center justify-between gap-2 px-4 h-12 max-w-[100vw]">
+        {/* Logo */}
         <Link href="/home" aria-label="Cellah 홈으로">
           <CellahLogo className="text-[17px] shrink-0" />
         </Link>
-        <nav className="flex items-center gap-2 flex-wrap justify-end" aria-label="Main navigation">
+
+        {/* Right actions */}
+        <div className="flex items-center gap-1">
           <LanguageSwitcher />
-          <Link href="/search" className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded" aria-label={t.common.search}>
+
+          <Link href="/search" className={iconBtn} aria-label={t.common.search}>
             <SearchIcon className="w-5 h-5" />
           </Link>
+
           {user && (
             <>
+              {/* Write */}
               <Link
                 href="/write"
-                className="inline-flex items-center gap-1 rounded-lg bg-theme-primary px-3 py-1.5 text-[13px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
+                className={iconBtn}
+                aria-label={t.header.write}
               >
-                {t.header.write}
+                <PencilIcon className="w-5 h-5" />
               </Link>
-              <Link
-                href="/messages"
-                className="p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
-                aria-label={t.header.messages}
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-              </Link>
+
+              {/* Notifications */}
               <Link
                 href="/notifications"
-                className="relative p-1.5 text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
+                className={`${iconBtn} relative`}
                 aria-label={displayCount > 0 ? `${t.header.notifications} ${displayCount}` : t.header.notifications}
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
+                <BellIcon className="w-5 h-5" />
                 {displayCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-red-500 px-1 py-0.5 text-[10px] font-bold text-white tabular-nums">
+                  <span className="absolute top-1 right-1 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white tabular-nums leading-4">
                     {displayCount > 9 ? "9+" : displayCount}
                   </span>
                 )}
               </Link>
+
+              {/* User menu */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className={`${iconBtn} flex items-center gap-1.5`}
+                  aria-label={t.header.settings}
+                  aria-expanded={menuOpen}
+                  aria-haspopup="menu"
+                >
+                  <UserCircleIcon className="w-5 h-5" />
+                </button>
+
+                {menuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-theme-border bg-theme-surface shadow-lg py-1 z-50"
+                  >
+                    <div className="px-3 py-2 border-b border-theme-border/60">
+                      <p className="text-[13px] font-medium text-theme-text truncate">{user.name}</p>
+                    </div>
+
+                    <Link
+                      href={`/profile/${user.id}`}
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-[13px] text-theme-text hover:bg-theme-surface-2 transition-colors"
+                    >
+                      {t.header.profile}
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-[13px] text-theme-text hover:bg-theme-surface-2 transition-colors"
+                    >
+                      {t.header.settings}
+                    </Link>
+
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-[13px] text-theme-text hover:bg-theme-surface-2 transition-colors"
+                      >
+                        {t.header.admin}
+                      </Link>
+                    )}
+
+                    <div className="border-t border-theme-border/60 mt-1 pt-1">
+                      <form action={logoutAction}>
+                        <button
+                          type="submit"
+                          role="menuitem"
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 text-[13px] text-red-500 hover:bg-theme-surface-2 transition-colors"
+                        >
+                          {t.header.logout}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
-          {user ? (
-            <>
-              {process.env.NODE_ENV !== "production" && (
-                <span className="text-[10px] text-theme-muted mr-1" aria-hidden>auth=yes {user.id.slice(0, 6)}</span>
-              )}
-              {isAdmin && (
-                <Link href="/admin" className="text-[13px] font-medium text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
-                  {t.header.admin}
-                </Link>
-              )}
-              <Link
-                href="/settings"
-                className="inline-flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-1 text-[13px] text-theme-primary hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
-                aria-label={t.header.settings}
-              >
-                {user.name || t.header.settings}
-              </Link>
-              <form action={logoutAction} className="inline">
-                <button type="submit" className="text-[13px] text-theme-muted hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
-                  {t.header.logout}
-                </button>
-              </form>
-            </>
-          ) : (
-            <Link href="/login" className="rounded-lg bg-theme-primary px-3 py-1.5 text-[13px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2">
+
+          {!user && (
+            <Link href="/login" className="rounded-lg bg-theme-primary px-3 py-1.5 text-[13px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-1">
               {t.header.login}
             </Link>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );

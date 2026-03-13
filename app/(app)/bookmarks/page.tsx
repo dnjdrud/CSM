@@ -5,10 +5,12 @@ import { listBookmarks } from "@/lib/data/repository";
 import { BookmarkedPostCard } from "./_components/BookmarkedPostCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TimelineContainer } from "@/components/TimelineContainer";
+import { getServerT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function BookmarksPage() {
+  const t = await getServerT();
   const userId = await getAuthUserId();
   if (!userId) redirect("/login");
 
@@ -22,20 +24,20 @@ export default async function BookmarksPage() {
             href="/home"
             className="text-[13px] text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
           >
-            ← 홈으로
+            {t.common.backHome}
           </Link>
         </div>
-        <h1 className="text-[18px] font-semibold text-theme-text">저장한 글</h1>
+        <h1 className="text-[18px] font-semibold text-theme-text">{t.bookmarks.title}</h1>
         <p className="mt-1 text-[13px] text-theme-muted">
-          {posts.length > 0 ? `${posts.length}개 저장됨` : "저장된 글이 없습니다"}
+          {posts.length > 0 ? `${posts.length}${t.bookmarks.savedCount}` : t.bookmarks.empty}
         </p>
       </div>
 
       {posts.length === 0 ? (
         <div className="py-6 px-4">
           <EmptyState
-            title="저장된 글이 없습니다"
-            description="북마크 아이콘을 눌러 나중에 읽고 싶은 글을 저장해보세요."
+            title={t.bookmarks.empty}
+            description={t.bookmarks.emptyDesc}
           />
         </div>
       ) : (

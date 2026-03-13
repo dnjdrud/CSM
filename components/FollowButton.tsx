@@ -4,13 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFollowAction } from "@/app/(app)/feed/actions";
 import { useToast } from "@/components/ui/Toast";
+import { useT } from "@/lib/i18n";
 
 type Props = {
-  /** User id to follow/unfollow (e.g. post author). */
   followingId: string;
-  /** Current follow state from server. */
   initialFollowing: boolean;
-  /** Optional compact style for post card. */
   compact?: boolean;
   className?: string;
 };
@@ -21,6 +19,7 @@ export function FollowButton({
   compact = false,
   className = "",
 }: Props) {
+  const t = useT();
   const router = useRouter();
   const toast = useToast();
   const [pending, setPending] = useState(false);
@@ -34,7 +33,7 @@ export function FollowButton({
     if (ok) {
       setLocalFollowing(!localFollowing);
       router.refresh();
-      toast.show(localFollowing ? "Unfollowed." : "Following.");
+      toast.show(localFollowing ? t.profile.unfollow : t.profile.following);
     } else {
       toast.error();
     }
@@ -53,9 +52,9 @@ export function FollowButton({
       onClick={handleClick}
       disabled={pending}
       className={`${base} ${size} ${variant} ${className}`.trim()}
-      aria-label={localFollowing ? "Unfollow" : "Follow"}
+      aria-label={localFollowing ? t.profile.unfollow : t.profile.follow}
     >
-      {pending ? "…" : localFollowing ? "Unfollow" : "Follow"}
+      {pending ? "…" : localFollowing ? t.profile.unfollow : t.profile.follow}
     </button>
   );
 }

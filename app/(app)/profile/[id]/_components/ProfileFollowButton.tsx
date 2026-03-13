@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleFollowAction } from "../actions";
 import { useToast } from "@/components/ui/Toast";
+import { useT } from "@/lib/i18n";
 
 export function ProfileFollowButton({
   profileId,
@@ -12,6 +13,7 @@ export function ProfileFollowButton({
   profileId: string;
   following: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [localFollowing, setLocalFollowing] = useState(following);
@@ -25,7 +27,7 @@ export function ProfileFollowButton({
     if (ok) {
       setLocalFollowing(!localFollowing);
       router.refresh();
-      toast.show(localFollowing ? "Unfollowed." : "Following.");
+      toast.show(localFollowing ? t.profile.unfollow : t.profile.following);
     } else {
       toast.error();
     }
@@ -42,7 +44,7 @@ export function ProfileFollowButton({
           : "bg-gray-800 text-gray-50 hover:bg-gray-700"
       }`}
     >
-      {pending ? "…" : localFollowing ? "Unfollow" : "Follow"}
+      {pending ? "…" : localFollowing ? t.profile.unfollow : t.profile.follow}
     </button>
   );
 }

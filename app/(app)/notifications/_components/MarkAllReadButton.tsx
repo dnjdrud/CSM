@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { useT } from "@/lib/i18n";
 import { markAllReadAction } from "../actions";
 
 export function MarkAllReadButton() {
+  const t = useT();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const toast = useToast();
@@ -19,7 +21,7 @@ export function MarkAllReadButton() {
         window.dispatchEvent(new CustomEvent("csm:notifications-read-all"));
       }
       router.refresh();
-      toast.show("Marked as read.");
+      toast.show(t.notifications.markedRead);
     } catch {
       toast.error();
     } finally {
@@ -36,7 +38,7 @@ export function MarkAllReadButton() {
       disabled={loading}
       onClick={handleClick}
     >
-      Mark all as read
+      {t.notifications.markAllRead}
     </Button>
   );
 }
