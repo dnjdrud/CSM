@@ -1316,7 +1316,11 @@ export async function updateUserProfile(
   const { error } = await client.from("users").update(update).eq("id", userId);
   if (error) {
     console.error("[updateUserProfile] error", error.message, "update", JSON.stringify(update));
-    if (/unique|duplicate/i.test(error.message)) return { error: "이 사용자 이름은 이미 사용 중입니다." };
+    // username은 DB unique 제약이 있음. church·affiliation은 중복 허용 — username 컬럼 에러인 경우만 전용 메시지.
+    if (/unique|duplicate/i.test(error.message) && /username/i.test(error.message)) {
+      return { error: "이 사용자 이름은 이미 사용 중입니다." };
+    }
+    if (/unique|duplicate/i.test(error.message)) return { error: "이미 사용 중인 값이 있습니다." };
     return { error: error.message };
   }
   return { ok: true };

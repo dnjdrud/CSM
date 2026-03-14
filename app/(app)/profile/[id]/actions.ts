@@ -65,8 +65,29 @@ export async function updateProfileAction(data: {
 }): Promise<UpdateProfileResult> {
   const session = await getSession();
   if (!session) return { error: "로그인이 필요합니다." };
+
+  // 서버 필수 검증
   const name = data.name?.trim();
   if (name !== undefined && !name) return { error: "이름은 비워둘 수 없습니다." };
+
+  // username이 payload에 포함된 경우 필수 · 형식 검증
+  if ("username" in data) {
+    const u = (data.username ?? "").trim();
+    if (!u) return { error: "사용자 이름은 필수 입력사항입니다." };
+    if (u.length < 2) return { error: "사용자 이름은 2자 이상이어야 합니다." };
+    if (!/^[a-zA-Z0-9_]+$/.test(u)) return { error: "사용자 이름은 영문, 숫자, 밑줄(_)만 사용 가능합니다." };
+  }
+
+  // denomination이 payload에 포함된 경우 필수 검증
+  if ("denomination" in data) {
+    if (!data.denomination?.trim()) return { error: "교단을 선택해주세요." };
+  }
+
+  // church가 payload에 포함된 경우 필수 검증
+  if ("church" in data) {
+    if (!data.church?.trim()) return { error: "교회명은 필수 입력사항입니다." };
+  }
+
   const role = data.role && ALLOWED_ROLES.includes(data.role) ? data.role : undefined;
   const result = await updateUserProfile(session.userId, { ...data, name: name || undefined, role });
   if ("ok" in result && result.ok) {
