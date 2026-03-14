@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfileAction } from "../../actions";
 import { ROLE_DISPLAY, type UserRole, type User } from "@/lib/domain/types";
@@ -36,6 +36,21 @@ export function ProfileEditForm({ user }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // router.refresh() 후 서버에서 새 user prop이 내려오면 form state를 재동기화한다.
+  // user.id가 아닌 필드 조합을 key로 써야 저장 후 변경된 값이 반영된다.
+  const syncKey = `${user.name}|${user.username ?? ""}|${user.bio ?? ""}|${user.church ?? ""}|${user.denomination ?? ""}|${user.faithYears ?? ""}|${user.affiliation ?? ""}`;
+  useEffect(() => {
+    setName(user.name);
+    setUsername(user.username ?? "");
+    setRole(user.role === "ADMIN" ? "LAY" : user.role);
+    setDenomination(user.denomination ?? "");
+    setFaithYears(user.faithYears != null ? String(user.faithYears) : "");
+    setChurch(user.church ?? "");
+    setAffiliation(user.affiliation ?? "");
+    setBio(user.bio ?? "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncKey]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
