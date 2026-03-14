@@ -347,7 +347,8 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
 
               <DrawerLink href="/write" onClick={() => setDrawerOpen(false)}>
                 <PencilIcon className="w-5 h-5 shrink-0" />
-                {t.header.write}
+                {/* t.header.write에 ✏️ 이모지가 포함되어 있어 드로어에서는 제거 후 표시 */}
+                {t.header.write.replace(/^\p{Emoji}\s*/u, "")}
               </DrawerLink>
 
               <div className="my-2 border-t border-theme-border/60" />

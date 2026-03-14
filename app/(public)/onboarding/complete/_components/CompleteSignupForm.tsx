@@ -48,7 +48,11 @@ export function CompleteSignupForm({ token, request }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const step1Valid = password.length >= 8 && password === confirmPassword && username.trim().length > 0;
+  const step1Valid =
+    password.length >= 8 &&
+    password === confirmPassword &&
+    username.trim().length >= 2 &&
+    /^[a-zA-Z0-9_]+$/.test(username.trim());
   const step2Valid = name.trim().length > 0 && denomination.trim().length > 0 && faithYears.trim().length > 0;
   const step3Valid = church.trim().length > 0;
 
@@ -56,6 +60,8 @@ export function CompleteSignupForm({ token, request }: Props) {
     setError(null);
     if (step === 1) {
       if (!username.trim()) { setError("사용자 이름을 입력해 주세요."); return; }
+      if (username.trim().length < 2) { setError("사용자 이름은 2자 이상이어야 합니다."); return; }
+      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError("사용자 이름은 영문, 숫자, 밑줄(_)만 사용 가능합니다."); return; }
       if (password.length < 8) { setError("비밀번호는 8자 이상이어야 합니다."); return; }
       if (password !== confirmPassword) { setError("비밀번호가 일치하지 않습니다."); return; }
       setStep(2);
@@ -134,11 +140,15 @@ export function CompleteSignupForm({ token, request }: Props) {
                   id="username"
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="핸들 또는 표시 이름"
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+                  placeholder="영문·숫자·밑줄 2자 이상"
+                  minLength={2}
+                  maxLength={30}
+                  required
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                   autoComplete="username"
                 />
+                <p className="mt-1 text-xs text-gray-500">영문, 숫자, 밑줄(_)만 사용 가능합니다.</p>
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-800">
