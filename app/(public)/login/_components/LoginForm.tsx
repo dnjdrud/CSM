@@ -13,6 +13,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [notRegistered, setNotRegistered] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleEmailSubmit(e: React.FormEvent) {
@@ -32,6 +33,10 @@ export function LoginForm() {
       setError(typeof data?.error === "string" ? data.error : "Failed to send sign-in link.");
       return;
     }
+    if (data?.notRegistered) {
+      setNotRegistered(true);
+      return;
+    }
     setSent(true);
   }
 
@@ -44,6 +49,33 @@ export function LoginForm() {
         <p className="text-sm text-gray-500">
           You can close this tab after you’ve signed in. If you don’t see the email, check your spam folder.
         </p>
+      </div>
+    );
+  }
+
+  if (notRegistered) {
+    return (
+      <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-5">
+        <p className="text-sm font-medium text-amber-800">가입 승인이 되지 않은 이메일입니다.</p>
+        <p className="mt-1.5 text-sm text-amber-700 leading-relaxed">
+          <strong className="font-medium">{email.trim()}</strong> 으로 가입된 계정이 없습니다.
+          아직 가입 신청을 하지 않으셨거나, 아직 승인 대기 중일 수 있습니다.
+        </p>
+        <div className="mt-4 flex gap-3">
+          <Link
+            href="/request-access"
+            className="inline-block rounded-lg bg-amber-800 px-4 py-2 text-sm font-medium text-white hover:bg-amber-900 focus:outline-none"
+          >
+            가입 신청하기
+          </Link>
+          <button
+            type="button"
+            onClick={() => { setNotRegistered(false); setEmail(""); }}
+            className="inline-block rounded-lg border border-amber-300 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 focus:outline-none"
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     );
   }

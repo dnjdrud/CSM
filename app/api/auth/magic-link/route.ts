@@ -23,9 +23,10 @@ export async function POST(request: Request) {
 
   const result = await createMagicLink(email);
   if ("error" in result) {
-    // USER_NOT_FOUND: silently return ok — don't reveal whether email is registered.
+    // USER_NOT_FOUND: not an approved member yet — tell the client so the UI
+    // can direct them to request access. Still HTTP 200 to avoid timing attacks.
     if (result.error === "USER_NOT_FOUND") {
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, notRegistered: true });
     }
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
