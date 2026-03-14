@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ROLE_DISPLAY, type UserRole, type SignupRequest } from "@/lib/domain/types";
+import { useT } from "@/lib/i18n";
 
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const ROLE_OPTIONS = ROLES.map((value) => ({ value, label: ROLE_DISPLAY[value] }));
@@ -22,6 +23,9 @@ const DENOMINATIONS = [
 type Props = { token: string; request: SignupRequest; initialError?: string | null };
 
 export function CompleteSignupForm({ token, request, initialError }: Props) {
+  const t = useT();
+  const sf = t.signupForm;
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -55,10 +59,10 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-xl">
         <h1 className="text-xl font-serif font-normal text-gray-800 tracking-tight">
-          Complete signup
+          {sf.completeWebTitle}
         </h1>
         <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
-          Set your password and confirm your profile. You'll be signed in and taken to the feed when done.
+          {sf.completeWebDesc}
         </p>
 
         <form
@@ -70,14 +74,14 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
           <input type="hidden" name="token" value={token} />
 
           <div>
-            <label className="block text-sm font-medium text-gray-800">Email</label>
+            <label className="block text-sm font-medium text-gray-800">{sf.email}</label>
             <p className="mt-1 text-[15px] text-gray-700">{request.email}</p>
           </div>
 
           {/* Username — required */}
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-800">
-              Username <span className="text-red-500">*</span>
+              {sf.username} <span className="text-red-500">*</span>
             </label>
             <input
               id="username"
@@ -85,20 +89,20 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-              placeholder="Letters, numbers, underscore (min 2 chars)"
+              placeholder={sf.usernamePlaceholder}
               minLength={2}
               maxLength={30}
               required
               className={inputReqCls}
               autoComplete="username"
             />
-            <p className="mt-1 text-xs text-gray-500">Only letters, numbers, and underscores allowed.</p>
+            <p className="mt-1 text-xs text-gray-500">{sf.usernameHelper}</p>
           </div>
 
           {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-800">
-              Password <span className="text-red-500">*</span>
+              {sf.password} <span className="text-red-500">*</span>
             </label>
             <input
               id="password"
@@ -106,7 +110,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder={sf.passwordPlaceholder}
               className={inputReqCls}
               autoComplete="new-password"
               required
@@ -116,27 +120,27 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-800">
-              Confirm password <span className="text-red-500">*</span>
+              {sf.confirmPassword} <span className="text-red-500">*</span>
             </label>
             <input
               id="confirmPassword"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Same as above"
+              placeholder={sf.confirmPasswordPlaceholder}
               className={inputReqCls}
               autoComplete="new-password"
               required
             />
             {password && confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">Passwords do not match.</p>
+              <p className="mt-1 text-sm text-red-600">{sf.passwordMismatch}</p>
             )}
           </div>
 
           {/* Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-800">
-              Name <span className="text-red-500">*</span>
+              {sf.name} <span className="text-red-500">*</span>
             </label>
             <input
               id="name"
@@ -151,7 +155,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
 
           {/* Role */}
           <div>
-            <label className="block text-sm font-medium text-gray-800">Role</label>
+            <label className="block text-sm font-medium text-gray-800">{sf.role}</label>
             <select
               name="role"
               value={role}
@@ -167,7 +171,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
           {/* Denomination — required */}
           <div>
             <label htmlFor="denomination" className="block text-sm font-medium text-gray-800">
-              Denomination <span className="text-red-500">*</span>
+              {sf.denomination} <span className="text-red-500">*</span>
             </label>
             <select
               id="denomination"
@@ -177,7 +181,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               required
               className={inputReqCls}
             >
-              <option value="">Select your denomination</option>
+              <option value="">{sf.denominationPlaceholder}</option>
               {DENOMINATIONS.map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
@@ -187,7 +191,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
           {/* Church — required */}
           <div>
             <label htmlFor="church" className="block text-sm font-medium text-gray-800">
-              Church <span className="text-red-500">*</span>
+              {sf.church} <span className="text-red-500">*</span>
             </label>
             <input
               id="church"
@@ -195,7 +199,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               type="text"
               value={church}
               onChange={(e) => setChurch(e.target.value)}
-              placeholder="Your church or ministry"
+              placeholder={sf.churchPlaceholder}
               required
               className={inputReqCls}
             />
@@ -204,7 +208,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
           {/* Bio — optional */}
           <div>
             <label htmlFor="bio" className="block text-sm font-medium text-gray-800">
-              Bio <span className="text-gray-500 font-normal">(optional)</span>
+              {sf.bio} <span className="text-gray-500 font-normal">{sf.optional}</span>
             </label>
             <textarea
               id="bio"
@@ -219,7 +223,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
           {/* Affiliation — optional */}
           <div>
             <label htmlFor="affiliation" className="block text-sm font-medium text-gray-800">
-              Affiliation <span className="text-gray-500 font-normal">(optional)</span>
+              {sf.affiliation} <span className="text-gray-500 font-normal">{sf.optional}</span>
             </label>
             <input
               id="affiliation"
@@ -241,13 +245,13 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               disabled={!canSubmit}
               className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {pending ? "Creating account…" : "Complete signup"}
+              {pending ? sf.creatingAccount : sf.completeSignup}
             </button>
           </div>
         </form>
 
         <p className="mt-4 text-sm text-gray-500">
-          After completing signup you'll be signed in and taken to the feed.
+          {sf.completeWebFooter}
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { completeSignupAction } from "../actions";
 import { ROLE_DISPLAY, type UserRole, type SignupRequest } from "@/lib/domain/types";
+import { useT } from "@/lib/i18n";
 
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const ROLE_OPTIONS = ROLES.map((value) => ({ value, label: ROLE_DISPLAY[value] }));
@@ -25,6 +26,9 @@ type Step = 1 | 2 | 3;
 type Props = { token: string; request: SignupRequest };
 
 export function CompleteSignupForm({ token, request }: Props) {
+  const t = useT();
+  const sf = t.signupForm;
+
   const [step, setStep] = useState<Step>(1);
 
   // Step 1: Account
@@ -59,16 +63,16 @@ export function CompleteSignupForm({ token, request }: Props) {
   function handleNext() {
     setError(null);
     if (step === 1) {
-      if (!username.trim()) { setError("사용자 이름을 입력해 주세요."); return; }
-      if (username.trim().length < 2) { setError("사용자 이름은 2자 이상이어야 합니다."); return; }
-      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError("사용자 이름은 영문, 숫자, 밑줄(_)만 사용 가능합니다."); return; }
-      if (password.length < 8) { setError("비밀번호는 8자 이상이어야 합니다."); return; }
-      if (password !== confirmPassword) { setError("비밀번호가 일치하지 않습니다."); return; }
+      if (!username.trim()) { setError(sf.errUsername); return; }
+      if (username.trim().length < 2) { setError(sf.errUsernameLength); return; }
+      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError(sf.errUsernameFormat); return; }
+      if (password.length < 8) { setError(sf.errPassword); return; }
+      if (password !== confirmPassword) { setError(sf.errPasswordMismatch); return; }
       setStep(2);
     } else if (step === 2) {
-      if (!name.trim()) { setError("이름을 입력해 주세요."); return; }
-      if (!denomination.trim()) { setError("교단을 선택해 주세요."); return; }
-      if (!faithYears.trim()) { setError("신앙 연수를 입력해 주세요."); return; }
+      if (!name.trim()) { setError(sf.errName); return; }
+      if (!denomination.trim()) { setError(sf.errDenomination); return; }
+      if (!faithYears.trim()) { setError(sf.errFaithYears); return; }
       setStep(3);
     }
   }
@@ -76,7 +80,7 @@ export function CompleteSignupForm({ token, request }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!step1Valid || !step2Valid || !step3Valid || pending) return;
-    if (!church.trim()) { setError("섬기는 교회를 입력해 주세요."); return; }
+    if (!church.trim()) { setError(sf.errChurchRequired); return; }
     setPending(true);
     setError(null);
     const result = await completeSignupAction({
@@ -95,16 +99,16 @@ export function CompleteSignupForm({ token, request }: Props) {
     if ("error" in result) setError(result.error);
   }
 
-  const STEP_LABELS = ["계정 설정", "프로필", "교회 & 소개"];
+  const STEP_LABELS = [sf.stepAccount, sf.stepProfile, sf.stepCommunity];
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-xl">
         <h1 className="text-xl font-serif font-normal text-gray-800 tracking-tight">
-          회원가입 완료
+          {sf.completeTitle}
         </h1>
         <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
-          비밀번호를 설정하고 프로필을 확인해 주세요.
+          {sf.completeDesc}
         </p>
 
         {/* Step indicator */}
@@ -129,37 +133,37 @@ export function CompleteSignupForm({ token, request }: Props) {
           {step === 1 && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-800">이메일</label>
+                <label className="block text-sm font-medium text-gray-800">{sf.email}</label>
                 <p className="mt-1 text-[15px] text-gray-700">{request.email}</p>
               </div>
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-800">
-                  사용자 이름 <span className="text-red-500">*</span>
+                  {sf.username} <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-                  placeholder="영문·숫자·밑줄 2자 이상"
+                  placeholder={sf.usernamePlaceholder}
                   minLength={2}
                   maxLength={30}
                   required
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                   autoComplete="username"
                 />
-                <p className="mt-1 text-xs text-gray-500">영문, 숫자, 밑줄(_)만 사용 가능합니다.</p>
+                <p className="mt-1 text-xs text-gray-500">{sf.usernameHelper}</p>
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-800">
-                  비밀번호
+                  {sf.password}
                 </label>
                 <input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="8자 이상"
+                  placeholder={sf.passwordPlaceholder}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                   autoComplete="new-password"
                   required
@@ -168,20 +172,20 @@ export function CompleteSignupForm({ token, request }: Props) {
               </div>
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-800">
-                  비밀번호 확인
+                  {sf.confirmPassword}
                 </label>
                 <input
                   id="confirmPassword"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="동일하게 입력"
+                  placeholder={sf.confirmPasswordPlaceholder}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                   autoComplete="new-password"
                   required
                 />
                 {password && confirmPassword && password !== confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">비밀번호가 일치하지 않습니다.</p>
+                  <p className="mt-1 text-sm text-red-600">{sf.passwordMismatch}</p>
                 )}
               </div>
             </>
@@ -192,7 +196,7 @@ export function CompleteSignupForm({ token, request }: Props) {
             <>
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-800">
-                  이름
+                  {sf.name}
                 </label>
                 <input
                   id="name"
@@ -204,7 +208,7 @@ export function CompleteSignupForm({ token, request }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-800">역할</label>
+                <label className="block text-sm font-medium text-gray-800">{sf.role}</label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
@@ -217,7 +221,7 @@ export function CompleteSignupForm({ token, request }: Props) {
               </div>
               <div>
                 <label htmlFor="denomination" className="block text-sm font-medium text-gray-800">
-                  교단 <span className="text-red-500">*</span>
+                  {sf.denomination} <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="denomination"
@@ -225,7 +229,7 @@ export function CompleteSignupForm({ token, request }: Props) {
                   onChange={(e) => setDenomination(e.target.value)}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                 >
-                  <option value="" disabled>교단을 선택해 주세요</option>
+                  <option value="" disabled>{sf.denominationPlaceholder}</option>
                   {DENOMINATIONS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
@@ -233,7 +237,7 @@ export function CompleteSignupForm({ token, request }: Props) {
               </div>
               <div>
                 <label htmlFor="faithYears" className="block text-sm font-medium text-gray-800">
-                  신앙 연수 <span className="text-red-500">*</span>
+                  {sf.faithYears} <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="faithYears"
@@ -242,7 +246,7 @@ export function CompleteSignupForm({ token, request }: Props) {
                   max={120}
                   value={faithYears}
                   onChange={(e) => setFaithYears(e.target.value)}
-                  placeholder="몇 년째 신앙생활 중인지 입력"
+                  placeholder={sf.faithYearsPlaceholder}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
@@ -254,40 +258,40 @@ export function CompleteSignupForm({ token, request }: Props) {
             <>
               <div>
                 <label htmlFor="church" className="block text-sm font-medium text-gray-800">
-                  섬기는 교회 <span className="text-red-500">*</span>
+                  {sf.churchLabel} <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="church"
                   type="text"
                   value={church}
                   onChange={(e) => setChurch(e.target.value)}
-                  placeholder="소속 교회 또는 사역지"
+                  placeholder={sf.churchPlaceholder}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
               <div>
                 <label htmlFor="affiliation" className="block text-sm font-medium text-gray-800">
-                  소속 기관 <span className="text-gray-500 font-normal">(선택)</span>
+                  {sf.affiliation} <span className="text-gray-500 font-normal">{sf.optional}</span>
                 </label>
                 <input
                   id="affiliation"
                   type="text"
                   value={affiliation}
                   onChange={(e) => setAffiliation(e.target.value)}
-                  placeholder="선교단체 또는 네트워크"
+                  placeholder={sf.affiliationPlaceholder}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
                 />
               </div>
               <div>
                 <label htmlFor="bio" className="block text-sm font-medium text-gray-800">
-                  자기소개 <span className="text-gray-500 font-normal">(선택)</span>
+                  {sf.bio} <span className="text-gray-500 font-normal">{sf.optional}</span>
                 </label>
                 <textarea
                   id="bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   rows={3}
-                  placeholder="간단한 소개를 적어주세요"
+                  placeholder={sf.bioPlaceholder}
                   className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-y"
                 />
               </div>
@@ -305,7 +309,7 @@ export function CompleteSignupForm({ token, request }: Props) {
                 onClick={() => { setError(null); setStep((s) => (s - 1) as Step); }}
                 className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
               >
-                이전
+                {sf.prev}
               </button>
             )}
             {step < 3 ? (
@@ -315,7 +319,7 @@ export function CompleteSignupForm({ token, request }: Props) {
                 disabled={step === 1 ? !step1Valid : !step2Valid}
                 className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                다음
+                {sf.next}
               </button>
             ) : (
               <button
@@ -323,7 +327,7 @@ export function CompleteSignupForm({ token, request }: Props) {
                 disabled={pending || !step3Valid}
                 className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {pending ? "계정 생성 중…" : "가입 완료"}
+                {pending ? sf.creatingAccount : sf.completeSignup}
               </button>
             )}
           </div>

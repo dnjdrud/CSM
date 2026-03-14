@@ -83,6 +83,30 @@ export interface Translations {
     postsTab: string; contentsTab: string; crowTab: string; spiritualTab: string;
     loadError: string; notFound: string;
   };
+  signupForm: {
+    requestTitle: string; requestDesc: string;
+    completeTitle: string; completeDesc: string;
+    completeWebTitle: string; completeWebDesc: string; completeWebFooter: string;
+    stepAccount: string; stepProfile: string; stepCommunity: string;
+    email: string; name: string; namePlaceholder: string;
+    username: string; usernamePlaceholder: string; usernameHelper: string;
+    password: string; passwordPlaceholder: string;
+    confirmPassword: string; confirmPasswordPlaceholder: string; passwordMismatch: string;
+    role: string; denomination: string; denominationPlaceholder: string;
+    faithYears: string; faithYearsPlaceholder: string;
+    church: string; churchLabel: string; churchPlaceholder: string; churchHelper: string;
+    bio: string; bioPlaceholder: string;
+    affiliation: string; affiliationPlaceholder: string;
+    optional: string;
+    prev: string; next: string;
+    submitRequest: string; submitting: string; completeSignup: string; creatingAccount: string;
+    errName: string; errDenomination: string; errChurch: string;
+    errUsername: string; errUsernameLength: string; errUsernameFormat: string;
+    errPassword: string; errPasswordMismatch: string; errFaithYears: string; errChurchRequired: string;
+    successTitle: string; successDesc: string; successNote: string; successContact: string;
+    alreadyHaveAccount: string; signIn: string;
+    linkInvalid: string; linkInvalidDesc: string; backToRequest: string;
+  };
 }
 
 const ko: Translations = {
@@ -184,6 +208,30 @@ const ko: Translations = {
     postsTab: "게시글", contentsTab: "콘텐츠", crowTab: "까마귀", spiritualTab: "영성",
     loadError: "프로필을 불러올 수 없습니다", notFound: "존재하지 않는 사용자이거나 오류가 발생했습니다.",
   },
+  signupForm: {
+    requestTitle: "가입 신청", requestDesc: "정보를 입력하고 관리자의 승인을 기다려주세요. 승인 후 이메일로 가입 링크를 보내드립니다 (7일간 유효).",
+    completeTitle: "회원가입 완료", completeDesc: "비밀번호를 설정하고 프로필을 확인해 주세요.",
+    completeWebTitle: "회원가입 완료", completeWebDesc: "비밀번호를 설정하고 프로필 정보를 입력해 주세요. 완료 후 피드로 이동합니다.", completeWebFooter: "가입 완료 후 자동으로 로그인되어 피드로 이동합니다.",
+    stepAccount: "계정 설정", stepProfile: "프로필", stepCommunity: "교회 & 소개",
+    email: "이메일", name: "이름", namePlaceholder: "이름을 입력해 주세요",
+    username: "사용자 이름", usernamePlaceholder: "영문·숫자·밑줄 2자 이상", usernameHelper: "영문, 숫자, 밑줄(_)만 사용 가능합니다.",
+    password: "비밀번호", passwordPlaceholder: "8자 이상",
+    confirmPassword: "비밀번호 확인", confirmPasswordPlaceholder: "동일하게 입력", passwordMismatch: "비밀번호가 일치하지 않습니다.",
+    role: "역할", denomination: "교단", denominationPlaceholder: "교단을 선택해 주세요",
+    faithYears: "신앙 연수", faithYearsPlaceholder: "몇 년째 신앙생활 중인지 입력",
+    church: "교회", churchLabel: "섬기는 교회", churchPlaceholder: "소속 교회 또는 사역지", churchHelper: "같은 이름을 여러 사람이 사용할 수 있습니다.",
+    bio: "자기소개", bioPlaceholder: "간단한 소개를 적어주세요",
+    affiliation: "소속 기관", affiliationPlaceholder: "선교단체 또는 네트워크",
+    optional: "(선택)",
+    prev: "이전", next: "다음",
+    submitRequest: "신청하기", submitting: "제출 중…", completeSignup: "가입 완료", creatingAccount: "계정 생성 중…",
+    errName: "이름을 입력해 주세요.", errDenomination: "교단을 선택해 주세요.", errChurch: "교회명을 입력해 주세요.",
+    errUsername: "사용자 이름을 입력해 주세요.", errUsernameLength: "사용자 이름은 2자 이상이어야 합니다.", errUsernameFormat: "사용자 이름은 영문, 숫자, 밑줄(_)만 사용 가능합니다.",
+    errPassword: "비밀번호는 8자 이상이어야 합니다.", errPasswordMismatch: "비밀번호가 일치하지 않습니다.", errFaithYears: "신앙 연수를 입력해 주세요.", errChurchRequired: "섬기는 교회를 입력해 주세요.",
+    successTitle: "신청이 완료되었습니다", successDesc: "신청이 제출되었습니다. 관리자 검토 후 이메일로 가입 링크를 보내드립니다 (7일간 유효).", successNote: "이 페이지를 닫아도 됩니다. 문의 사항이 있으시면", successContact: "문의하기",
+    alreadyHaveAccount: "이미 계정이 있으신가요?", signIn: "로그인",
+    linkInvalid: "링크가 유효하지 않거나 만료되었습니다.", linkInvalidDesc: "이 링크가 유효하지 않거나 만료되었습니다. 승인을 받으셨다면 승인한 분께 새 링크를 요청해 주세요.", backToRequest: "가입 신청으로 돌아가기",
+  },
 };
 
 const en: Translations = {
@@ -284,6 +332,30 @@ const en: Translations = {
     noContents: "No content yet", noOwnContents: "No content uploaded yet", uploadContent: "Upload content",
     postsTab: "Posts", contentsTab: "Contents", crowTab: "Crow", spiritualTab: "Spiritual",
     loadError: "Failed to load profile", notFound: "User not found or an error occurred.",
+  },
+  signupForm: {
+    requestTitle: "Request access", requestDesc: "Submit your details. An admin will review your request. You'll receive an email with a link to complete signup (valid 7 days) once approved.",
+    completeTitle: "Complete signup", completeDesc: "Set your password and confirm your profile.",
+    completeWebTitle: "Complete signup", completeWebDesc: "Set your password and fill in your profile. You'll be signed in and taken to the feed when done.", completeWebFooter: "After completing signup you'll be signed in and taken to the feed.",
+    stepAccount: "Account", stepProfile: "Profile", stepCommunity: "Church & Bio",
+    email: "Email", name: "Name", namePlaceholder: "Enter your name",
+    username: "Username", usernamePlaceholder: "Letters, numbers, underscore (min 2 chars)", usernameHelper: "Only letters, numbers, and underscores allowed.",
+    password: "Password", passwordPlaceholder: "At least 8 characters",
+    confirmPassword: "Confirm password", confirmPasswordPlaceholder: "Same as above", passwordMismatch: "Passwords do not match.",
+    role: "Role", denomination: "Denomination", denominationPlaceholder: "Select your denomination",
+    faithYears: "Years of faith", faithYearsPlaceholder: "How many years have you been a believer?",
+    church: "Church", churchLabel: "Your church", churchPlaceholder: "Your church or ministry", churchHelper: "Multiple people can use the same name.",
+    bio: "Bio", bioPlaceholder: "A short intro",
+    affiliation: "Affiliation", affiliationPlaceholder: "Organization or network",
+    optional: "(optional)",
+    prev: "Previous", next: "Next",
+    submitRequest: "Submit request", submitting: "Submitting…", completeSignup: "Complete signup", creatingAccount: "Creating account…",
+    errName: "Please enter your name.", errDenomination: "Please select a denomination.", errChurch: "Please enter your church name.",
+    errUsername: "Please enter a username.", errUsernameLength: "Username must be at least 2 characters.", errUsernameFormat: "Username can only contain letters, numbers, and underscores.",
+    errPassword: "Password must be at least 8 characters.", errPasswordMismatch: "Passwords do not match.", errFaithYears: "Please enter your years of faith.", errChurchRequired: "Please enter your church.",
+    successTitle: "Request received", successDesc: "Your request has been submitted. Await approval. We'll email you a link to complete signup (valid 7 days) once an admin has reviewed it.", successNote: "You can close this page. If you have questions,", successContact: "contact us",
+    alreadyHaveAccount: "Already have an account?", signIn: "Sign in",
+    linkInvalid: "Link invalid or expired", linkInvalidDesc: "This link is invalid or expired. If you were approved to join, please request a new link from the person who approved you.", backToRequest: "Back to request access",
   },
 };
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { requestAccessAction } from "../actions";
 import { ROLE_DISPLAY, type UserRole } from "@/lib/domain/types";
+import { useT } from "@/lib/i18n";
 
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const ROLE_OPTIONS = ROLES.map((value) => ({ value, label: ROLE_DISPLAY[value] }));
@@ -21,6 +22,9 @@ const DENOMINATIONS = [
 ];
 
 export function RequestAccessForm() {
+  const t = useT();
+  const sf = t.signupForm;
+
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("LAY");
@@ -36,10 +40,9 @@ export function RequestAccessForm() {
     e.preventDefault();
     if (!email.trim() || pending) return;
 
-    // 클라이언트 필수 검증
-    if (!name.trim()) { setError("이름을 입력해 주세요."); return; }
-    if (!denomination) { setError("교단을 선택해 주세요."); return; }
-    if (!church.trim()) { setError("교회명을 입력해 주세요."); return; }
+    if (!name.trim()) { setError(sf.errName); return; }
+    if (!denomination) { setError(sf.errDenomination); return; }
+    if (!church.trim()) { setError(sf.errChurch); return; }
 
     setPending(true);
     setError(null);
@@ -57,19 +60,19 @@ export function RequestAccessForm() {
       setSuccess(true);
       return;
     }
-    setError("errorMessage" in result ? result.errorMessage : "Something went wrong.");
+    setError("errorMessage" in result ? result.errorMessage : t.common.error);
   }
 
   if (success) {
     return (
       <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50/80 p-6">
-        <h2 className="text-lg font-medium text-gray-800">Request received</h2>
+        <h2 className="text-lg font-medium text-gray-800">{sf.successTitle}</h2>
         <p className="mt-2 text-[15px] text-gray-600 leading-relaxed">
-          Your request has been submitted. Await approval. We'll email you a link to complete signup (valid 7 days) once an admin has reviewed it.
+          {sf.successDesc}
         </p>
         <p className="mt-4 text-sm text-gray-500">
-          You can close this page. If you have questions,{" "}
-          <a href="/contact" className="text-gray-700 underline hover:text-gray-900">contact us</a>.
+          {sf.successNote}{" "}
+          <a href="/contact" className="text-gray-700 underline hover:text-gray-900">{sf.successContact}</a>.
         </p>
       </div>
     );
@@ -88,7 +91,7 @@ export function RequestAccessForm() {
       {/* Email — required */}
       <div>
         <label htmlFor="request-email" className="block text-sm font-medium text-gray-800">
-          Email <span className="text-red-500">*</span>
+          {sf.email} <span className="text-red-500">*</span>
         </label>
         <input
           id="request-email"
@@ -106,14 +109,14 @@ export function RequestAccessForm() {
       {/* Name — required */}
       <div>
         <label htmlFor="request-name" className="block text-sm font-medium text-gray-800">
-          이름 <span className="text-red-500">*</span>
+          {sf.name} <span className="text-red-500">*</span>
         </label>
         <input
           id="request-name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="실명을 입력해 주세요"
+          placeholder={sf.namePlaceholder}
           required
           className={inputReqCls}
         />
@@ -121,7 +124,7 @@ export function RequestAccessForm() {
 
       {/* Role */}
       <div>
-        <label className="block text-sm font-medium text-gray-800">Role</label>
+        <label className="block text-sm font-medium text-gray-800">{sf.role}</label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
@@ -136,7 +139,7 @@ export function RequestAccessForm() {
       {/* Denomination — required */}
       <div>
         <label htmlFor="request-denomination" className="block text-sm font-medium text-gray-800">
-          교단 <span className="text-red-500">*</span>
+          {sf.denomination} <span className="text-red-500">*</span>
         </label>
         <select
           id="request-denomination"
@@ -145,7 +148,7 @@ export function RequestAccessForm() {
           required
           className={inputReqCls}
         >
-          <option value="">교단을 선택해 주세요</option>
+          <option value="">{sf.denominationPlaceholder}</option>
           {DENOMINATIONS.map((d) => (
             <option key={d} value={d}>{d}</option>
           ))}
@@ -155,14 +158,14 @@ export function RequestAccessForm() {
       {/* Church — required */}
       <div>
         <label htmlFor="request-church" className="block text-sm font-medium text-gray-800">
-          교회 <span className="text-red-500">*</span>
+          {sf.church} <span className="text-red-500">*</span>
         </label>
         <input
           id="request-church"
           type="text"
           value={church}
           onChange={(e) => setChurch(e.target.value)}
-          placeholder="소속 교회 또는 사역지"
+          placeholder={sf.churchPlaceholder}
           required
           className={inputReqCls}
         />
@@ -171,14 +174,14 @@ export function RequestAccessForm() {
       {/* Bio — optional */}
       <div>
         <label htmlFor="request-bio" className="block text-sm font-medium text-gray-800">
-          Bio <span className="text-gray-500 font-normal">(optional)</span>
+          {sf.bio} <span className="text-gray-500 font-normal">{sf.optional}</span>
         </label>
         <textarea
           id="request-bio"
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={3}
-          placeholder="A short intro"
+          placeholder={sf.bioPlaceholder}
           className={`${inputCls} resize-y text-sm`}
         />
       </div>
@@ -186,14 +189,14 @@ export function RequestAccessForm() {
       {/* Affiliation — optional */}
       <div>
         <label htmlFor="request-affiliation" className="block text-sm font-medium text-gray-800">
-          Affiliation <span className="text-gray-500 font-normal">(optional)</span>
+          {sf.affiliation} <span className="text-gray-500 font-normal">{sf.optional}</span>
         </label>
         <input
           id="request-affiliation"
           type="text"
           value={affiliation}
           onChange={(e) => setAffiliation(e.target.value)}
-          placeholder="Organization or network"
+          placeholder={sf.affiliationPlaceholder}
           className={inputCls}
         />
       </div>
@@ -207,7 +210,7 @@ export function RequestAccessForm() {
         disabled={pending}
         className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
       >
-        {pending ? "Submitting…" : "Submit request"}
+        {pending ? sf.submitting : sf.submitRequest}
       </button>
     </form>
   );
