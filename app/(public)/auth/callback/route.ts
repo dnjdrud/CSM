@@ -15,7 +15,6 @@ const LOG_PREFIX = "[auth/callback]";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const origin = requestUrl.origin;
   const pathname = requestUrl.pathname;
 
   const code = requestUrl.searchParams.get("code");
@@ -59,6 +58,25 @@ export async function GET(request: NextRequest) {
     },
   }));
 
+  // Helper: allow access only if user was admin-approved.
+  // Admin-allowlisted emails always pass. Others must have a public.users row (created during approval signup).
+  // This prevents users who signed up directly via Supabase (bypassing our approval flow) from getting in.
+  async function assertApprovedUser(userId: string, email: string | undefined): Promise<boolean> {
+    const { isAdminEmail } = await import("@/lib/admin/bootstrap");
+    if (isAdminEmail(email ?? "")) {
+      const { ensureProfile } = await import("@/lib/auth/ensureProfile");
+      await ensureProfile({ userId, email });
+      return true;
+    }
+    // For regular users: profile row existence proves they went through our approval flow.
+    // ensureProfile is NOT called here — we only check, never create for unapproved users.
+    const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+    const adminClient = getSupabaseAdmin();
+    if (!adminClient) return false;
+    const { data: profile } = await adminClient.from("users").select("id").eq("id", userId).maybeSingle();
+    return !!profile;
+  }
+
   try {
     if (code) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -66,8 +84,14 @@ export async function GET(request: NextRequest) {
         console.error(LOG_PREFIX, "exchangeCodeForSession failed", { message: error?.message });
         throw error ?? new Error("No user after exchangeCodeForSession");
       }
-      const { ensureProfile } = await import("@/lib/auth/ensureProfile");
-      await ensureProfile({ userId: data.user.id, email: data.user.email });
+      const approved = await assertApprovedUser(data.user.id, data.user.email);
+      if (!approved) {
+        console.error(LOG_PREFIX, "unapproved user attempted access via callback code", { userId: data.user.id });
+        await supabase.auth.signOut();
+        const redirectTo = new URL("/onboarding", request.url);
+        redirectTo.searchParams.set("error", "not_approved");
+        return NextResponse.redirect(redirectTo);
+      }
       return response;
     }
 
@@ -80,8 +104,14 @@ export async function GET(request: NextRequest) {
         console.error(LOG_PREFIX, "verifyOtp failed", { message: error?.message });
         throw error ?? new Error("No user after verifyOtp");
       }
-      const { ensureProfile } = await import("@/lib/auth/ensureProfile");
-      await ensureProfile({ userId: data.user.id, email: data.user.email });
+      const approved = await assertApprovedUser(data.user.id, data.user.email);
+      if (!approved) {
+        console.error(LOG_PREFIX, "unapproved user attempted access via callback token_hash", { userId: data.user.id });
+        await supabase.auth.signOut();
+        const redirectTo = new URL("/onboarding", request.url);
+        redirectTo.searchParams.set("error", "not_approved");
+        return NextResponse.redirect(redirectTo);
+      }
       return response;
     }
 

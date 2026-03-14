@@ -23,6 +23,10 @@ export async function POST(request: Request) {
 
   const result = await createMagicLink(email);
   if ("error" in result) {
+    // USER_NOT_FOUND: silently return ok — don't reveal whether email is registered.
+    if (result.error === "USER_NOT_FOUND") {
+      return NextResponse.json({ ok: true });
+    }
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 

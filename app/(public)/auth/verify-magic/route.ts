@@ -43,6 +43,22 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=server_error`);
   }
 
+  // Step 1b: Defense-in-depth — verify this email belongs to an admin-approved user.
+  // Prevents any token that was created before this check existed from granting access.
+  const { isAdminEmail } = await import("@/lib/admin/bootstrap");
+  if (!isAdminEmail(result.email)) {
+    const { data: signupReq } = await admin
+      .from("signup_requests")
+      .select("id")
+      .eq("email", result.email)
+      .eq("status", "COMPLETED")
+      .maybeSingle();
+    if (!signupReq) {
+      console.log("verify-magic: email not registered via approval flow:", result.email);
+      return NextResponse.redirect(`${origin}/login?error=not_registered`);
+    }
+  }
+
   // Step 2: generate a Supabase magic link server-side to get the hashed_token.
   // We do NOT redirect the user to action_link — we consume the token ourselves.
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
