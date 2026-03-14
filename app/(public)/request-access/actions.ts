@@ -8,7 +8,9 @@ const ALLOWED_ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONA
 
 export async function requestAccessAction(formData: {
   email: string;
+  name?: string | null;
   role: UserRole;
+  denomination?: string | null;
   church?: string | null;
   bio?: string | null;
   affiliation?: string | null;
@@ -22,7 +24,9 @@ export async function requestAccessAction(formData: {
   try {
     const result = await createSignupRequest({
       email: formData.email.trim(),
+      name: formData.name?.trim() || null,
       role: ALLOWED_ROLES.includes(formData.role) ? formData.role : "LAY",
+      denomination: formData.denomination?.trim() || null,
       church: formData.church?.trim() || null,
       bio: formData.bio?.trim() || null,
       affiliation: formData.affiliation?.trim() || null,

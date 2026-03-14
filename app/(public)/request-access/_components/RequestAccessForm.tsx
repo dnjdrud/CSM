@@ -7,9 +7,24 @@ import { ROLE_DISPLAY, type UserRole } from "@/lib/domain/types";
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const ROLE_OPTIONS = ROLES.map((value) => ({ value, label: ROLE_DISPLAY[value] }));
 
+const DENOMINATIONS = [
+  "장로교 (통합)",
+  "장로교 (합동)",
+  "장로교 (기타)",
+  "감리교",
+  "침례교",
+  "성결교",
+  "순복음 / 오순절",
+  "구세군",
+  "루터교",
+  "기타",
+];
+
 export function RequestAccessForm() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("LAY");
+  const [denomination, setDenomination] = useState("");
   const [church, setChurch] = useState("");
   const [bio, setBio] = useState("");
   const [affiliation, setAffiliation] = useState("");
@@ -20,12 +35,20 @@ export function RequestAccessForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || pending) return;
+
+    // 클라이언트 필수 검증
+    if (!name.trim()) { setError("이름을 입력해 주세요."); return; }
+    if (!denomination) { setError("교단을 선택해 주세요."); return; }
+    if (!church.trim()) { setError("교회명을 입력해 주세요."); return; }
+
     setPending(true);
     setError(null);
     const result = await requestAccessAction({
       email: email.trim(),
+      name: name.trim(),
       role,
-      church: church.trim() || undefined,
+      denomination,
+      church: church.trim(),
       bio: bio.trim() || undefined,
       affiliation: affiliation.trim() || undefined,
     });
@@ -42,7 +65,7 @@ export function RequestAccessForm() {
       <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50/80 p-6">
         <h2 className="text-lg font-medium text-gray-800">Request received</h2>
         <p className="mt-2 text-[15px] text-gray-600 leading-relaxed">
-          Your request has been submitted. Await approval. We’ll email you a link to complete signup (valid 7 days) once an admin has reviewed it.
+          Your request has been submitted. Await approval. We'll email you a link to complete signup (valid 7 days) once an admin has reviewed it.
         </p>
         <p className="mt-4 text-sm text-gray-500">
           You can close this page. If you have questions,{" "}
@@ -52,6 +75,9 @@ export function RequestAccessForm() {
     );
   }
 
+  const inputCls = "mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400";
+  const inputReqCls = "mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500";
+
   return (
     <form
       name="request-access"
@@ -59,9 +85,10 @@ export function RequestAccessForm() {
       className="mt-8 space-y-5"
       autoComplete="off"
     >
+      {/* Email — required */}
       <div>
         <label htmlFor="request-email" className="block text-sm font-medium text-gray-800">
-          Email
+          Email <span className="text-red-500">*</span>
         </label>
         <input
           id="request-email"
@@ -70,36 +97,78 @@ export function RequestAccessForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputReqCls}
           autoComplete="off"
           required
         />
       </div>
+
+      {/* Name — required */}
+      <div>
+        <label htmlFor="request-name" className="block text-sm font-medium text-gray-800">
+          이름 <span className="text-red-500">*</span>
+        </label>
+        <input
+          id="request-name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="실명을 입력해 주세요"
+          required
+          className={inputReqCls}
+        />
+      </div>
+
+      {/* Role */}
       <div>
         <label className="block text-sm font-medium text-gray-800">Role</label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
         >
           {ROLE_OPTIONS.map(({ value, label }) => (
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
       </div>
+
+      {/* Denomination — required */}
+      <div>
+        <label htmlFor="request-denomination" className="block text-sm font-medium text-gray-800">
+          교단 <span className="text-red-500">*</span>
+        </label>
+        <select
+          id="request-denomination"
+          value={denomination}
+          onChange={(e) => setDenomination(e.target.value)}
+          required
+          className={inputReqCls}
+        >
+          <option value="">교단을 선택해 주세요</option>
+          {DENOMINATIONS.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Church — required */}
       <div>
         <label htmlFor="request-church" className="block text-sm font-medium text-gray-800">
-          Church <span className="text-gray-500 font-normal">(optional)</span>
+          교회 <span className="text-red-500">*</span>
         </label>
         <input
           id="request-church"
           type="text"
           value={church}
           onChange={(e) => setChurch(e.target.value)}
-          placeholder="Your church or ministry"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          placeholder="소속 교회 또는 사역지"
+          required
+          className={inputReqCls}
         />
       </div>
+
+      {/* Bio — optional */}
       <div>
         <label htmlFor="request-bio" className="block text-sm font-medium text-gray-800">
           Bio <span className="text-gray-500 font-normal">(optional)</span>
@@ -110,9 +179,11 @@ export function RequestAccessForm() {
           onChange={(e) => setBio(e.target.value)}
           rows={3}
           placeholder="A short intro"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-y"
+          className={`${inputCls} resize-y text-sm`}
         />
       </div>
+
+      {/* Affiliation — optional */}
       <div>
         <label htmlFor="request-affiliation" className="block text-sm font-medium text-gray-800">
           Affiliation <span className="text-gray-500 font-normal">(optional)</span>
@@ -123,14 +194,14 @@ export function RequestAccessForm() {
           value={affiliation}
           onChange={(e) => setAffiliation(e.target.value)}
           placeholder="Organization or network"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
         />
       </div>
+
       {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
+        <p className="text-sm text-red-600" role="alert">{error}</p>
       )}
+
       <button
         type="submit"
         disabled={pending}
