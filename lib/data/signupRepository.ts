@@ -300,15 +300,22 @@ export async function approveAndCreateUser(
     email_confirm: true,
   });
 
+  let userId: string;
   if (createError) {
-    if (createError.message.includes("already been registered"))
-      return { error: "This email is already registered." };
-    return { error: createError.message };
+    if (!createError.message.includes("already been registered"))
+      return { error: createError.message };
+    // Auth user already exists — look up their ID and continue
+    const { data: existingUsers } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const existing = existingUsers?.users?.find((u) => u.email?.toLowerCase() === email);
+    if (!existing) return { error: "This email is already registered but could not be found." };
+    userId = existing.id;
+  } else {
+    if (!authUser?.user?.id) return { error: "Failed to create account." };
+    userId = authUser.user.id;
   }
-  if (!authUser?.user?.id) return { error: "Failed to create account." };
 
   const { error: userUpsertErr } = await admin.from("users").upsert({
-    id: authUser.user.id,
+    id: userId,
     name,
     role,
     church: (req.church as string | null)?.trim() || null,
@@ -320,7 +327,7 @@ export async function approveAndCreateUser(
   }, { onConflict: "id", ignoreDuplicates: false });
 
   if (userUpsertErr) {
-    await admin.auth.admin.deleteUser(authUser.user.id);
+    if (authUser?.user?.id) await admin.auth.admin.deleteUser(authUser.user.id);
     return { error: userUpsertErr.message };
   }
 
@@ -333,7 +340,7 @@ export async function approveAndCreateUser(
   }).eq("id", requestId);
 
   const { logSignupComplete } = await import("@/lib/admin/audit");
-  await logSignupComplete(authUser.user.id, requestId, email);
+  await logSignupComplete(userId, requestId, email);
 
   return { ok: true, email };
 }
