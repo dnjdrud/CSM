@@ -57,7 +57,7 @@ export function SignupRequestsTable({ requests, readOnly = false }: Props) {
       if (result.emailError) {
         toast.error(`Approved, but email failed: ${result.emailError}`);
       } else {
-        toast.show("Approved. Email sent with signup link.");
+        toast.show("계정이 생성되었습니다. 로그인 링크를 이메일로 발송했습니다.");
       }
       router.refresh();
     }

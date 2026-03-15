@@ -31,10 +31,8 @@ export function CompleteSignupForm({ token, request }: Props) {
 
   const [step, setStep] = useState<Step>(1);
 
-  // Step 1: Account
+  // Step 1: Account (username only — no password, uses magic link auth)
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Step 2: Identity
   const [name, setName] = useState(request.name ?? "");
@@ -53,8 +51,6 @@ export function CompleteSignupForm({ token, request }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const step1Valid =
-    password.length >= 8 &&
-    password === confirmPassword &&
     username.trim().length >= 2 &&
     /^[a-zA-Z0-9_]+$/.test(username.trim());
   const step2Valid = name.trim().length > 0 && denomination.trim().length > 0 && faithYears.trim().length > 0;
@@ -66,8 +62,6 @@ export function CompleteSignupForm({ token, request }: Props) {
       if (!username.trim()) { setError(sf.errUsername); return; }
       if (username.trim().length < 2) { setError(sf.errUsernameLength); return; }
       if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) { setError(sf.errUsernameFormat); return; }
-      if (password.length < 8) { setError(sf.errPassword); return; }
-      if (password !== confirmPassword) { setError(sf.errPasswordMismatch); return; }
       setStep(2);
     } else if (step === 2) {
       if (!name.trim()) { setError(sf.errName); return; }
@@ -77,7 +71,7 @@ export function CompleteSignupForm({ token, request }: Props) {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!step1Valid || !step2Valid || !step3Valid || pending) return;
     if (!church.trim()) { setError(sf.errChurchRequired); return; }
@@ -85,7 +79,6 @@ export function CompleteSignupForm({ token, request }: Props) {
     setError(null);
     const result = await completeSignupAction({
       token,
-      password,
       username: username.trim(),
       name: name.trim(),
       role,
@@ -153,40 +146,6 @@ export function CompleteSignupForm({ token, request }: Props) {
                   autoComplete="username"
                 />
                 <p className="mt-1 text-xs text-gray-500">{sf.usernameHelper}</p>
-              </div>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-800">
-                  {sf.password}
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={sf.passwordPlaceholder}
-                  className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                />
-              </div>
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-800">
-                  {sf.confirmPassword}
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder={sf.confirmPasswordPlaceholder}
-                  className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
-                  autoComplete="new-password"
-                  required
-                />
-                {password && confirmPassword && password !== confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{sf.passwordMismatch}</p>
-                )}
               </div>
             </>
           )}

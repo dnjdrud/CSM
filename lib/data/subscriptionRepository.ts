@@ -6,11 +6,9 @@
  *  - creator_id    = auth.uid() → 구독자 목록 조회
  *  - 구독자 수(카운트)는 admin client 사용 (RLS 우회 필요)
  *
- * 향후 확장 포인트:
- *  - status: 'active' → 'paused' | 'cancelled' (결제 lifecycle)
- *  - plan: 'free' | 'supporter' | 'premium' (멤버십 등급)
- *  - expires_at: 유료 구독 만료일
- *  - stripe_subscription_id: Stripe 연동
+ * 캔들 유료 구독 지원:
+ *  - isActiveSubscriber: 유료(캔들)/무료 구독 모두 포함한 활성 구독 확인
+ *  - getCreatorSubscriptionInfo: 크리에이터의 캔들 구독 정보 조회
  */
 
 import { supabaseServer } from "@/lib/supabase/server";
@@ -134,7 +132,63 @@ export async function isSubscribed(
 }
 
 /**
- * 구독 토글 — 구독 중이면 취소, 아니면 구독.
+ * 현재 유저가 특정 크리에이터의 활성 구독자인지 확인.
+ * 유료(캔들) + 무료(free) 모두 포함.
+ * expires_at가 있으면 만료 여부도 체크.
+ */
+export async function isActiveSubscriber(
+  subscriberId: string,
+  creatorId: string
+): Promise<boolean> {
+  const admin = getSupabaseAdmin();
+  const queryClient = admin ?? (await supabaseServer());
+
+  const { data } = await queryClient
+    .from("subscriptions")
+    .select("id, expires_at, plan")
+    .eq("subscriber_id", subscriberId)
+    .eq("creator_id", creatorId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!data) return false;
+
+  // Free subscriptions are always active
+  if (!data.plan || data.plan === "free") return true;
+
+  // Paid (candle): check expires_at
+  if (!data.expires_at) return true;
+  return new Date(data.expires_at) > new Date();
+}
+
+export type CreatorSubscriptionInfo = {
+  candlesPerMonth: number | null;
+};
+
+/**
+ * 크리에이터의 캔들 구독 정보 조회.
+ */
+export async function getCreatorSubscriptionInfo(
+  creatorId: string
+): Promise<CreatorSubscriptionInfo | null> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+
+  const { data } = await admin
+    .from("users")
+    .select("subscription_candles_per_month")
+    .eq("id", creatorId)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    candlesPerMonth: data.subscription_candles_per_month ?? null,
+  };
+}
+
+/**
+ * 구독 토글 — 구독 중이면 취소, 아니면 구독 (무료 구독용).
  * Returns: 'subscribed' | 'unsubscribed'
  */
 export async function toggleSubscription(

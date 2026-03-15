@@ -16,6 +16,8 @@ import {
   listMySubscriptions,
   getSubscriberCount,
   isSubscribed,
+  isActiveSubscriber,
+  getCreatorSubscriptionInfo,
 } from "@/lib/data/subscriptionRepository";
 import type { PostCategory } from "@/lib/domain/types";
 
@@ -49,6 +51,9 @@ export default async function ProfilePage({
     activeTab === "spiritual" && isOwnProfile && !!currentUserId;
   const shouldFetchCrowList = activeTab === "crow" && isOwnProfile && !!currentUserId;
 
+  // Fetch viewer's candle balance if logged in and viewing another profile
+  const shouldFetchCandleBalance = !isOwnProfile && !!currentUserId;
+
   const [
     { user, errorMessage },
     posts,
@@ -60,6 +65,9 @@ export default async function ProfilePage({
     mySubscriptions,
     crowSubscriberCount,
     viewerIsSubscribed,
+    viewerIsActiveSub,
+    creatorSubInfo,
+    viewerCandleBalance,
   ] = await Promise.all([
     getProfileWithError(id),
     listPostsByAuthorId(id),
@@ -85,6 +93,28 @@ export default async function ProfilePage({
     !isOwnProfile && !!currentUserId
       ? isSubscribed(currentUserId, id)
       : Promise.resolve(false),
+    // is current user an active (paid or free) subscriber
+    !isOwnProfile && !!currentUserId
+      ? isActiveSubscriber(currentUserId, id)
+      : Promise.resolve(false),
+    // creator's candle subscription info
+    !isOwnProfile
+      ? getCreatorSubscriptionInfo(id)
+      : Promise.resolve(null),
+    // viewer's candle balance for subscription button
+    shouldFetchCandleBalance
+      ? (async () => {
+          const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
+          const admin = getSupabaseAdmin();
+          if (!admin) return 0;
+          const { data } = await admin
+            .from("users")
+            .select("candle_balance")
+            .eq("id", currentUserId!)
+            .single();
+          return data?.candle_balance ?? 0;
+        })()
+      : Promise.resolve(0),
   ]);
 
   if (!user) {
@@ -122,6 +152,7 @@ export default async function ProfilePage({
       followerCount={followerIds.length}
       followingCount={followingIds.length}
       subscriberCount={crowSubscriberCount}
+      viewerIsActiveSubscriber={viewerIsActiveSub}
     >
       {activeTab === "posts" && (
         <ProfilePostsTab
@@ -154,7 +185,10 @@ export default async function ProfilePage({
           creatorName={user.name}
           subscriberCount={crowSubscriberCount}
           isSubscribed={viewerIsSubscribed}
+          isActiveSubscriber={viewerIsActiveSub}
           isLoggedIn={!!currentUserId}
+          candlesPerMonth={creatorSubInfo?.candlesPerMonth ?? null}
+          userCandleBalance={viewerCandleBalance}
         />
       )}
       {activeTab === "spiritual" && (

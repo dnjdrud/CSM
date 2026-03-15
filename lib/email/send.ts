@@ -8,6 +8,7 @@ import {
   buildMagicLinkEmail,
   buildResetPasswordEmail,
   buildApprovalEmail,
+  buildApprovalLoginEmail,
 } from "@/lib/email/templates";
 
 export async function sendInviteEmail(to: string, inviteUrl: string): Promise<void> {
@@ -45,6 +46,16 @@ export async function sendApprovalEmail(to: string, completionUrl: string): Prom
   await sendEmail({
     to: to.trim().toLowerCase(),
     subject: "Your access is approved — complete your signup",
+    html,
+    text,
+  });
+}
+
+export async function sendApprovalLoginEmail(to: string, loginUrl: string): Promise<void> {
+  const { html, text } = buildApprovalLoginEmail({ loginUrl });
+  await sendEmail({
+    to: to.trim().toLowerCase(),
+    subject: "셀라 가입이 승인되었습니다 — 로그인하기",
     html,
     text,
   });

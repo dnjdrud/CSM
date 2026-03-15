@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Subscription } from "@/lib/data/subscriptionRepository";
 import { SubscribeButton } from "@/components/ui/SubscribeButton";
+import { PaidSubscribeButton } from "@/components/ui/PaidSubscribeButton";
 
 /* ─── 공통 타입 ──────────────────────────────────────────────── */
 
@@ -14,9 +15,12 @@ type OtherCrowProps = {
   isOwnProfile: false;
   subscriberCount: number;
   isSubscribed: boolean;
+  isActiveSubscriber: boolean;
   isLoggedIn: boolean;
   creatorId: string;
   creatorName: string;
+  candlesPerMonth?: number | null;
+  userCandleBalance?: number;
 };
 
 type Props = (OwnCrowProps | OtherCrowProps) & { profileId: string };
@@ -161,14 +165,23 @@ function OtherCrowTab({
   creatorName,
   subscriberCount,
   isSubscribed,
+  isActiveSubscriber: isActiveSub,
   isLoggedIn,
+  candlesPerMonth,
+  userCandleBalance = 0,
 }: {
   creatorId: string;
   creatorName: string;
   subscriberCount: number;
   isSubscribed: boolean;
+  isActiveSubscriber: boolean;
   isLoggedIn: boolean;
+  candlesPerMonth?: number | null;
+  userCandleBalance?: number;
 }) {
+  // 결제 시스템 준비 중 — 캔들 유료 구독 비활성화, 무료 구독만 사용
+  const hasPaidSub = false; // !!candlesPerMonth && candlesPerMonth >= 5;
+
   return (
     <div className="px-4 py-10 flex flex-col items-center gap-6 text-center">
       {/* 까마귀 아이콘 */}
@@ -181,23 +194,46 @@ function OtherCrowTab({
         <p className="text-[16px] font-semibold text-theme-text">
           {creatorName}님의 까마귀가 되어보세요
         </p>
-        <p className="text-[13px] text-theme-muted leading-relaxed max-w-xs">
-          구독하면 이 분이 올리는 콘텐츠와 선교 소식을
-          <br />
-          놓치지 않고 받아볼 수 있습니다.
-        </p>
+        {hasPaidSub ? (
+          <p className="text-[13px] text-theme-muted leading-relaxed max-w-xs">
+            월{" "}
+            <strong className="text-theme-text">
+              {candlesPerMonth}캔들 ({(candlesPerMonth! * 100).toLocaleString()}원)
+            </strong>{" "}
+            구독으로 프리미엄 콘텐츠와 선교 소식을
+            <br />
+            놓치지 않고 받아볼 수 있습니다.
+          </p>
+        ) : (
+          <p className="text-[13px] text-theme-muted leading-relaxed max-w-xs">
+            구독하면 이 분이 올리는 콘텐츠와 선교 소식을
+            <br />
+            놓치지 않고 받아볼 수 있습니다.
+          </p>
+        )}
       </div>
 
       {/* 구독 버튼 */}
-      <SubscribeButton
-        creatorId={creatorId}
-        initialIsSubscribed={isSubscribed}
-        initialCount={subscriberCount}
-        isLoggedIn={isLoggedIn}
-      />
+      {hasPaidSub ? (
+        <PaidSubscribeButton
+          creatorId={creatorId}
+          isActiveSubscriber={isActiveSub}
+          candlesPerMonth={candlesPerMonth!}
+          initialCount={subscriberCount}
+          isLoggedIn={isLoggedIn}
+          userCandleBalance={userCandleBalance}
+        />
+      ) : (
+        <SubscribeButton
+          creatorId={creatorId}
+          initialIsSubscribed={isSubscribed}
+          initialCount={subscriberCount}
+          isLoggedIn={isLoggedIn}
+        />
+      )}
 
       {/* 구독자 없을 때 첫 까마귀 독려 */}
-      {subscriberCount === 0 && !isSubscribed && (
+      {subscriberCount === 0 && !isSubscribed && !isActiveSub && (
         <p className="text-[12px] text-theme-muted">
           첫 번째 까마귀가 되어주세요 🙏
         </p>
@@ -219,7 +255,10 @@ export function ProfileCrowTab(props: Props) {
       creatorName={props.creatorName}
       subscriberCount={props.subscriberCount}
       isSubscribed={props.isSubscribed}
+      isActiveSubscriber={props.isActiveSubscriber}
       isLoggedIn={props.isLoggedIn}
+      candlesPerMonth={props.candlesPerMonth}
+      userCandleBalance={props.userCandleBalance}
     />
   );
 }

@@ -72,7 +72,7 @@ If you didn't request a password reset, you can ignore this email.`;
   return { html: html.trim(), text };
 }
 
-/** Approval (signup request approved) — completion link. Reused from existing copy. */
+/** Approval (signup request approved) — completion link. Legacy: kept for reference. */
 export function buildApprovalEmail(params: { completionUrl: string }): { html: string; text: string } {
   const { completionUrl } = params;
   const text = `Your request to join has been approved. Complete your signup by opening the link below and setting your password.
@@ -89,6 +89,30 @@ This link expires in 7 days. If you didn't request access, you can ignore this e
   <p style="color: #555;">Complete your signup by opening the link below and setting your password.</p>
   <p style="margin: 24px 0;"><a href="${escapeHtml(completionUrl)}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 8px;">Complete signup</a></p>
   <p style="color: #888; font-size: 14px;">This link expires in 7 days. If you didn't request access, you can ignore this email.</p>
+</body>
+</html>`;
+  return { html: html.trim(), text };
+}
+
+/** Approval welcome — account created, magic link to log in immediately. Expires in 1 hour. */
+export function buildApprovalLoginEmail(params: { loginUrl: string }): { html: string; text: string } {
+  const { loginUrl } = params;
+  const text = `셀라에 오신 것을 환영합니다! 가입 신청이 승인되었습니다.
+
+아래 링크를 클릭하면 바로 로그인됩니다. 이 링크는 1시간 후 만료됩니다.
+
+${loginUrl}
+
+본인이 신청하지 않은 경우 이 이메일을 무시해 주세요.`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>가입 승인 완료</title></head>
+<body style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="color: #333;">셀라에 오신 것을 환영합니다!</p>
+  <p style="color: #555;">가입 신청이 승인되었습니다. 아래 버튼을 클릭하면 바로 로그인됩니다.</p>
+  <p style="margin: 24px 0;"><a href="${escapeHtml(loginUrl)}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 8px;">로그인하기</a></p>
+  <p style="color: #888; font-size: 14px;">이 링크는 1시간 후 만료됩니다. 본인이 신청하지 않은 경우 이 이메일을 무시해 주세요.</p>
 </body>
 </html>`;
   return { html: html.trim(), text };

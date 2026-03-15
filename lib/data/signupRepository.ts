@@ -265,6 +265,79 @@ export async function verifyApprovalToken(
   return null;
 }
 
+/**
+ * Approve signup: immediately creates Supabase auth user + public.users row, marks COMPLETED.
+ * Replaces the old PENDING → APPROVED → COMPLETED two-step flow.
+ * Uses service role for auth user creation; supabase client for RLS-gated request update.
+ */
+export async function approveAndCreateUser(
+  adminId: string,
+  requestId: string,
+  supabase?: SupabaseClientLike
+): Promise<{ ok: true; email: string } | { error: string }> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return { error: "Server not configured" };
+
+  const client = supabase ?? admin;
+
+  const { data: req } = await client
+    .from("signup_requests")
+    .select("id, email, name, role, church, bio, affiliation, denomination, faith_years")
+    .eq("id", requestId)
+    .eq("status", "PENDING")
+    .single();
+
+  if (!req) return { error: "Request not found or not pending." };
+
+  const email = req.email.trim().toLowerCase();
+  const password = randomBytes(32).toString("base64url");
+  const role = SIGNUP_ROLES.includes(req.role as UserRole) ? (req.role as UserRole) : "LAY";
+  const name = (req.name as string | null)?.trim() || "Member";
+
+  const { data: authUser, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (createError) {
+    if (createError.message.includes("already been registered"))
+      return { error: "This email is already registered." };
+    return { error: createError.message };
+  }
+  if (!authUser?.user?.id) return { error: "Failed to create account." };
+
+  const { error: userUpsertErr } = await admin.from("users").upsert({
+    id: authUser.user.id,
+    name,
+    role,
+    church: (req.church as string | null)?.trim() || null,
+    bio: (req.bio as string | null)?.trim() || null,
+    affiliation: (req.affiliation as string | null)?.trim() || null,
+    denomination: (req.denomination as string | null)?.trim() || null,
+    faith_years: req.faith_years ?? null,
+    username: null,
+  }, { onConflict: "id", ignoreDuplicates: false });
+
+  if (userUpsertErr) {
+    await admin.auth.admin.deleteUser(authUser.user.id);
+    return { error: userUpsertErr.message };
+  }
+
+  const now = new Date().toISOString();
+  await client.from("signup_requests").update({
+    status: "COMPLETED",
+    reviewed_at: now,
+    reviewed_by: adminId,
+    review_note: null,
+  }).eq("id", requestId);
+
+  const { logSignupComplete } = await import("@/lib/admin/audit");
+  await logSignupComplete(authUser.user.id, requestId, email);
+
+  return { ok: true, email };
+}
+
 /** Create public.users row with role ADMIN for bootstrap admin. Uses service role. */
 export async function createAdminProfileForOnboarding(
   authUserId: string,
@@ -358,11 +431,12 @@ async function clearTokenUsedAt(
 
 /**
  * Consume token, create Auth user, upsert public.users, mark request COMPLETED.
- * Uses service role only. Returns email on success so caller can sign user in.
+ * Uses service role only. Returns email + auto-generated password (for session creation only).
+ * Password is randomly generated — users always sign in via magic link.
  */
 export async function consumeApprovalTokenAndCreateUser(params: {
   token: string;
-  password: string;
+  password?: string; // deprecated: ignored, random password is generated internally
   username?: string | null;
   name: string;
   role: UserRole;
@@ -371,7 +445,7 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   affiliation?: string | null;
   denomination?: string | null;
   faithYears?: number | null;
-}): Promise<{ ok: true; email: string } | { error: string }> {
+}): Promise<{ ok: true; email: string; _pw: string } | { error: string }> {
   const admin = getSupabaseAdmin();
   if (!admin) return { error: "Server not configured" };
 
@@ -380,8 +454,8 @@ export async function consumeApprovalTokenAndCreateUser(params: {
 
   const { request } = reserved;
   const email = request.email.trim().toLowerCase();
-  const password = params.password.trim();
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  // Always generate a random password — users log in via magic link only
+  const password = randomBytes(32).toString("base64url");
 
   const role = SIGNUP_ROLES.includes(params.role) ? params.role : request.role;
   const name = params.name?.trim() || request.name?.trim() || "Member";
@@ -441,5 +515,5 @@ export async function consumeApprovalTokenAndCreateUser(params: {
   const { logSignupComplete } = await import("@/lib/admin/audit");
   await logSignupComplete(authUser.user.id, request.id, email);
 
-  return { ok: true, email };
+  return { ok: true, email, _pw: password };
 }

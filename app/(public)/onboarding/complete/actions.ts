@@ -10,7 +10,6 @@ export type CompleteSignupResult = { ok: true } | { error: string };
 
 export async function completeSignupAction(params: {
   token: string;
-  password: string;
   username?: string | null;
   name: string;
   role: UserRole;
@@ -26,7 +25,6 @@ export async function completeSignupAction(params: {
 
   const result = await consumeApprovalTokenAndCreateUser({
     token: params.token.trim(),
-    password: params.password,
     username: params.username?.trim() || null,
     name,
     role,

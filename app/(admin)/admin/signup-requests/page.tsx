@@ -5,7 +5,6 @@ import type { SignupRequestStatus } from "@/lib/domain/types";
 
 const TABS: { value: SignupRequestStatus | "ALL"; label: string }[] = [
   { value: "PENDING", label: "Pending" },
-  { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
   { value: "COMPLETED", label: "Completed" },
   { value: "ALL", label: "All" },
@@ -28,7 +27,7 @@ export default async function AdminSignupRequestsPage({ searchParams }: Props) {
           Signup requests
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Review and approve or reject access requests. Approved users receive an email to complete signup.
+          Review and approve or reject access requests. Approved users instantly get an account and receive a login link by email.
         </p>
       </div>
 

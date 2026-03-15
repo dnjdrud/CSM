@@ -283,7 +283,30 @@ export function PostCard({
       </header>
 
       <div className="mt-2">
-        {shouldClamp ? (
+        {post.subscribersOnly && !post.isViewerSubscriber && effectiveUserId !== post.authorId ? (
+          <div className="relative rounded-xl overflow-hidden border border-theme-border/60">
+            {/* Blurred preview of first ~120 chars */}
+            <div className="px-4 py-3 text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans blur-sm select-none pointer-events-none line-clamp-3">
+              {post.content.slice(0, 120)}
+            </div>
+            {/* Lock overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-theme-surface/80 backdrop-blur-sm px-4 py-4 text-center">
+              <span className="text-2xl" aria-hidden>🔒</span>
+              <p className="text-[13px] font-medium text-theme-text">구독 후 열람 가능</p>
+              {post.authorSubscriptionPriceKrw && (
+                <p className="text-[12px] text-theme-muted">
+                  월 {post.authorSubscriptionPriceKrw.toLocaleString()}원
+                </p>
+              )}
+              <Link
+                href={`/profile/${post.authorId}?tab=crow`}
+                className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-theme-primary text-white text-[12px] font-semibold hover:opacity-90 transition-opacity"
+              >
+                <span aria-hidden>🐦</span> 구독하기
+              </Link>
+            </div>
+          </div>
+        ) : shouldClamp ? (
           <>
             <div className="line-clamp-6 text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans">
               {post.content}

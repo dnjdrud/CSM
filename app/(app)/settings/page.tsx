@@ -19,6 +19,8 @@ export default async function SettingsPage() {
     { href: "/settings/account", icon: "🔐", label: t.settings.account, desc: t.settings.accountDesc },
     { href: "/settings/notifications", icon: "🔔", label: t.settings.notificationsLabel, desc: t.settings.notificationsDesc },
     { href: "/bookmarks", icon: "🔖", label: t.settings.bookmarks, desc: t.settings.bookmarksDesc },
+    { href: "/settings/candles", icon: "🕯️", label: "캔들 충전", desc: "캔들을 충전하고 크리에이터를 구독하세요" },
+    { href: "/settings/creator", icon: "🐦", label: "크리에이터 설정", desc: "구독 가격 설정 및 구독자 관리" },
   ] as const;
 
   return (

@@ -26,8 +26,6 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
   const t = useT();
   const sf = t.signupForm;
 
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
   const [name, setName] = useState(request.name ?? "");
   const [role, setRole] = useState<UserRole>(request.role);
@@ -43,8 +41,6 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
   }, [initialError]);
 
   const canSubmit =
-    password.length >= 8 &&
-    password === confirmPassword &&
     name.trim().length > 0 &&
     username.trim().length >= 2 &&
     /^[a-zA-Z0-9_]+$/.test(username.trim()) &&
@@ -97,44 +93,6 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               autoComplete="username"
             />
             <p className="mt-1 text-xs text-gray-500">{sf.usernameHelper}</p>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-800">
-              {sf.password} <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={sf.passwordPlaceholder}
-              className={inputReqCls}
-              autoComplete="new-password"
-              required
-              minLength={8}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-800">
-              {sf.confirmPassword} <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder={sf.confirmPasswordPlaceholder}
-              className={inputReqCls}
-              autoComplete="new-password"
-              required
-            />
-            {password && confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">{sf.passwordMismatch}</p>
-            )}
           </div>
 
           {/* Name */}

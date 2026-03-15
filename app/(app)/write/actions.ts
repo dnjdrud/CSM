@@ -71,6 +71,7 @@ export async function composePostAction(params: {
   tags?: string[];
   youtubeUrl?: string;
   mediaUrls?: string[];
+  subscribersOnly?: boolean;
 }): Promise<{ ok: true; postId: string } | { ok: false; error: string }> {
   logInfo("SERVER_ACTION", "composePostAction(write) start", {
     hasContent: params.content.trim().length > 0,
@@ -109,6 +110,7 @@ export async function composePostAction(params: {
       tags,
       youtubeUrl: params.youtubeUrl || null,
       mediaUrls: params.mediaUrls ?? [],
+      subscribersOnly: params.subscribersOnly ?? false,
     });
     logInfo("SERVER_ACTION", "composePostAction(write) success", {
       userId: session.userId,

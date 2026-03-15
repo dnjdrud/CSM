@@ -398,6 +398,7 @@ export async function createPost(input: {
   tags?: string[];
   youtubeUrl?: string | null;
   mediaUrls?: string[];
+  subscribersOnly?: boolean;
 }): Promise<DomainPost> {
   if (DATA_MODE === "supabase") return supabaseRepo.createPost(input);
   const id = `p${Date.now()}`;

@@ -674,6 +674,7 @@ export async function createPost(input: {
   tags?: string[];
   youtubeUrl?: string | null;
   mediaUrls?: string[];
+  subscribersOnly?: boolean;
 }): Promise<DomainPost> {
   const supabase = await supabaseServer();
   const tags = [...new Set((input.tags ?? []).map(normalizeTag).filter(Boolean))].slice(0, 5);
@@ -683,6 +684,7 @@ export async function createPost(input: {
     content: input.content.trim(),
     visibility: input.visibility ?? "MEMBERS",
     tags,
+    subscribers_only: input.subscribersOnly ?? false,
   };
   if (input.youtubeUrl) payload.youtube_url = input.youtubeUrl;
   if (input.mediaUrls && input.mediaUrls.length > 0) payload.media_urls = input.mediaUrls;

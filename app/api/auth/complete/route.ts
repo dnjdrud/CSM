@@ -1,7 +1,7 @@
 /**
  * POST /api/auth/complete — Complete signup with token, then sign user in and redirect to /feed.
- * Form body: token, password, name, role, church?, bio?, affiliation?, username?
- * Uses service role for completion; anon client for signInWithPassword and cookie set.
+ * Form body: token, name, role, church?, bio?, affiliation?, username?
+ * Password is generated internally — users always authenticate via magic link.
  */
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -41,25 +41,17 @@ export async function POST(request: Request) {
   }
 
   const token = (formData.get("token") as string)?.trim();
-  const password = (formData.get("password") as string)?.trim();
   const name = (formData.get("name") as string)?.trim();
 
-  if (!token || !password || !name) {
+  if (!token || !name) {
     const back = new URL("/auth/complete", baseUrl(request));
     if (token) back.searchParams.set("token", token);
-    back.searchParams.set("error", encodeURIComponent("Token, password, and name are required."));
-    return NextResponse.redirect(back.toString());
-  }
-  if (password.length < 8) {
-    const back = new URL("/auth/complete", baseUrl(request));
-    back.searchParams.set("token", token);
-    back.searchParams.set("error", encodeURIComponent("Password must be at least 8 characters."));
+    back.searchParams.set("error", encodeURIComponent("Token and name are required."));
     return NextResponse.redirect(back.toString());
   }
 
   const result = await consumeApprovalTokenAndCreateUser({
     token,
-    password,
     username: (formData.get("username") as string)?.trim() || null,
     name,
     role: parseRole((formData.get("role") as string) || null),
@@ -80,11 +72,6 @@ export async function POST(request: Request) {
   const response = NextResponse.redirect(redirectTo.toString());
 
   const isProduction = process.env.NODE_ENV === "production";
-  const cookieOpts: { path: string; secure?: boolean; sameSite?: "lax" } = {
-    path: "/",
-    secure: isProduction,
-    sameSite: "lax",
-  };
 
   const supabase = wrapSupabaseAuthSafe(createServerClient(url, anonKey, {
     cookies: {
@@ -93,15 +80,16 @@ export async function POST(request: Request) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name: n, value, options }) =>
-          response.cookies.set(n, value, { path: "/", ...options })
+          response.cookies.set(n, value, { path: "/", secure: isProduction, ...options })
         );
       },
     },
   }));
 
+  // Sign in with auto-generated password to establish initial session
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: result.email,
-    password,
+    password: result._pw,
   });
 
   if (signInError) {

@@ -6,12 +6,12 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { ADMIN_ACTION, AUDIT_TARGET_TYPE } from "@/lib/admin/constants";
 import {
   listSignupRequests,
-  approveSignupRequest,
+  approveAndCreateUser,
   rejectSignupRequest,
 } from "@/lib/data/signupRepository";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { supabaseServer } from "@/lib/supabase/server";
-import { sendApprovalEmail } from "@/lib/email/send";
+import { sendApprovalLoginEmail } from "@/lib/email/send";
+import { createMagicLink } from "@/lib/auth/magicLink";
 import { logError } from "@/lib/logging/systemLogger";
 import { getBaseUrlForLinks } from "@/lib/url/site";
 import type { SignupRequestStatus } from "@/lib/domain/types";
@@ -26,30 +26,29 @@ export async function listSignupRequestsAction(
   return { requests };
 }
 
-/** Approve: DB update + token 생성은 관리자 세션(RLS)으로 항상 수행. 이메일 실패 시 emailError 반환. */
+/** Approve: immediately creates account + sends magic link login email. */
 export async function approveSignupRequestAction(
   requestId: string
-): Promise<{ ok: true; link?: string; emailError?: string } | { error: string }> {
+): Promise<{ ok: true; emailError?: string } | { error: string }> {
   const admin = await getAdminOrNull();
   if (!admin) return { error: "Unauthorized" };
 
   const supabase = await supabaseServer();
 
   try {
-    const result = await approveSignupRequest(admin.userId, requestId, supabase);
-    if (!result) {
-      return { error: "Request not found or not pending." };
-    }
+    const result = await approveAndCreateUser(admin.userId, requestId, supabase);
+    if ("error" in result) return { error: result.error };
 
-    const completionUrl = `${getBaseUrlForLinks()}/auth/complete?token=${encodeURIComponent(result.token)}`;
     let emailError: string | undefined;
-
     try {
-      await sendApprovalEmail(result.email, completionUrl);
+      const magicLink = await createMagicLink(result.email);
+      if ("error" in magicLink) throw new Error(magicLink.error);
+      const loginUrl = `${getBaseUrlForLinks()}/auth/verify-magic?id=${magicLink.id}&token=${encodeURIComponent(magicLink.rawToken)}`;
+      await sendApprovalLoginEmail(result.email, loginUrl);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       emailError = msg;
-      logError("SERVER_ACTION", "[approveSignupRequest] sendApprovalEmail failed", {
+      logError("SERVER_ACTION", "[approveSignupRequest] sendApprovalLoginEmail failed", {
         requestId,
         email: result.email,
         error: msg,
@@ -61,12 +60,12 @@ export async function approveSignupRequestAction(
       action: ADMIN_ACTION.APPROVE_SIGNUP_REQUEST,
       targetType: AUDIT_TARGET_TYPE.SIGNUP_REQUEST,
       targetId: requestId,
-      metadata: { email: result.email, link: completionUrl },
+      metadata: { email: result.email },
     });
 
     revalidatePath("/admin/signup-requests");
     revalidatePath("/admin/signups");
-    return { ok: true, link: completionUrl, emailError };
+    return { ok: true, emailError };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[approveSignupRequest] threw", e);

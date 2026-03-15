@@ -81,6 +81,8 @@ export interface Post {
   youtubeUrl?: string | null;
   /** Media URLs for PHOTO type posts (Supabase Storage public URLs). */
   mediaUrls?: string[];
+  /** If true, only active paid subscribers can view the full content. */
+  subscribersOnly?: boolean;
 }
 
 export interface Comment {
@@ -184,6 +186,10 @@ export interface PostWithAuthor extends Post {
   reactionCounts?: ReactionCounts;
   /** Total comment count for the post. */
   commentCount?: number;
+  /** Whether the current viewer is an active paid subscriber of the author. */
+  isViewerSubscriber?: boolean;
+  /** Monthly subscription price for the author (KRW), if set. */
+  authorSubscriptionPriceKrw?: number | null;
 }
 
 /** Ministry or worker that can receive support. No goals, no public amounts. */

@@ -36,9 +36,11 @@ function getRedirectPath(category: PostCategory, postId: string, cellTopic?: str
 export default function WritePageClient({
   recommendedCategories = [],
   writeHint,
+  stripeAccountEnabled = false,
 }: {
   recommendedCategories?: PostCategory[];
   writeHint?: string;
+  stripeAccountEnabled?: boolean;
 }) {
   const t = useT();
   const searchParams = useSearchParams();
@@ -82,6 +84,7 @@ export default function WritePageClient({
         postType={selected}
         initialTag={initialTag}
         requestTypeOptions={REQUEST_TYPE_OPTIONS}
+        stripeAccountEnabled={stripeAccountEnabled}
         onBack={() => { setSelected(null); setInitialTag(""); }}
       />
     );
@@ -277,11 +280,13 @@ function ComposeForm({
   postType,
   initialTag = "",
   requestTypeOptions,
+  stripeAccountEnabled = false,
   onBack,
 }: {
   postType: PostType;
   initialTag?: string;
   requestTypeOptions: readonly { value: string; label: string }[];
+  stripeAccountEnabled?: boolean;
   onBack: () => void;
 }) {
   const t = useT();
@@ -301,6 +306,7 @@ function ComposeForm({
   });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [subscribersOnly, setSubscribersOnly] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -344,6 +350,7 @@ function ComposeForm({
       tags: allTags,
       youtubeUrl: youtubeUrl.trim() || undefined,
       mediaUrls: imageUrl ? [imageUrl] : [],
+      subscribersOnly,
     });
 
     setSubmitting(false);
@@ -476,6 +483,33 @@ function ComposeForm({
             className="w-full text-[14px] border border-theme-border rounded-lg px-3 py-2 bg-theme-surface text-theme-text placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-primary/40"
           />
         </div>
+
+        {stripeAccountEnabled && (
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div
+              role="switch"
+              aria-checked={subscribersOnly}
+              onClick={() => setSubscribersOnly((v) => !v)}
+              className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${
+                subscribersOnly ? "bg-theme-primary" : "bg-theme-border"
+              }`}
+            >
+              <span
+                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
+                  subscribersOnly ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </div>
+            <span className="text-[13px] text-theme-text">
+              구독자 전용
+              {subscribersOnly && (
+                <span className="ml-1.5 text-[11px] text-theme-primary font-medium">
+                  (유료 구독자만 열람 가능)
+                </span>
+              )}
+            </span>
+          </label>
+        )}
 
         {error && (
           <p className="text-[13px] text-red-600" role="alert">{error}</p>
