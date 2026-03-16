@@ -64,7 +64,7 @@ export function SharePrayerModal({ note, onClose }: Props) {
     setStep("done");
   }
 
-  const typeLabel = note.type === "prayer" ? "🙏 기도제목" : "📔 삶 기록";
+  const typeLabel = note.type === "prayer" ? "🙏 기도 노트" : "📔 삶 기록";
   const filtered = query.trim()
     ? users.filter((u) =>
         u.name.toLowerCase().includes(query.toLowerCase())
@@ -90,7 +90,7 @@ export function SharePrayerModal({ note, onClose }: Props) {
               {typeLabel}
             </p>
             <h2 className="text-[16px] font-bold text-theme-text mt-0.5">
-              {step === "done" ? "기도 요청 전송 완료" : "기도 요청 보내기"}
+              {step === "done" ? "공유 완료" : "공유하기"}
             </h2>
           </div>
           <button
@@ -118,7 +118,7 @@ export function SharePrayerModal({ note, onClose }: Props) {
         {step === "pick" && (
           <div className="px-5 pb-6 mt-4 space-y-3">
             <p className="text-[13px] text-theme-muted">
-              기도를 부탁할 사람을 선택하세요.
+              노트를 공유할 사람을 선택하세요.
             </p>
 
             {/* 검색 */}
@@ -200,11 +200,9 @@ export function SharePrayerModal({ note, onClose }: Props) {
               </div>
             </div>
 
-            <p className="text-[12px] text-theme-muted leading-relaxed">
-              이 기록을 {selected.name}님에게 DM으로 보냅니다.
-              <br />
-              상대방은 내용을 읽고 기도로 함께할 수 있습니다.
-            </p>
+                <p className="text-[12px] text-theme-muted leading-relaxed">
+                  이 기록을 {selected.name}님에게 DM으로 보냅니다.
+                </p>
 
             {error && (
               <p className="text-[12px] text-red-500" role="alert">
@@ -224,7 +222,7 @@ export function SharePrayerModal({ note, onClose }: Props) {
                 disabled={sending}
                 className="flex-1 py-2.5 rounded-xl bg-theme-primary text-white text-[13px] font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
-                {sending ? "보내는 중…" : "기도 요청 보내기 🙏"}
+                {sending ? "보내는 중…" : "노트 보내기 🙏"}
               </button>
             </div>
           </div>
@@ -235,12 +233,10 @@ export function SharePrayerModal({ note, onClose }: Props) {
           <div className="px-5 pb-8 mt-4 text-center space-y-3">
             <span className="text-5xl block" aria-hidden>🕊️</span>
             <p className="text-[15px] font-semibold text-theme-text">
-              기도 부탁을 보냈습니다
+              노트를 보냈습니다
             </p>
             <p className="text-[13px] text-theme-muted leading-relaxed">
-              {selected?.name}님이 이 기도를 함께
-              <br />
-              붙들어 주실 거예요.
+              {selected?.name}님과 이 내용을 함께 나눴습니다.
             </p>
             <button
               onClick={onClose}

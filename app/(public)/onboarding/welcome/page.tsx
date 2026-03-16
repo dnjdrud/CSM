@@ -37,7 +37,7 @@ export default function OnboardingWelcomePage() {
           <ul className="space-y-2 text-sm text-theme-text-2">
             <li className="flex items-start gap-2">
               <span className="mt-0.5 text-theme-muted">•</span>
-              <span>피드에서 기도 요청, 묵상, 사역 소식을 나눌 수 있습니다.</span>
+              <span>피드에서 묵상과 사역 소식을 나눌 수 있습니다.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5 text-theme-muted">•</span>

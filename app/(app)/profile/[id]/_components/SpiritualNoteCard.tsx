@@ -175,12 +175,12 @@ export function SpiritualNoteCard({ note }: { note: SpiritualNote }) {
             </button>
           )}
 
-          {/* 기도 요청 공유 */}
+          {/* 노트 공유 */}
           <button
             onClick={() => setSharing(true)}
             className="ml-auto text-[11px] font-medium text-theme-primary/80 hover:text-theme-primary transition-colors flex items-center gap-1"
           >
-            🙏 기도 요청 보내기
+            🙏 노트 공유하기
           </button>
         </div>
       </div>

@@ -8,18 +8,16 @@ import {
   isMuted,
   getBookmarkedPostIds,
   getTodaysDailyPrayer,
-  listPrayerRequests,
 } from "@/lib/data/repository";
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
-import { HOME_FEED_CATEGORIES, PRAYER_CATEGORY_LABELS } from "@/lib/domain/types";
+import { HOME_FEED_CATEGORIES } from "@/lib/domain/types";
 import { TimelineContainer } from "@/components/TimelineContainer";
 import { FeedScopeToggle } from "@/components/FeedScopeToggle";
 import { FeedComposer } from "@/app/(app)/feed/_components/FeedComposer";
 import { SuggestedPeople } from "@/app/(app)/feed/_components/SuggestedPeople";
 import { HomeTabs } from "./_components/HomeTabs";
 import { HomeInfiniteList } from "./_components/HomeInfiniteList";
-import type { HomeTab } from "./_components/HomeTabs";
 import { getRoleUX } from "@/lib/config/roleUX";
 import { getServerT, getServerLocale } from "@/lib/i18n/server";
 import type { Translations } from "@/lib/i18n/translations";
@@ -105,7 +103,6 @@ export default async function HomePage({
   searchParams: Promise<{ tab?: string; scope?: string }>;
 }) {
   const params = await searchParams;
-  const activeTab: HomeTab = params.tab === "prayer" ? "prayer" : "feed";
   const rawScope = params.scope === "following" ? "FOLLOWING" : "ALL";
   const uiScope: "all" | "following" = rawScope === "FOLLOWING" ? "following" : "all";
 
@@ -118,20 +115,12 @@ export default async function HomePage({
       <h1 className="sr-only">홈</h1>
 
       <Suspense fallback={<div className="h-12 border-b border-theme-border" />}>
-        <HomeTabs activeTab={activeTab} />
+        <HomeTabs />
       </Suspense>
 
-      {activeTab === "feed" ? (
-        // Suspense로 감싸야 FeedTabContent가 데이터를 기다리는 동안
-        // 위의 탭바가 이미 화면에 표시된다. (스트리밍)
-        <Suspense fallback={<FeedSkeleton />}>
-          <FeedTabContent currentUserPromise={currentUserPromise} scope={rawScope} uiScope={uiScope} />
-        </Suspense>
-      ) : (
-        <Suspense fallback={<PrayerSkeleton />}>
-          <PrayerTabContent currentUserPromise={currentUserPromise} />
-        </Suspense>
-      )}
+      <Suspense fallback={<FeedSkeleton />}>
+        <FeedTabContent currentUserPromise={currentUserPromise} scope={rawScope} uiScope={uiScope} />
+      </Suspense>
     </TimelineContainer>
   );
 }
@@ -316,115 +305,4 @@ function DailyPrayerBanner({
   );
 }
 
-/* ── Prayer Tab ─────────────────────────────────────────────────────────────
-   최적화 내역:
-   - currentUser + getServerT 병렬 대기.
-   - listFollowingIds → listPrayerRequests는 구조적으로 직렬 불가피:
-     listPrayerRequests의 userIds 인자가 followingIds에 의존하기 때문.
-     근본 해결: follows JOIN을 포함한 단일 DB 쿼리 함수 추가 필요.
-   - 전체 컴포넌트가 Suspense 안에 있어 페이지 셸은 이미 스트리밍된 상태.
-──────────────────────────────────────────────────────────────────────────── */
-
-async function PrayerTabContent({
-  currentUserPromise,
-}: {
-  currentUserPromise: ReturnType<typeof getCurrentUser>;
-}) {
-  const [currentUser, t] = await Promise.all([
-    currentUserPromise,
-    getServerT(),
-  ]);
-
-  // followingIds는 listPrayerRequests의 userIds를 만들기 위해 먼저 필요 — 직렬 불가피
-  const followingIds = currentUser
-    ? await listFollowingIds(currentUser.id)
-    : [];
-
-  const userIds = currentUser
-    ? [...new Set([currentUser.id, ...followingIds])]
-    : null;
-
-  const prayers = userIds
-    ? await listPrayerRequests({ viewerId: currentUser?.id, userIds, limit: 30 })
-    : [];
-
-  return (
-    <div>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border/60 bg-theme-surface-2/30">
-        <p className="text-[12px] text-theme-muted">
-          {t.home.followingPrayerSubtitle}
-        </p>
-        <Link
-          href="/prayer/create"
-          className="text-[12px] font-medium text-theme-primary hover:opacity-80"
-        >
-          {t.home.addPrayer}
-        </Link>
-      </div>
-
-      {prayers.length === 0 ? (
-        <div className="px-4 py-12 text-center space-y-3">
-          <span className="text-4xl" aria-hidden>🙏</span>
-          <p className="text-[15px] font-medium text-theme-text">기도 제목이 없습니다</p>
-          <p className="text-[14px] text-theme-muted leading-relaxed">
-            팔로우한 사람들이 올린 기도 제목이 여기 표시됩니다.
-          </p>
-          <Link
-            href="/prayer"
-            className="inline-block mt-2 text-[13px] text-theme-primary hover:opacity-80"
-          >
-            전체 기도 게시판 보기 →
-          </Link>
-        </div>
-      ) : (
-        <div className="divide-y divide-theme-border/60">
-          {prayers.map((prayer) => {
-            const initial = prayer.author?.name?.charAt(0) ?? "?";
-            return (
-              <Link
-                key={prayer.id}
-                href={`/prayer/${prayer.id}`}
-                className="block px-4 py-4 hover:bg-theme-surface-2/40 transition-colors"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-full bg-theme-primary/20 flex items-center justify-center text-theme-primary font-semibold text-sm shrink-0">
-                    {initial}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[13px] font-medium text-theme-text">
-                        {prayer.author?.name ?? "알 수 없음"}
-                      </span>
-                      <span className="text-[11px] bg-theme-primary/10 text-theme-primary px-2 py-0.5 rounded-full">
-                        {PRAYER_CATEGORY_LABELS[prayer.category]}
-                      </span>
-                      {prayer.answeredAt && (
-                        <span className="text-[11px] bg-theme-success-bg text-theme-success px-2 py-0.5 rounded-full">
-                          ✓ 응답
-                        </span>
-                      )}
-                      <span className="text-[12px] text-theme-muted ml-auto">
-                        {new Date(prayer.createdAt).toLocaleDateString("ko-KR")}
-                      </span>
-                    </div>
-                    <p className="text-[14px] text-theme-text mt-1 line-clamp-2 leading-relaxed">
-                      {prayer.content}
-                    </p>
-                    <p className="text-[12px] text-theme-muted mt-1.5">
-                      🙏 {prayer.intercessorCount ?? 0}명이 기도했습니다
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-          <div className="px-4 py-3 text-center">
-            <Link href="/prayer" className="text-[13px] text-theme-primary hover:opacity-80">
-              전체 기도 게시판 보기 →
-            </Link>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+// Prayer tab content has been removed as part of retiring the prayer feature.

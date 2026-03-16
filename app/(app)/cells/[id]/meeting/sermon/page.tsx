@@ -13,8 +13,8 @@ export default async function MeetingSermonPage({ params }: { params: Promise<{ 
         </div>
         <input className="w-full rounded-xl border border-theme-border bg-theme-surface p-4 text-[14px] text-theme-text placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-primary/30" placeholder="본문 말씀 (예: 마태복음 5:1-12)" />
         <textarea className="w-full rounded-xl border border-theme-border bg-theme-surface p-4 text-[14px] text-theme-text placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-primary/30 resize-none min-h-[120px]" placeholder="말씀에서 은혜 받은 내용을 나눠보세요…" />
-        <Link href={`/cells/${id}/meeting/prayer`} className="block w-full rounded-lg bg-theme-primary px-4 py-3 text-center text-[14px] font-medium text-white hover:opacity-90">
-          다음: 기도제목 나눔 →
+        <Link href={`/cells/${id}/meeting/pray`} className="block w-full rounded-lg bg-theme-primary px-4 py-3 text-center text-[14px] font-medium text-white hover:opacity-90">
+          다음: 함께 기도 →
         </Link>
       </div>
     </TimelineContainer>

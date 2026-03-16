@@ -48,10 +48,7 @@ function GuideKo() {
               <ul className="mt-2 space-y-2">
                 <li><strong>Feed</strong> — 팔로잉한 사람들의 셀 게시글 · 구독한 크리에이터 영상</li>
                 <li>
-                  <strong>Prayer</strong> — 기도 요청 · "기도했습니다" 버튼
-                  <p className="text-[12px] text-theme-muted mt-0.5">
-                    Prayer 탭은 토론이 아니라 기도 참여를 위한 공간입니다. (댓글 기능 없음)
-                  </p>
+                  <strong>Prayer</strong> — (이 기능은 현재 사용되지 않습니다)
                 </li>
               </ul>
             </TabBlock>

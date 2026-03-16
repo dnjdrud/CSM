@@ -12,7 +12,6 @@ export const metadata = {
 };
 
 const CATEGORIES = [
-  { key: "PRAYER",      label: "기도",   icon: "🙏", desc: "기도제목을 나누고 함께 기도해요" },
   { key: "DEVOTIONAL",  label: "묵상",   icon: "📖", desc: "말씀과 묵상을 나눠요" },
   { key: "TESTIMONY",   label: "간증",   icon: "✨", desc: "하나님의 역사를 나눠요" },
   { key: "MINISTRY",    label: "사역",   icon: "🌏", desc: "선교와 사역 소식을 나눠요" },
@@ -113,13 +112,7 @@ export default async function ExplorePage() {
               <p className="text-[11px] text-theme-muted">소그룹 공동체</p>
             </div>
           </Link>
-          <Link href="/prayer" className="flex items-center gap-2 rounded-xl border border-theme-border bg-theme-surface px-3 py-3 hover:border-theme-primary/40 transition-colors">
-            <span className="text-xl" aria-hidden>🙏</span>
-            <div>
-              <p className="text-[13px] font-medium text-theme-text">기도 요청</p>
-              <p className="text-[11px] text-theme-muted">중보기도 네트워크</p>
-            </div>
-          </Link>
+          {/* Prayer quick link removed */}
           <Link href="/missions" className="flex items-center gap-2 rounded-xl border border-theme-border bg-theme-surface px-3 py-3 hover:border-theme-primary/40 transition-colors">
             <span className="text-xl" aria-hidden>🌏</span>
             <div>

@@ -90,7 +90,6 @@ export default async function CellsDetailPage({ params }: { params: Promise<{ id
             <nav className="flex gap-3 mt-3 text-[13px]" aria-label="셀 메뉴">
               <Link href={`/cells/${id}`} className="font-medium text-theme-primary border-b-2 border-theme-primary pb-0.5">채팅</Link>
               <Link href={`/cells/${id}/posts`} className="text-theme-muted hover:text-theme-text">게시판</Link>
-              <Link href={`/cells/${id}/prayer`} className="text-theme-muted hover:text-theme-text">기도제목</Link>
               <Link href={`/cells/${id}/meetings`} className="text-theme-muted hover:text-theme-text">모임</Link>
               <Link href={`/cells/${id}/members`} className="text-theme-muted hover:text-theme-text">멤버</Link>
             </nav>

@@ -169,8 +169,8 @@ const ko: Translations = {
   home: {
     feedTab: "피드", prayerTab: "기도",
     dailyPrayer: "오늘의 기도", prayTogether: "함께 기도하기 →", viewPrayerBoard: "기도 게시판 보기 →",
-    followingPrayerSubtitle: "팔로우한 사람들의 기도 제목", myPrayers: "내 기도", addPrayer: "+ 기도 제목",
-    feedError: "피드를 불러올 수 없습니다.", prayerError: "기도 제목을 불러올 수 없습니다.",
+    followingPrayerSubtitle: "팔로우한 사람들의 글", myPrayers: "내 글", addPrayer: "+ 글",
+    feedError: "피드를 불러올 수 없습니다.", prayerError: "콘텐츠를 불러올 수 없습니다.",
   },
   write: {
     typePickerTitle: "무엇을 나누실 건가요?", typePickerDesc: "게시글 종류를 선택하세요", recommended: "추천", back: "← 뒤로",
@@ -294,8 +294,8 @@ const en: Translations = {
   home: {
     feedTab: "Feed", prayerTab: "Prayer",
     dailyPrayer: "Today's Prayer", prayTogether: "Pray together →", viewPrayerBoard: "View prayer board →",
-    followingPrayerSubtitle: "Prayer requests from people you follow", myPrayers: "My Prayers", addPrayer: "+ Prayer",
-    feedError: "Failed to load feed.", prayerError: "Failed to load prayers.",
+    followingPrayerSubtitle: "Posts from people you follow", myPrayers: "My posts", addPrayer: "+ Post",
+    feedError: "Failed to load feed.", prayerError: "Failed to load content.",
   },
   write: {
     typePickerTitle: "What would you like to share?", typePickerDesc: "Select a post type", recommended: "Recommended", back: "← Back",

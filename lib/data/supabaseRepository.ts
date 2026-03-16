@@ -34,9 +34,6 @@ import type {
   SupportPurpose,
   DirectMessage,
   ConversationPreview,
-  PrayerRequest,
-  PrayerCategory,
-  PrayerIntercession,
   NotificationPrefs,
   MissionaryProject,
   MissionaryProjectStatus,
@@ -1662,7 +1659,7 @@ export async function publishNoteToCommunity(params: {
   if (note.publishedPostId) return { postId: note.publishedPostId };
   const post = await createPost({
     authorId: params.userId,
-    category: "PRAYER",
+    category: "TESTIMONY",
     content: note.content,
     visibility: "MEMBERS",
     tags: note.tags ?? [],
@@ -2136,161 +2133,6 @@ export async function updateNotificationPrefs(
     .eq("id", userId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
-}
-
-// =============================================================
-// Prayer requests
-// =============================================================
-
-function rowToPrayerRequest(r: {
-  id: string;
-  user_id: string;
-  content: string;
-  category: string;
-  visibility: string;
-  answered_at?: string | null;
-  answer_note?: string | null;
-  created_at: string;
-  users?: { id: string; name: string | null; role: string | null; bio: string | null; affiliation: string | null; created_at: string | null; avatar_url?: string | null } | null;
-  prayer_intercessions?: { count: number }[] | null;
-  viewer_prayed?: boolean;
-}): PrayerRequest {
-  return {
-    id: r.id,
-    userId: r.user_id,
-    content: r.content,
-    category: r.category as PrayerCategory,
-    visibility: r.visibility as PrayerRequest["visibility"],
-    answeredAt: r.answered_at ?? null,
-    answerNote: r.answer_note ?? null,
-    createdAt: r.created_at,
-    author: r.users ? rowToUser(r.users as any) : undefined,
-    intercessorCount: r.prayer_intercessions?.[0]?.count ?? 0,
-    hasPrayed: r.viewer_prayed ?? false,
-  };
-}
-
-export async function listPrayerRequests(opts: {
-  limit?: number;
-  userId?: string | null; // filter to specific user's requests
-  userIds?: string[] | null; // filter to multiple users (e.g. followed users)
-  viewerId?: string | null;
-  onlyAnswered?: boolean;
-} = {}): Promise<PrayerRequest[]> {
-  const supabase = await supabaseServer();
-  const limit = opts.limit ?? 30;
-
-  let q = supabase
-    .from("prayer_requests")
-    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), prayer_intercessions(count)")
-    .eq("visibility", "PUBLIC")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (opts.userId) q = q.eq("user_id", opts.userId);
-  if (opts.userIds && opts.userIds.length > 0) q = q.in("user_id", opts.userIds);
-  if (opts.onlyAnswered) q = q.not("answered_at", "is", null);
-
-  const { data, error } = await q;
-  if (error) { console.error("[listPrayerRequests]", error.message); return []; }
-
-  const rows = (data ?? []) as any[];
-  if (!opts.viewerId) return rows.map(rowToPrayerRequest);
-
-  // Check which ones the viewer has prayed for
-  const ids = rows.map((r: any) => r.id);
-  const { data: intercessions } = await supabase
-    .from("prayer_intercessions")
-    .select("prayer_request_id")
-    .in("prayer_request_id", ids)
-    .eq("user_id", opts.viewerId);
-  const prayedSet = new Set((intercessions ?? []).map((i: any) => i.prayer_request_id));
-  return rows.map((r: any) => rowToPrayerRequest({ ...r, viewer_prayed: prayedSet.has(r.id) }));
-}
-
-export async function getPrayerRequestById(id: string, viewerId?: string | null): Promise<PrayerRequest | null> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from("prayer_requests")
-    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), prayer_intercessions(count)")
-    .eq("id", id)
-    .single();
-  if (error || !data) return null;
-
-  let hasPrayed = false;
-  if (viewerId) {
-    const { data: pi } = await supabase
-      .from("prayer_intercessions")
-      .select("id")
-      .eq("prayer_request_id", id)
-      .eq("user_id", viewerId)
-      .single();
-    hasPrayed = !!pi;
-  }
-  return rowToPrayerRequest({ ...(data as any), viewer_prayed: hasPrayed });
-}
-
-export async function createPrayerRequest(input: {
-  userId: string;
-  content: string;
-  category: PrayerCategory;
-  visibility: "PUBLIC" | "CELL" | "PRIVATE";
-}): Promise<PrayerRequest> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from("prayer_requests")
-    .insert({ user_id: input.userId, content: input.content.trim(), category: input.category, visibility: input.visibility })
-    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url), prayer_intercessions(count)")
-    .single();
-  if (error) throw new Error(error.message);
-  return rowToPrayerRequest(data as any);
-}
-
-export async function intercedeForPrayer(prayerRequestId: string, userId: string, message?: string): Promise<void> {
-  const supabase = await supabaseServer();
-  const { error } = await supabase
-    .from("prayer_intercessions")
-    .upsert({ prayer_request_id: prayerRequestId, user_id: userId, message: message ?? null }, { onConflict: "prayer_request_id,user_id" });
-  if (error) throw new Error(error.message);
-}
-
-export async function removeIntercession(prayerRequestId: string, userId: string): Promise<void> {
-  const supabase = await supabaseServer();
-  await supabase.from("prayer_intercessions").delete().match({ prayer_request_id: prayerRequestId, user_id: userId });
-}
-
-export async function markPrayerAnswered(prayerRequestId: string, userId: string, answerNote?: string): Promise<void> {
-  const supabase = await supabaseServer();
-  const { error } = await supabase
-    .from("prayer_requests")
-    .update({ answered_at: new Date().toISOString(), answer_note: answerNote ?? null })
-    .eq("id", prayerRequestId)
-    .eq("user_id", userId);
-  if (error) throw new Error(error.message);
-}
-
-export async function deletePrayerRequest(id: string, userId: string): Promise<void> {
-  const supabase = await supabaseServer();
-  await supabase.from("prayer_requests").delete().eq("id", id).eq("user_id", userId);
-}
-
-export async function listPrayerIntercessions(prayerRequestId: string): Promise<PrayerIntercession[]> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from("prayer_intercessions")
-    .select("*, users(id,name,role,bio,affiliation,created_at,avatar_url)")
-    .eq("prayer_request_id", prayerRequestId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-  if (error) return [];
-  return (data ?? []).map((r: any) => ({
-    id: r.id,
-    prayerRequestId: r.prayer_request_id,
-    userId: r.user_id,
-    message: r.message ?? null,
-    createdAt: r.created_at,
-    author: r.users ? rowToUser(r.users) : undefined,
-  }));
 }
 
 // =============================================================

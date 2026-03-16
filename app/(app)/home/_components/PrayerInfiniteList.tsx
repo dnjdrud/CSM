@@ -62,7 +62,7 @@ export function PrayerInfiniteList({
           팔로우한 사람들이 올린 기도 제목이 여기 표시됩니다.
         </p>
         <Link
-          href="/prayer"
+          href="/home"
           className="inline-block mt-2 text-[13px] text-theme-primary hover:opacity-80"
         >
           전체 기도 게시판 보기 →

@@ -6,7 +6,7 @@ export default async function MeetingPrayPage({ params }: { params: Promise<{ id
     <TimelineContainer>
       <div className="px-4 py-6 space-y-6 text-center">
         <div>
-          <Link href={`/cells/${id}/meeting/prayer`} className="text-[12px] text-theme-muted hover:text-theme-primary">← 기도제목</Link>
+          <Link href={`/cells/${id}/meeting/sermon`} className="text-[12px] text-theme-muted hover:text-theme-primary">← 설교 나눔</Link>
           <p className="text-[11px] text-theme-muted uppercase tracking-wider mt-2">4단계</p>
           <h1 className="text-xl font-semibold text-theme-text mt-1">✝️ 함께 기도</h1>
         </div>

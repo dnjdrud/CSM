@@ -1326,21 +1326,6 @@ export async function updateNotificationPrefs(userId: string, prefs: Partial<imp
 // Prayer requests
 // =============================================================
 
-export async function listPrayerRequests(opts?: Parameters<typeof supabaseRepo.listPrayerRequests>[0]): Promise<import("@/lib/domain/types").PrayerRequest[]> {
-  if (DATA_MODE === "supabase") return supabaseRepo.listPrayerRequests(opts);
-  return [];
-}
-
-export async function getPrayerRequestById(id: string, viewerId?: string | null): Promise<import("@/lib/domain/types").PrayerRequest | null> {
-  if (DATA_MODE === "supabase") return supabaseRepo.getPrayerRequestById(id, viewerId);
-  return null;
-}
-
-export async function createPrayerRequest(input: Parameters<typeof supabaseRepo.createPrayerRequest>[0]): Promise<import("@/lib/domain/types").PrayerRequest> {
-  if (DATA_MODE === "supabase") return supabaseRepo.createPrayerRequest(input);
-  throw new Error("Not supported");
-}
-
 export async function intercedeForPrayer(prayerRequestId: string, userId: string, message?: string): Promise<void> {
   if (DATA_MODE === "supabase") return supabaseRepo.intercedeForPrayer(prayerRequestId, userId, message);
 }
@@ -1356,12 +1341,6 @@ export async function markPrayerAnswered(prayerRequestId: string, userId: string
 export async function deletePrayerRequest(id: string, userId: string): Promise<void> {
   if (DATA_MODE === "supabase") return supabaseRepo.deletePrayerRequest(id, userId);
 }
-
-export async function listPrayerIntercessions(prayerRequestId: string): Promise<import("@/lib/domain/types").PrayerIntercession[]> {
-  if (DATA_MODE === "supabase") return supabaseRepo.listPrayerIntercessions(prayerRequestId);
-  return [];
-}
-
 // =============================================================
 // Missionary projects
 // =============================================================

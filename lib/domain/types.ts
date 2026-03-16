@@ -14,24 +14,21 @@ export type PostCategory =
   | "MINISTRY"   // 사역 나눔
   | "TESTIMONY"  // 간증
   | "PHOTO"      // 사진
-  // --- 기도 탭 ---
-  | "PRAYER"     // 기도 제목
   // --- 셀 탭 ---
   | "CELL"       // 셀 나눔
   // --- 컨텐츠 탭 ---
   | "CONTENT"    // 유튜브/컨텐츠
-  | "REQUEST"    // 후원/기도 요청
+  | "REQUEST"    // 후원/제작 요청
   // --- 선교 탭 ---
   | "MISSION";   // 선교 업데이트
 
 /** Maps each post category to the bottom-nav tab where it appears. */
-export const CATEGORY_TAB: Record<PostCategory, "home" | "prayer" | "cells" | "contents" | "mission"> = {
+export const CATEGORY_TAB: Record<PostCategory, "home" | "cells" | "contents" | "mission"> = {
   GENERAL:   "home",
   DEVOTIONAL:"home",
   MINISTRY:  "home",
   TESTIMONY: "home",
   PHOTO:     "home",
-  PRAYER:    "prayer",
   CELL:      "cells",
   CONTENT:   "contents",
   REQUEST:   "contents",
@@ -219,10 +216,9 @@ export const CATEGORY_LABELS: Record<PostCategory, string> = {
   MINISTRY:  "사역 나눔",
   TESTIMONY: "간증",
   PHOTO:     "사진",
-  PRAYER:    "기도 제목",
   CELL:      "셀 나눔",
   CONTENT:   "컨텐츠",
-  REQUEST:   "후원/기도 요청",
+  REQUEST:   "후원/제작 요청",
   MISSION:   "선교 업데이트",
 };
 
@@ -330,47 +326,6 @@ export interface AuditLogEntry {
   targetId: string | null;
   metadata: Record<string, unknown>;
   createdAt: string; // ISO
-}
-
-// =============================================================
-// Prayer requests (community prayer board)
-// =============================================================
-
-export type PrayerCategory = "PERSONAL" | "FAMILY" | "CELL" | "CHURCH" | "MISSION" | "SOCIAL";
-
-export const PRAYER_CATEGORY_LABELS: Record<PrayerCategory, string> = {
-  PERSONAL: "개인",
-  FAMILY: "가족",
-  CELL: "셀",
-  CHURCH: "교회",
-  MISSION: "선교",
-  SOCIAL: "사회",
-};
-
-export interface PrayerRequest {
-  id: string;
-  userId: string;
-  content: string;
-  category: PrayerCategory;
-  visibility: "PUBLIC" | "CELL" | "PRIVATE";
-  answeredAt?: string | null;
-  answerNote?: string | null;
-  createdAt: string;
-  /** Joined author */
-  author?: User;
-  /** Count of intercessions */
-  intercessorCount?: number;
-  /** Whether the current viewer has prayed */
-  hasPrayed?: boolean;
-}
-
-export interface PrayerIntercession {
-  id: string;
-  prayerRequestId: string;
-  userId: string;
-  message?: string | null;
-  createdAt: string;
-  author?: User;
 }
 
 // =============================================================
