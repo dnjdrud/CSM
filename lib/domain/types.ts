@@ -35,8 +35,8 @@ export const CATEGORY_TAB: Record<PostCategory, "home" | "cells" | "contents" | 
   MISSION:   "mission",
 };
 
-/** Categories shown in the home feed tab (excludes prayer/cell/mission). */
-export const HOME_FEED_CATEGORIES: PostCategory[] = ["GENERAL", "DEVOTIONAL", "MINISTRY", "TESTIMONY", "PHOTO", "CONTENT"];
+/** Categories shown in the home feed tab (includes cell posts as well). */
+export const HOME_FEED_CATEGORIES: PostCategory[] = ["GENERAL", "DEVOTIONAL", "MINISTRY", "TESTIMONY", "PHOTO", "CONTENT", "CELL"];
 
 export type ReactionType = "PRAYED" | "WITH_YOU";
 
