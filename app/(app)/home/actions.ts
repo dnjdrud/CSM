@@ -23,6 +23,7 @@ const PAGE_LIMIT = 20;
 async function loadFeedPage(
   userId: string,
   categories: string[],
+  scope: "ALL" | "FOLLOWING",
   cursorStr: string | null
 ): Promise<{ items: PostWithAuthor[]; nextCursorStr: string | null }> {
   const cursor = decodeCursor(cursorStr);
@@ -31,7 +32,7 @@ async function loadFeedPage(
   const [result, followingIds] = await Promise.all([
     listFeedPostsPage({
       currentUserId: userId,
-      scope: "FOLLOWING",
+      scope,
       limit: PAGE_LIMIT,
       cursor,
       includeCategories: categories,
@@ -61,10 +62,11 @@ async function loadFeedPage(
 /** Load next page of the home Feed tab (FOLLOWING scope, no PRAYER posts). */
 export async function loadMoreHomeFeedAction(input: {
   cursorStr: string | null;
+  scope: "ALL" | "FOLLOWING";
 }): Promise<{ items: PostWithAuthor[]; nextCursorStr: string | null }> {
   const session = await getSession();
   if (!session) return { items: [], nextCursorStr: null };
-  return loadFeedPage(session.userId, HOME_FEED_CATEGORIES, input.cursorStr);
+  return loadFeedPage(session.userId, HOME_FEED_CATEGORIES, input.scope, input.cursorStr);
 }
 
 /* ──────────────────────────────────── Prayer Tab ── */
@@ -75,7 +77,7 @@ export async function loadMorePrayerFeedAction(input: {
 }): Promise<{ items: PostWithAuthor[]; nextCursorStr: string | null }> {
   const session = await getSession();
   if (!session) return { items: [], nextCursorStr: null };
-  return loadFeedPage(session.userId, ["PRAYER"], input.cursorStr);
+  return loadFeedPage(session.userId, ["PRAYER"], "FOLLOWING", input.cursorStr);
 }
 
 /* ──────────────────────────────────── Reactions ── */

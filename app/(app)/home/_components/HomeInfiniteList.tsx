@@ -13,6 +13,7 @@ type Props = {
   currentUserId: string | null;
   followingIds: string[];
   bookmarkedPostIds?: string[];
+  scope: "ALL" | "FOLLOWING";
 };
 
 export function HomeInfiniteList({
@@ -21,6 +22,7 @@ export function HomeInfiniteList({
   currentUserId,
   followingIds,
   bookmarkedPostIds = [],
+  scope,
 }: Props) {
   const [items, setItems] = useState<PostWithAuthor[]>(initialItems);
   const [nextCursorStr, setNextCursorStr] = useState<string | null>(initialNextCursorStr);
@@ -44,7 +46,7 @@ export function HomeInfiniteList({
     setLoading(true);
     setError(null);
     try {
-      const result = await loadMoreHomeFeedAction({ cursorStr: nextCursorStr });
+      const result = await loadMoreHomeFeedAction({ cursorStr: nextCursorStr, scope });
       setItems((prev) => [...prev, ...result.items]);
       setNextCursorStr(result.nextCursorStr);
     } catch (e) {
@@ -52,7 +54,7 @@ export function HomeInfiniteList({
     } finally {
       setLoading(false);
     }
-  }, [nextCursorStr, loading]);
+  }, [nextCursorStr, loading, scope]);
 
   // Intersection observer for infinite scroll
   useEffect(() => {

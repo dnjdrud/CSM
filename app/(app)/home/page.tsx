@@ -101,10 +101,12 @@ function DailyPrayerBannerSkeleton() {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; scope?: string }>;
 }) {
   const params = await searchParams;
   const activeTab: HomeTab = params.tab === "prayer" ? "prayer" : "feed";
+  const rawScope = params.scope === "following" ? "FOLLOWING" : "ALL";
+  const uiScope: "all" | "following" = rawScope === "FOLLOWING" ? "following" : "all";
 
   // await 없이 Promise 생성 — 탭 컴포넌트 안에서 Suspense 경계 내부에 resolve됨.
   // 이렇게 하면 페이지 셸(탭바 포함)이 DB 조회 전에 먼저 스트리밍된다.
@@ -122,7 +124,7 @@ export default async function HomePage({
         // Suspense로 감싸야 FeedTabContent가 데이터를 기다리는 동안
         // 위의 탭바가 이미 화면에 표시된다. (스트리밍)
         <Suspense fallback={<FeedSkeleton />}>
-          <FeedTabContent currentUserPromise={currentUserPromise} />
+          <FeedTabContent currentUserPromise={currentUserPromise} scope={rawScope} uiScope={uiScope} />
         </Suspense>
       ) : (
         <Suspense fallback={<PrayerSkeleton />}>
@@ -146,8 +148,12 @@ export default async function HomePage({
 
 async function FeedTabContent({
   currentUserPromise,
+  scope,
+  uiScope,
 }: {
   currentUserPromise: ReturnType<typeof getCurrentUser>;
+  scope: "ALL" | "FOLLOWING";
+  uiScope: "all" | "following";
 }) {
   // DailyPrayerBanner 데이터 fetch를 가장 먼저 시작.
   // 이 Promise는 아래 await들과 병렬로 실행된다.
@@ -164,7 +170,7 @@ async function FeedTabContent({
   const [firstPage, followingIds] = await Promise.all([
     listFeedPostsPage({
       currentUserId: currentUser?.id ?? null,
-      scope: "FOLLOWING",
+      scope,
       limit: FEED_PAGE_SIZE,
       cursor: null,
       includeCategories: HOME_FEED_CATEGORIES,
@@ -196,6 +202,7 @@ async function FeedTabContent({
 
   return (
     <div>
+      <FeedScopeToggle initialScope={uiScope} context="home" />
       {/*
         DailyPrayerBanner를 별도 Suspense 경계로 분리.
         dailyPrayerPromise는 이미 위에서 시작됐으므로 피드 쿼리와 병렬 실행 중이다.
@@ -239,6 +246,7 @@ async function FeedTabContent({
           currentUserId={currentUser?.id ?? null}
           followingIds={followingIds}
           bookmarkedPostIds={bookmarkedPostIds}
+          scope={scope}
         />
       )}
     </div>

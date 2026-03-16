@@ -1,16 +1,39 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BORDER, PADDING, TYPOGRAPHY, FOCUS_RING, TRANSITION } from "@/lib/design/tokens";
 
 type Scope = "all" | "following";
+type Context = "feed" | "home";
+
+type Props = {
+  initialScope?: Scope;
+  /** where this toggle is used; controls target URL */
+  context?: Context;
+};
 
 /** Tab-style scope switch. Uses design tokens for tab padding and typography. */
-export function FeedScopeToggle({ initialScope = "all" }: { initialScope?: Scope }) {
+export function FeedScopeToggle({ initialScope = "all", context = "feed" }: Props) {
   const router = useRouter();
-  const validScope = initialScope === "following" ? "following" : "all";
+  const searchParams = useSearchParams();
+  const validScope: Scope = initialScope === "following" ? "following" : "all";
 
   function setScope(value: Scope) {
+    if (context === "home") {
+      const next = new URLSearchParams(searchParams);
+      // 홈에서는 항상 feed 탭 유지
+      next.set("tab", "feed");
+      if (value === "all") {
+        next.delete("scope");
+      } else {
+        next.set("scope", "following");
+      }
+      const qs = next.toString();
+      router.push(qs ? `/home?${qs}` : "/home");
+      return;
+    }
+
+    // legacy /feed 용
     router.push(value === "all" ? "/feed" : "/feed?scope=following");
   }
 
