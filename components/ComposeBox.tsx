@@ -34,7 +34,8 @@ export function ComposeBox({
   const [content, setContent] = useState("");
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [category, setCategory] = useState<PostCategory>("GENERAL");
-  const [visibility, setVisibility] = useState<Visibility>("MEMBERS");
+  // MEMBERS 와 PUBLIC 은 guard 상 동일하게 취급되므로, UI 기본값은 PUBLIC 만 사용한다.
+  const [visibility, setVisibility] = useState<Visibility>("PUBLIC");
   const [tagsInput, setTagsInput] = useState("");
   const [pending, setPending] = useState(false);
   const [justPosted, setJustPosted] = useState(false);
@@ -52,7 +53,6 @@ export function ComposeBox({
   ];
 
   const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
-    { value: "MEMBERS",   label: isKo ? "멤버 공개" : "Members only" },
     { value: "PUBLIC",    label: isKo ? "전체 공개" : "Public" },
     { value: "FOLLOWERS", label: isKo ? "팔로워 공개" : "Followers" },
     { value: "PRIVATE",   label: isKo ? "나만 보기" : "Only me" },

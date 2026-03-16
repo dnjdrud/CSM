@@ -18,7 +18,6 @@ const CATEGORIES: { value: PostCategory; label: string }[] = [
 ];
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
-  { value: "MEMBERS", label: "Members" },
   { value: "PUBLIC", label: "Public" },
   { value: "FOLLOWERS", label: "Followers" },
   { value: "PRIVATE", label: "Private" },
@@ -44,7 +43,10 @@ export function PostActionsMenu({
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(post.content);
   const [category, setCategory] = useState<PostCategory>(post.category);
-  const [visibility, setVisibility] = useState<Visibility>(post.visibility);
+  // 기존 데이터에 visibility === \"MEMBERS\" 가 있을 수 있으므로, UI 에서는 PUBLIC 으로 보여준다.
+  const [visibility, setVisibility] = useState<Visibility>(
+    post.visibility === "MEMBERS" ? "PUBLIC" : post.visibility
+  );
   const [tagsInput, setTagsInput] = useState((post.tags ?? []).join(", "));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);

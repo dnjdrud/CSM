@@ -14,6 +14,7 @@ import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { HOME_FEED_CATEGORIES, PRAYER_CATEGORY_LABELS } from "@/lib/domain/types";
 import { TimelineContainer } from "@/components/TimelineContainer";
+import { FeedScopeToggle } from "@/components/FeedScopeToggle";
 import { FeedComposer } from "@/app/(app)/feed/_components/FeedComposer";
 import { SuggestedPeople } from "@/app/(app)/feed/_components/SuggestedPeople";
 import { HomeTabs } from "./_components/HomeTabs";

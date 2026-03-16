@@ -41,7 +41,7 @@ export async function publishPostAction(
       authorId: session.userId,
       category,
       content: trimmed,
-      visibility: "MEMBERS",
+      visibility: "PUBLIC",
       tags,
     });
     logInfo("SERVER_ACTION", "publishPostAction success", {
@@ -106,7 +106,7 @@ export async function composePostAction(params: {
       authorId: session.userId,
       category: params.category ?? "GENERAL",
       content: trimmed,
-      visibility: params.visibility ?? "MEMBERS",
+      visibility: params.visibility ?? "PUBLIC",
       tags,
       youtubeUrl: params.youtubeUrl || null,
       mediaUrls: params.mediaUrls ?? [],

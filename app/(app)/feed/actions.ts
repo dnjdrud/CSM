@@ -131,7 +131,7 @@ export async function composePostAction(params: {
       authorId: session.userId,
       category: params.category ?? "PRAYER",
       content: trimmed,
-      visibility: params.visibility ?? "MEMBERS",
+      visibility: params.visibility ?? "PUBLIC",
       tags,
     });
     logInfo("SERVER_ACTION", "composePostAction(feed) success", {
