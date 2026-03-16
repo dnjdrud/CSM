@@ -9,7 +9,6 @@ const CATEGORIES = [
   { value: "MINISTRY", label: "사역" },
   { value: "TESTIMONY", label: "간증" },
   { value: "PHOTO", label: "사진" },
-  { value: "PRAYER", label: "기도" },
   { value: "CELL", label: "셀" },
   { value: "CONTENT", label: "콘텐츠" },
   { value: "REQUEST", label: "요청" },

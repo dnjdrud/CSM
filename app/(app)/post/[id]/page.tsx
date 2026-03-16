@@ -43,7 +43,7 @@ export default async function PostPage({
     );
   }
 
-  const allowComments = post.category !== "PRAYER";
+  const allowComments = true;
 
   const allComments = allowComments ? await listCommentsByPostId(id) : [];
   const comments = allowComments && currentUser

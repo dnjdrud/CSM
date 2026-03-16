@@ -168,7 +168,7 @@ export async function updatePostAction(
   if (!trimmed) return { ok: false, error: "Content is required" };
   const updated = await updatePost(postId, session.userId, {
     content: trimmed,
-    category: category as "PRAYER" | "DEVOTIONAL" | "MINISTRY" | undefined,
+    category: category as "DEVOTIONAL" | "MINISTRY" | "GENERAL" | undefined,
     visibility: visibility as "PUBLIC" | "MEMBERS" | "FOLLOWERS" | "PRIVATE" | undefined,
     tags,
   });

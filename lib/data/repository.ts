@@ -1028,7 +1028,7 @@ export async function publishNoteToCommunity(params: {
   if (note.publishedPostId) return { postId: note.publishedPostId };
   const post = await createPost({
     authorId: params.userId,
-    category: "PRAYER",
+    category: "TESTIMONY",
     content: note.content,
     visibility: "MEMBERS",
     tags: note.tags ?? [],
@@ -1322,25 +1322,6 @@ export async function updateNotificationPrefs(userId: string, prefs: Partial<imp
   return { ok: true };
 }
 
-// =============================================================
-// Prayer requests
-// =============================================================
-
-export async function intercedeForPrayer(prayerRequestId: string, userId: string, message?: string): Promise<void> {
-  if (DATA_MODE === "supabase") return supabaseRepo.intercedeForPrayer(prayerRequestId, userId, message);
-}
-
-export async function removeIntercession(prayerRequestId: string, userId: string): Promise<void> {
-  if (DATA_MODE === "supabase") return supabaseRepo.removeIntercession(prayerRequestId, userId);
-}
-
-export async function markPrayerAnswered(prayerRequestId: string, userId: string, answerNote?: string): Promise<void> {
-  if (DATA_MODE === "supabase") return supabaseRepo.markPrayerAnswered(prayerRequestId, userId, answerNote);
-}
-
-export async function deletePrayerRequest(id: string, userId: string): Promise<void> {
-  if (DATA_MODE === "supabase") return supabaseRepo.deletePrayerRequest(id, userId);
-}
 // =============================================================
 // Missionary projects
 // =============================================================

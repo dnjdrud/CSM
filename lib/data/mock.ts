@@ -53,7 +53,7 @@ const seedPosts: Post[] = [
   {
     id: "p1",
     authorId: "u3",
-    category: "PRAYER",
+    category: "GENERAL",
     content:
       "Would you pray with me for the family I mentioned last week—the one who lost their father. They're navigating grief and logistics. I don't have words to fix it. I'm asking for peace and presence for them.",
     visibility: "MEMBERS",

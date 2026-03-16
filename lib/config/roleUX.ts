@@ -22,16 +22,16 @@ export type RoleUXConfig = {
 const DEFAULT: RoleUXConfig = {
   homeCta: "오늘 나누고 싶은 이야기가 있나요?",
   homeEmptyDescription: "팔로우한 사람들의 글이 여기 표시됩니다.",
-  recommendedCategories: ["GENERAL", "PRAYER", "CELL"],
-  writeHint: "일상, 기도, 셀 나눔을 공유해보세요.",
+  recommendedCategories: ["GENERAL", "DEVOTIONAL", "CELL"],
+  writeHint: "일상, 묵상, 셀 나눔을 공유해보세요.",
 };
 
 const ROLE_UX: Partial<Record<UserRole, RoleUXConfig>> = {
   LAY: {
     homeCta: "오늘 나누고 싶은 이야기가 있나요?",
     homeEmptyDescription: "팔로우한 사람들의 글이 여기 표시됩니다. 기도 제목이나 셀 나눔을 공유해보세요.",
-    recommendedCategories: ["GENERAL", "PRAYER", "CELL"],
-    writeHint: "일상, 기도, 셀 나눔을 공유해보세요.",
+    recommendedCategories: ["GENERAL", "DEVOTIONAL", "CELL"],
+    writeHint: "일상, 묵상, 셀 나눔을 공유해보세요.",
   },
   MINISTRY_WORKER: {
     homeCta: "사역 소식과 컨텐츠를 나눠주세요.",
@@ -48,14 +48,14 @@ const ROLE_UX: Partial<Record<UserRole, RoleUXConfig>> = {
   MISSIONARY: {
     homeCta: "선교 현장 소식을 전해주세요.",
     homeEmptyDescription: "팔로우한 선교사·사역자의 소식이 여기 표시됩니다.",
-    recommendedCategories: ["MISSION", "PRAYER", "CONTENT"],
-    writeHint: "선교 업데이트·기도 제목·컨텐츠를 나눠보세요.",
+    recommendedCategories: ["MISSION", "TESTIMONY", "CONTENT"],
+    writeHint: "선교 업데이트·간증·컨텐츠를 나눠보세요.",
   },
   SEMINARIAN: {
     homeCta: "신앙의 여정을 나눠주세요.",
     homeEmptyDescription: "팔로우한 사람들의 글이 여기 표시됩니다.",
-    recommendedCategories: ["GENERAL", "PRAYER", "TESTIMONY"],
-    writeHint: "묵상·기도·간증을 기록해보세요.",
+    recommendedCategories: ["GENERAL", "DEVOTIONAL", "TESTIMONY"],
+    writeHint: "묵상·간증을 기록해보세요.",
   },
 };
 

@@ -94,7 +94,7 @@ export async function composePostAction(params: {
 }): Promise<{ ok: boolean; error?: string }> {
   logInfo("SERVER_ACTION", "composePostAction(feed) start", {
     hasContent: params.content.trim().length > 0,
-    category: params.category ?? "PRAYER",
+    category: params.category ?? "GENERAL",
     visibility: params.visibility ?? "MEMBERS",
     hasTags: !!params.tags && params.tags.length > 0,
   });
@@ -129,7 +129,7 @@ export async function composePostAction(params: {
   try {
     await createPost({
       authorId: session.userId,
-      category: params.category ?? "PRAYER",
+      category: params.category ?? "GENERAL",
       content: trimmed,
       visibility: params.visibility ?? "PUBLIC",
       tags,
@@ -259,7 +259,7 @@ export async function updatePostAction(
   const { updatePost } = await import("@/lib/data/repository");
   const updated = await updatePost(postId, session.userId, {
     content: trimmed,
-    category: category as "PRAYER" | "DEVOTIONAL" | "MINISTRY" | undefined,
+    category: category as PostCategory | undefined,
     visibility: visibility as "PUBLIC" | "MEMBERS" | "FOLLOWERS" | "PRIVATE" | undefined,
     tags,
   });

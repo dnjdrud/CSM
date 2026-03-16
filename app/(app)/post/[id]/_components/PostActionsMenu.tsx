@@ -11,10 +11,10 @@ type DeletePostAction = (postId: string) => Promise<{ ok: boolean; error?: strin
 type UpdatePostAction = (postId: string, content: string, category?: string, visibility?: string, tags?: string[]) => Promise<{ ok: boolean; error?: string }>;
 
 const CATEGORIES: { value: PostCategory; label: string }[] = [
-  { value: "PRAYER", label: CATEGORY_LABELS.PRAYER },
   { value: "DEVOTIONAL", label: CATEGORY_LABELS.DEVOTIONAL },
   { value: "MINISTRY", label: CATEGORY_LABELS.MINISTRY },
   { value: "TESTIMONY", label: CATEGORY_LABELS.TESTIMONY },
+  { value: "GENERAL", label: CATEGORY_LABELS.GENERAL },
 ];
 
 const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [

@@ -49,7 +49,6 @@ export default function WritePageClient({
 
   const POST_TYPES: PostType[] = [
     { category: "GENERAL", label: t.write.postTypes.general.label, icon: "✏️", description: t.write.postTypes.general.description, placeholder: t.write.postTypes.general.placeholder, showImageUpload: true },
-    { category: "PRAYER", label: t.write.postTypes.prayer.label, icon: "🙏", description: t.write.postTypes.prayer.description, placeholder: t.write.postTypes.prayer.placeholder },
     { category: "CELL", label: t.write.postTypes.cell.label, icon: "💬", description: t.write.postTypes.cell.description, placeholder: t.write.postTypes.cell.placeholder, showCellTopic: true, showImageUpload: true },
     { category: "CONTENT", label: t.write.postTypes.content.label, icon: "🎬", description: t.write.postTypes.content.description, placeholder: t.write.postTypes.content.placeholder, showYoutubeUrl: true, showImageUpload: true },
     { category: "MISSION", label: t.write.postTypes.mission.label, icon: "🌍", description: t.write.postTypes.mission.description, placeholder: t.write.postTypes.mission.placeholder, showMissionCountry: true, showYoutubeUrl: true, showImageUpload: true },
