@@ -90,9 +90,7 @@ export default async function MissionCountryPage({
     }),
   ]);
 
-  function filterVisible<T extends { tags: string[]; authorId: string }>(
-    items: T[]
-  ): T[] {
+  function filterVisible<T extends { tags: string[]; authorId: string }>(items: T[]): T[] {
     const moderated = currentUser
       ? items.filter((p) => {
           if (isBlocked(currentUser.id, p.authorId)) return false;
@@ -107,8 +105,21 @@ export default async function MissionCountryPage({
     return filterByCountryTags(moderated, countryData.tags);
   }
 
-  const missionItems = filterVisible(missionPage.items);
-  const contentItems = filterVisible(contentPage.items);
+  const missionVisible = filterVisible(missionPage.items);
+  const contentVisible = filterVisible(contentPage.items);
+
+  // 분리 규칙:
+  // - 선교 소식: 카테고리 MISSION 이면서 YouTube URL 이 없는 글
+  // - 관련 콘텐츠: 카테고리 CONTENT/PHOTO 이거나, MISSION 이지만 YouTube URL 이 붙은 글
+  const missionItems = missionVisible.filter((p) => !p.youtubeUrl);
+
+  const contentFromMission = missionVisible.filter((p) => !!p.youtubeUrl);
+  const contentItemsMap = new Map<string, (typeof contentVisible)[number]>();
+  contentVisible.forEach((p) => contentItemsMap.set(p.id as string, p));
+  contentFromMission.forEach((p) => {
+    contentItemsMap.set(p.id as string, p);
+  });
+  const contentItems = Array.from(contentItemsMap.values());
 
   const writeUrl = `/write?category=MISSION&tag=${encodeURIComponent(countryData.tags[0] ?? "")}`;
 
