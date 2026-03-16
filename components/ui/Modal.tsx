@@ -6,7 +6,7 @@
 "use client";
 
 import * as React from "react";
-import { RADIUS, SHADOW, BORDER, PADDING, FOCUS_RING } from "@/lib/design/tokens";
+import { SHADOW, BORDER, FOCUS_RING } from "@/lib/design/tokens";
 
 type ModalProps = {
   open: boolean;
@@ -57,27 +57,25 @@ export function Modal({
         className={`w-full max-w-sm rounded-2xl border bg-theme-surface ${SHADOW.lg} ${BORDER.default} ${panelClassName}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {(title || onClose) && (
-          <div className="flex items-center justify-between border-b border-theme-border px-5 py-4">
-            {title && (
-              <h2 id="modal-title" className="text-lg font-semibold tracking-tight text-theme-text">
-                {title}
-              </h2>
-            )}
-            <div className={title ? "" : "ml-auto"}>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="닫기"
-                className={`flex h-9 w-9 items-center justify-center rounded-lg text-theme-muted transition-colors duration-150 hover:bg-theme-surface-2 hover:text-theme-text active:bg-theme-surface-3 ${FOCUS_RING}`}
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="flex items-center justify-between border-b border-theme-border px-5 py-4">
+          {title ? (
+            <h2 id="modal-title" className="text-lg font-semibold tracking-tight text-theme-text">
+              {title}
+            </h2>
+          ) : (
+            <span aria-hidden className="flex-1" />
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="닫기"
+            className={`flex h-9 w-9 items-center justify-center rounded-lg text-theme-muted transition-colors duration-150 hover:bg-theme-surface-2 hover:text-theme-text active:bg-theme-surface-3 ${FOCUS_RING}`}
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
         <div className="px-5 py-4">{children}</div>
       </div>
     </div>
