@@ -1,10 +1,11 @@
 "use client";
 
 /**
- * Single feedback pattern: toast. Success = minimal message; error = calm, human.
- * Use useToast() in client components. Buttons should disable while pending and prevent duplicate submit.
+ * Design system: Toast
+ * Success / error feedback. Spacing and shadow from tokens; no hover (ephemeral).
  */
 import React, { createContext, useCallback, useContext, useState } from "react";
+import { RADIUS, SHADOW } from "@/lib/design/tokens";
 
 const TOAST_DURATION_MS = 3000;
 const ERROR_MESSAGE = "Something didn't work. Please try again.";
@@ -53,8 +54,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           aria-live="polite"
           className={
             toast.type === "error"
-              ? "fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-800 shadow-lg"
-              : "fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full bg-gray-800 px-4 py-2 text-sm font-medium text-white shadow-lg"
+              ? `fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-xl border border-theme-danger/20 bg-theme-danger-bg px-5 py-3 text-sm font-medium text-theme-danger ${SHADOW.lg}`
+              : `fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-xl bg-theme-primary px-5 py-3 text-sm font-medium text-white ${SHADOW.lg}`
           }
         >
           {toast.message}

@@ -69,7 +69,7 @@ export default async function FeedPage({
     <TimelineContainer>
       <h1 className="sr-only">Feed</h1>
       {process.env.NODE_ENV !== "production" && (
-        <div className="px-4 py-2 border-b border-amber-200 bg-amber-50/80 text-[13px] text-amber-900" role="status" aria-label="Feed diagnostics">
+        <div className="px-4 py-2 border-b border-theme-warning/30 bg-theme-warning-bg text-[13px] text-theme-warning" role="status" aria-label="Feed diagnostics">
           <p><strong>Session:</strong> userId={session?.userId ?? "—"} role={session?.role ?? "—"}</p>
           <p><strong>Posts from repository:</strong> {firstPage.items.length}{firstPage.error ? ` (error: ${firstPage.error})` : ""}</p>
         </div>
@@ -95,7 +95,7 @@ export default async function FeedPage({
       )}
       <div className="space-y-6 sm:space-y-5 py-4">
         {firstPage.error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="rounded-xl border border-theme-danger/20 bg-theme-danger-bg px-4 py-3 text-sm text-theme-danger">
             <p className="font-medium">Feed could not load.</p>
             <p className="mt-1">{firstPage.error}</p>
           </div>

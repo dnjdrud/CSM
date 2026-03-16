@@ -1,18 +1,23 @@
 /**
  * Design system: Badge
- * - Variants: default, muted, testimony, daily-prayer. Used for role, category labels.
- * - Typography: meta text size (text-xs). Spacing: px-1.5 py-0.5, rounded-md.
+ * Variants: default, muted, testimony, daily-prayer. Spacing and radius from tokens.
  */
 import * as React from "react";
+import { RADIUS } from "@/lib/design/tokens";
 
 type Variant = "default" | "muted" | "subtle" | "testimony" | "daily-prayer";
 
 const variantStyles: Record<Variant, string> = {
-  default: "bg-theme-primary text-white border border-transparent",
-  muted: "bg-theme-surface-2 text-theme-muted border border-theme-border",
-  subtle: "bg-theme-surface-2 text-theme-muted border border-theme-border",
-  testimony: "bg-theme-accent/20 text-theme-primary border border-theme-accent/40",
-  "daily-prayer": "bg-theme-surface-2 text-theme-primary border border-theme-border",
+  default:
+    "bg-theme-primary text-white border border-transparent",
+  muted:
+    "bg-theme-surface-2 text-theme-muted border border-theme-border",
+  subtle:
+    "bg-theme-surface-2 text-theme-muted border border-theme-border",
+  testimony:
+    "bg-theme-accent/20 text-theme-primary border border-theme-accent/40",
+  "daily-prayer":
+    "bg-theme-surface-2 text-theme-primary border border-theme-border",
 };
 
 export function Badge({
@@ -24,7 +29,12 @@ export function Badge({
   const style = variantStyles[variant === "subtle" ? "muted" : variant];
   return (
     <span
-      className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${style} ${className}`}
+      className={[
+        "inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium",
+        "transition-colors duration-150",
+        style,
+        className,
+      ].join(" ")}
       {...props}
     >
       {children}

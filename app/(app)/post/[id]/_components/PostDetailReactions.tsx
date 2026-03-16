@@ -58,14 +58,14 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
   return (
     <>
     <div
-      className="mt-6 pt-6 border-t border-gray-200 flex flex-wrap items-center gap-4 text-[12px] text-neutral-400"
+      className="mt-6 pt-6 border-t border-theme-border flex flex-wrap items-center gap-4 text-[12px] text-theme-muted"
       role="group"
       aria-label="Respond to this post"
     >
       <button
         type="button"
         onClick={() => handleToggle("PRAYED")}
-        className={`flex items-center gap-1.5 rounded px-2 py-2 -ml-2 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 ${responses.prayed ? "font-medium text-gray-900" : ""}`}
+        className={`flex items-center gap-1.5 rounded px-2 py-2 -ml-2 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${responses.prayed ? "font-medium text-theme-text" : ""}`}
       >
         <span aria-hidden>🙏</span>
         Prayed
@@ -73,7 +73,7 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); openReactorsModal("PRAYED"); }}
-            className="tabular-nums text-neutral-500 underline-offset-2 hover:underline focus:outline-none"
+            className="tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
             aria-label={`${counts.prayed}명이 기도했습니다. 클릭하여 목록 보기`}
           >
             {counts.prayed}
@@ -83,7 +83,7 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
       <button
         type="button"
         onClick={() => handleToggle("WITH_YOU")}
-        className={`flex items-center gap-1.5 rounded px-2 py-2 -ml-2 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 ${responses.withYou ? "font-medium text-gray-900" : ""}`}
+        className={`flex items-center gap-1.5 rounded px-2 py-2 -ml-2 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${responses.withYou ? "font-medium text-theme-text" : ""}`}
       >
         <span aria-hidden>🤍</span>
         With you
@@ -91,7 +91,7 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); openReactorsModal("WITH_YOU"); }}
-            className="tabular-nums text-neutral-500 underline-offset-2 hover:underline focus:outline-none"
+            className="tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
             aria-label={`${counts.withYou}명이 함께합니다. 클릭하여 목록 보기`}
           >
             {counts.withYou}

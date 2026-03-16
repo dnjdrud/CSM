@@ -57,13 +57,13 @@ export function AvatarUpload({ currentAvatarUrl, name }: Props) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={pending}
-        className="relative h-16 w-16 shrink-0 rounded-full overflow-hidden bg-gray-200 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-60"
+        className="relative h-16 w-16 shrink-0 rounded-full overflow-hidden bg-theme-surface-2 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 disabled:opacity-60"
         aria-label="프로필 사진 변경"
       >
         {displaySrc ? (
           <Image src={displaySrc} alt={name} fill className="object-cover" unoptimized />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-600">
+          <span className="flex h-full w-full items-center justify-center text-sm font-medium text-theme-muted">
             {getInitials(name)}
           </span>
         )}
@@ -92,13 +92,13 @@ export function AvatarUpload({ currentAvatarUrl, name }: Props) {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={pending}
-          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-button border border-theme-border px-3 py-1.5 text-xs font-medium text-theme-muted hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {pending ? "업로드 중…" : "사진 변경"}
         </button>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-        {saved && <p className="text-xs text-green-600">✓ 업로드 완료</p>}
-        <p className="text-xs text-gray-400">JPG, PNG, WEBP · 최대 5MB</p>
+        {error && <p className="text-xs text-theme-danger">{error}</p>}
+        {saved && <p className="text-xs text-theme-success">✓ 업로드 완료</p>}
+        <p className="text-xs text-theme-muted">JPG, PNG, WEBP · 최대 5MB</p>
       </div>
     </div>
   );

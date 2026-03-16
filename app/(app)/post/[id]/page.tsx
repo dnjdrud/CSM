@@ -33,11 +33,11 @@ export default async function PostPage({
         <div className="px-4 py-10 text-center">
           <Link
             href="/home"
-            className="text-[15px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded inline-block mb-6"
+            className="text-[15px] text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded inline-block mb-6"
           >
             ← 홈으로
           </Link>
-          <p className="text-gray-500 font-sans">이 게시글을 볼 수 없습니다.</p>
+          <p className="text-theme-muted font-sans">이 게시글을 볼 수 없습니다.</p>
         </div>
       </TimelineContainer>
     );
@@ -58,7 +58,7 @@ export default async function PostPage({
       <article className="px-4">
         <Link
           href="/home"
-          className="text-[15px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded inline-block py-4"
+          className="text-[15px] text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded inline-block py-4"
         >
           ← 홈으로
         </Link>

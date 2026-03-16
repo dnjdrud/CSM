@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { INPUT, BTN_PRIMARY } from "@/lib/design/tokens";
 
 /** Login magic link is sent via Resend (POST /api/auth/magic-link), not Supabase Auth. */
 export function LoginForm() {
@@ -16,7 +17,7 @@ export function LoginForm() {
   const [notRegistered, setNotRegistered] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleEmailSubmit(e: React.FormEvent) {
+  async function handleEmailSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed || pending) return;
@@ -43,11 +44,11 @@ export function LoginForm() {
   if (sent) {
     return (
       <div className="mt-8 space-y-4">
-        <p className="text-[15px] text-gray-600 leading-relaxed">
-          We sent a sign-in link to <strong className="font-medium text-gray-800">{email.trim()}</strong>. Click the link in that email to continue. It may take a minute to arrive.
+        <p className="text-body text-theme-text-2 leading-relaxed">
+          We sent a sign-in link to <strong className="font-medium text-theme-text">{email.trim()}</strong>. Click the link in that email to continue. It may take a minute to arrive.
         </p>
-        <p className="text-sm text-gray-500">
-          You can close this tab after you’ve signed in. If you don’t see the email, check your spam folder.
+        <p className="text-sm text-theme-muted">
+          You can close this tab after you've signed in. If you don't see the email, check your spam folder.
         </p>
       </div>
     );
@@ -55,23 +56,23 @@ export function LoginForm() {
 
   if (notRegistered) {
     return (
-      <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-5">
-        <p className="text-sm font-medium text-amber-800">가입 승인이 되지 않은 이메일입니다.</p>
-        <p className="mt-1.5 text-sm text-amber-700 leading-relaxed">
+      <div className="mt-8 rounded-xl border border-theme-warning/30 bg-theme-warning-bg p-5">
+        <p className="text-sm font-medium text-theme-warning">가입 승인이 되지 않은 이메일입니다.</p>
+        <p className="mt-1.5 text-sm text-theme-warning/80 leading-relaxed">
           <strong className="font-medium">{email.trim()}</strong> 으로 가입된 계정이 없습니다.
           아직 가입 신청을 하지 않으셨거나, 아직 승인 대기 중일 수 있습니다.
         </p>
         <div className="mt-4 flex gap-3">
           <Link
             href="/request-access"
-            className="inline-block rounded-lg bg-amber-800 px-4 py-2 text-sm font-medium text-white hover:bg-amber-900 focus:outline-none"
+            className="inline-block rounded-button bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:bg-theme-primary-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
           >
             가입 신청하기
           </Link>
           <button
             type="button"
             onClick={() => { setNotRegistered(false); setEmail(""); }}
-            className="inline-block rounded-lg border border-amber-300 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 focus:outline-none"
+            className="inline-block rounded-button border border-theme-warning/40 px-4 py-2 text-sm font-medium text-theme-warning hover:bg-theme-warning/10 transition-colors focus:outline-none"
           >
             다시 시도
           </button>
@@ -83,17 +84,17 @@ export function LoginForm() {
   return (
     <div className="mt-8 space-y-6">
       {message === "account_created" && (
-        <p className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800" role="status">
+        <p className="rounded-xl bg-theme-success-bg border border-theme-success/20 px-3 py-2 text-sm text-theme-success" role="status">
           Account created. Please sign in.
         </p>
       )}
       {message === "profile_missing" && (
-        <p className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800" role="status">
+        <p className="rounded-xl bg-theme-warning-bg border border-theme-warning/20 px-3 py-2 text-sm text-theme-warning" role="status">
           Please complete your profile to continue.
         </p>
       )}
       {urlError && (
-        <p className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-800" role="alert">
+        <p className="rounded-xl bg-theme-danger-bg border border-theme-danger/20 px-3 py-2 text-sm text-theme-danger" role="alert">
           {urlError === "invalid_or_expired"
             ? "This sign-in link has expired or already been used. Please request a new one."
             : urlError === "verify_failed" || urlError === "link_failed"
@@ -106,7 +107,7 @@ export function LoginForm() {
 
       <form onSubmit={handleEmailSubmit} className="space-y-5">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-800">
+          <label htmlFor="email" className="block text-sm font-medium text-theme-text">
             Email
           </label>
           <input
@@ -115,28 +116,28 @@ export function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className={`mt-1.5 ${INPUT}`}
             autoComplete="email"
             required
           />
         </div>
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-theme-danger" role="alert">
             {error}
           </p>
         )}
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+          className={`w-full ${BTN_PRIMARY}`}
         >
           {pending ? "Sending…" : "Send sign-in link"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-500">
-        Don’t have an account?{" "}
-        <Link href="/request-access" className="font-medium text-gray-700 underline hover:text-gray-900">
+      <p className="mt-6 text-center text-sm text-theme-muted">
+        Don't have an account?{" "}
+        <Link href="/request-access" className="font-medium text-theme-primary underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded">
           Request access
         </Link>
       </p>

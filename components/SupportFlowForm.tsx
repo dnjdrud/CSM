@@ -29,7 +29,7 @@ export function SupportFlowForm({ ministry }: { ministry: Ministry }) {
     amountChoice !== null &&
     resolvedAmount >= 1000;
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!canSubmit || pending) return;
 
@@ -161,7 +161,7 @@ export function SupportFlowForm({ ministry }: { ministry: Ministry }) {
               <p className="mt-1 text-xs text-theme-muted pl-1">
                 ₩{customValue.toLocaleString()}
                 {customValue < 1000 && (
-                  <span className="text-red-500 ml-2">최소 ₩1,000 이상</span>
+                  <span className="text-theme-danger ml-2">최소 ₩1,000 이상</span>
                 )}
               </p>
             )}
@@ -179,7 +179,7 @@ export function SupportFlowForm({ ministry }: { ministry: Ministry }) {
       </section>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-2 text-center">
+        <p className="text-sm text-theme-danger bg-theme-danger-bg rounded-xl px-4 py-2 text-center">
           {error}
         </p>
       )}

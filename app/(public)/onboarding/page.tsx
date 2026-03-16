@@ -49,16 +49,16 @@ export default async function OnboardingPage({ searchParams }: Props) {
             />
           </div>
         )}
-        <h1 className="text-xl font-serif font-normal text-gray-800 tracking-tight">
+        <h1 className="text-xl font-serif font-normal text-theme-text tracking-tight">
           Request access
         </h1>
-        <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
+        <p className="mt-3 text-[15px] text-theme-text-2 leading-relaxed">
           Submit your details. An admin will review your request. You’ll receive an email with a link to complete signup (valid 7 days) once approved.
         </p>
         <RequestAccessForm />
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-theme-muted">
           Already have an account?{" "}
-          <a href="/login" className="font-medium text-gray-700 underline hover:text-gray-900">
+          <a href="/login" className="font-medium text-theme-text underline hover:text-theme-primary">
             Sign in
           </a>
         </p>

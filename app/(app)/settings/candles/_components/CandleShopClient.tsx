@@ -102,7 +102,7 @@ export function CandleShopClient({ balance, userId: _userId, transactions }: Pro
                 <div className="text-right shrink-0">
                   <p
                     className={`text-[14px] font-semibold ${
-                      tx.delta > 0 ? "text-green-600" : "text-theme-text"
+                      tx.delta > 0 ? "text-theme-success" : "text-theme-text"
                     }`}
                   >
                     {tx.delta > 0 ? "+" : ""}

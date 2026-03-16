@@ -120,7 +120,7 @@ export default async function ProfilePage({
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-12">
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">
+        <div className="rounded-2xl border border-theme-danger/20 bg-theme-danger-bg p-6 text-theme-danger">
           <h1 className="text-xl font-semibold">프로필을 불러올 수 없습니다</h1>
           <p className="mt-2 text-sm">
             {errorMessage ?? "존재하지 않는 사용자이거나 오류가 발생했습니다."}

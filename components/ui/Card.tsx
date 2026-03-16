@@ -1,10 +1,19 @@
 /**
  * Design system: Card
- * Uses lib/design/tokens (RADIUS.card, BORDER.default, PADDING.card).
- * Optional header/footer via CardHeader, CardContent, CardFooter.
+ * Container with optional CardHeader, CardContent, CardFooter.
+ * Hover lift (shadow), focus-within for accessibility; spacing from tokens.
  */
 import * as React from "react";
-import { RADIUS, BORDER, BG, PADDING, TRANSITION } from "@/lib/design/tokens";
+import { RADIUS, BORDER, SHADOW, PADDING, TRANSITION_ALL } from "@/lib/design/tokens";
+
+const cardBase = [
+  "rounded-card border bg-theme-surface",
+  BORDER.default,
+  SHADOW.card,
+  TRANSITION_ALL,
+  "hover:shadow-card-hover",
+  "focus-within:ring-2 focus-within:ring-theme-primary/10 focus-within:ring-offset-2 focus-within:border-theme-border-2",
+].join(" ");
 
 export function Card({
   children,
@@ -12,14 +21,15 @@ export function Card({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div
-      className={`${RADIUS.card} border ${BORDER.default} ${BG.surface} shadow-soft ${TRANSITION} hover:bg-theme-surface-2/50 ${className}`}
-      {...props}
-    >
+    <div className={`${cardBase} ${className}`} {...props}>
       {children}
     </div>
   );
 }
+
+const headerPadding = "px-5 pt-5 pb-0";
+const contentPadding = "p-5";
+const footerPadding = "px-5 pb-5 pt-0";
 
 export function CardHeader({
   children,
@@ -27,7 +37,7 @@ export function CardHeader({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div className={`${PADDING.card} pb-0 ${className}`} {...props}>
+    <div className={`${headerPadding} ${className}`} {...props}>
       {children}
     </div>
   );
@@ -39,7 +49,7 @@ export function CardContent({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div className={`${PADDING.card} ${className}`} {...props}>
+    <div className={`${contentPadding} ${className}`} {...props}>
       {children}
     </div>
   );
@@ -51,7 +61,7 @@ export function CardFooter({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div className={`${PADDING.card} pt-0 ${className}`} {...props}>
+    <div className={`${footerPadding} ${className}`} {...props}>
       {children}
     </div>
   );

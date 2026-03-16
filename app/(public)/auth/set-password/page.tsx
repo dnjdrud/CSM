@@ -16,7 +16,7 @@ function SetPasswordForm() {
 
   const valid = id && token;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!valid || password.length < 8) {
       setStatus("error");
@@ -79,7 +79,7 @@ function SetPasswordForm() {
           required
         />
       </div>
-      {message && <p className={status === "error" ? "text-red-500 text-sm" : "text-theme-muted text-sm"}>{message}</p>}
+      {message && <p className={status === "error" ? "text-theme-danger text-sm" : "text-theme-muted text-sm"}>{message}</p>}
       <button
         type="submit"
         disabled={status === "loading"}

@@ -26,13 +26,13 @@ type SectionHeaderProps = {
 
 export function SectionHeader({ title, subtitle, actionSlot, id }: SectionHeaderProps) {
   return (
-    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2 pt-6 first:pt-0">
-      <div>
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-2 pt-6 first:pt-0">
+      <div className="min-w-0">
         <h2 id={id} className={`${TYPOGRAPHY.sectionTitle} ${TEXT.label}`}>
           {title}
         </h2>
         {subtitle && (
-          <p className={`mt-0.5 text-xs ${TEXT.muted}`}>{subtitle}</p>
+          <p className={`mt-0.5 text-meta ${TEXT.muted}`}>{subtitle}</p>
         )}
       </div>
       {actionSlot && <div className="mt-1 sm:mt-0 shrink-0">{actionSlot}</div>}

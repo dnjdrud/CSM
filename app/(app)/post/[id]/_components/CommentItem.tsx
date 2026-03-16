@@ -126,7 +126,7 @@ export function CommentItem({
   }
 
   const wrapperClass = isReply
-    ? "ml-6 pl-3 border-l-2 border-gray-100 py-2"
+    ? "ml-6 pl-3 border-l-2 border-theme-border py-2"
     : "py-3";
 
   return (
@@ -138,14 +138,14 @@ export function CommentItem({
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0">
           <Link
             href={`/profile/${comment.author.id}`}
-            className="text-[15px] font-medium text-gray-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+            className="text-[15px] font-medium text-theme-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
           >
             {comment.author.name}
           </Link>
           <Badge variant="subtle" className="text-[11px] px-1 py-0">
             {ROLE_DISPLAY[comment.author.role]}
           </Badge>
-          <time dateTime={comment.createdAt} className="text-xs text-neutral-500">
+          <time dateTime={comment.createdAt} className="text-xs text-theme-muted">
             {relativeTime(comment.createdAt)}
           </time>
         </div>
@@ -157,7 +157,7 @@ export function CommentItem({
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={2}
-              className="block w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[15px] text-gray-900 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+              className="block w-full rounded-md border border-theme-border bg-theme-surface-2/80 px-3 py-2 text-[15px] text-theme-text focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
               disabled={pending}
               aria-label="Edit comment"
             />
@@ -166,7 +166,7 @@ export function CommentItem({
                 type="button"
                 onClick={handleSave}
                 disabled={pending || !content.trim()}
-                className="rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                className="rounded-button bg-theme-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-theme-primary-2 transition-colors disabled:opacity-50"
               >
                 Save
               </button>
@@ -174,14 +174,14 @@ export function CommentItem({
                 type="button"
                 onClick={() => { setEditing(false); setContent(comment.content); }}
                 disabled={pending}
-                className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-button border border-theme-border px-3 py-1.5 text-xs font-medium text-theme-muted hover:bg-theme-surface-2 transition-colors"
               >
                 Cancel
               </button>
             </div>
           </div>
         ) : (
-          <p className="mt-0.5 text-[15px] leading-7 text-gray-900 whitespace-pre-wrap">
+          <p className="mt-0.5 text-[15px] leading-7 text-theme-text whitespace-pre-wrap">
             <MentionText text={comment.content} />
           </p>
         )}
@@ -195,8 +195,8 @@ export function CommentItem({
               disabled={!currentUserId || likePending}
               aria-label={likedByMe ? "Unlike" : "Like"}
               aria-pressed={likedByMe}
-              className={`flex items-center gap-1 text-xs rounded px-1 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 transition-colors ${
-                likedByMe ? "text-red-500 font-medium" : "text-neutral-400 hover:text-gray-600"
+              className={`flex items-center gap-1 text-xs rounded px-1 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 transition-colors ${
+                likedByMe ? "text-theme-danger font-medium" : "text-theme-muted hover:text-theme-text"
               } disabled:opacity-40`}
             >
               <span aria-hidden>{likedByMe ? "❤️" : "🤍"}</span>
@@ -206,7 +206,7 @@ export function CommentItem({
               <button
                 type="button"
                 onClick={() => onReplyClick(comment.id)}
-                className="text-xs text-neutral-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded px-1 py-0.5"
+                className="text-xs text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded px-1 py-0.5 transition-colors"
                 aria-label="Reply to comment"
               >
                 Reply
@@ -216,7 +216,7 @@ export function CommentItem({
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="rounded p-1 text-neutral-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+                className="rounded p-1 text-theme-muted hover:text-theme-text hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 transition-colors"
                 aria-label="Comment actions"
                 aria-expanded={menuOpen}
                 aria-haspopup="true"
@@ -225,7 +225,7 @@ export function CommentItem({
               </button>
               {menuOpen && (
                 <div
-                  className="absolute left-0 top-full z-20 mt-0.5 w-40 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                  className="absolute left-0 top-full z-20 mt-0.5 w-40 rounded-xl border border-theme-border bg-theme-surface py-1 shadow-md"
                   role="menu"
                 >
                   {isAuthor && (
@@ -234,7 +234,7 @@ export function CommentItem({
                         type="button"
                         role="menuitem"
                         onClick={() => { setEditing(true); setMenuOpen(false); }}
-                        className="block w-full px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50"
+                        className="block w-full px-3 py-1.5 text-left text-xs text-theme-text hover:bg-theme-surface-2 transition-colors"
                       >
                         Edit
                       </button>
@@ -243,14 +243,14 @@ export function CommentItem({
                         role="menuitem"
                         onClick={handleDelete}
                         disabled={pending}
-                        className="block w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        className="block w-full px-3 py-1.5 text-left text-xs text-theme-danger hover:bg-theme-danger-bg transition-colors disabled:opacity-50"
                       >
                         Delete
                       </button>
                     </>
                   )}
                   {!isAuthor && (
-                    <div className="border-t border-gray-100 pt-1 mt-1">
+                    <div className="border-t border-theme-border pt-1 mt-1">
                       <ReportMenu
                         targetType="comment"
                         commentId={comment.id}

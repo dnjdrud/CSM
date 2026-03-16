@@ -23,7 +23,7 @@ export function ProfileSection({
   const actionSlot = seeAllHref ? (
     <Link
       href={seeAllHref}
-      className="text-[13px] font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded shrink-0"
+      className="text-[13px] font-medium text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded shrink-0 transition-colors"
     >
       {seeAllLabel}
     </Link>

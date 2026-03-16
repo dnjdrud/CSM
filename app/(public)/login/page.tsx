@@ -19,13 +19,13 @@ export default async function LoginPage({
             optional="Use the link we sent you, or request a new one below."
           />
         )}
-        <h1 className={`text-xl font-serif font-normal text-gray-800 tracking-tight ${showAccountCreated ? "mt-6" : ""}`}>
+        <h1 className={`text-xl font-serif font-normal text-theme-text tracking-tight ${showAccountCreated ? "mt-6" : ""}`}>
           Sign in
         </h1>
-        <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
+        <p className="mt-3 text-[15px] text-theme-text-2 leading-relaxed">
           Enter your email to receive a sign-in link. No password required.
         </p>
-        <Suspense fallback={<div className="mt-8 h-32 animate-pulse rounded-lg bg-gray-100" />}>
+        <Suspense fallback={<div className="mt-8 h-32 animate-pulse rounded-lg bg-theme-surface-2" />}>
           <LoginForm />
         </Suspense>
       </div>

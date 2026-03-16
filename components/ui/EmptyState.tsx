@@ -1,28 +1,38 @@
 /**
  * Design system: EmptyState
- * - Used when lists are empty (feed, notes, notifications, search). Calm, readable.
- * - Props: title, description, optional action (label + href). Body text: text-[15px] leading-7; title text-base.
+ * Used when lists are empty (feed, notes, notifications, search).
+ * Typography hierarchy, consistent spacing, CTA from tokens.
  */
 import Link from "next/link";
 import * as React from "react";
+import { RADIUS, PADDING, FOCUS_RING_PRIMARY, TRANSITION } from "@/lib/design/tokens";
 
 type Props = {
   title: string;
   description: string;
   action?: { label: string; href: string };
+  /** Optional icon (emoji or ReactNode) above title */
+  icon?: React.ReactNode;
   className?: string;
 };
 
-export function EmptyState({ title, description, action, className = "" }: Props) {
+export function EmptyState({ title, description, action, icon, className = "" }: Props) {
   return (
-    <div className={`rounded-2xl border border-theme-border bg-theme-surface-2/50 px-6 py-10 text-center ${className}`}>
-      <h2 className="text-base font-medium text-theme-text">{title}</h2>
-      <p className="mt-2 text-[15px] leading-7 text-theme-muted">{description}</p>
+    <div
+      className={`rounded-xl border border-theme-border bg-theme-surface px-6 py-12 text-center sm:px-8 sm:py-14 ${className}`}
+    >
+      {icon && (
+        <div className="mb-4 flex justify-center text-2xl text-theme-muted [&>svg]:h-10 [&>svg]:w-10" aria-hidden>
+          {icon}
+        </div>
+      )}
+      <h2 className="text-lg font-semibold tracking-tight text-theme-text">{title}</h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-theme-muted max-w-sm mx-auto">{description}</p>
       {action && (
-        <p className="mt-4">
+        <p className="mt-6">
           <Link
             href={action.href}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-theme-primary px-4 py-3 text-sm font-medium text-white transition-colors duration-200 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:opacity-90"
+            className={`inline-flex min-h-[44px] items-center justify-center rounded-button bg-theme-primary px-5 py-2.5 text-sm font-semibold text-white ${TRANSITION} hover:bg-theme-primary-2 active:scale-[0.98] ${FOCUS_RING_PRIMARY}`}
           >
             {action.label}
           </Link>

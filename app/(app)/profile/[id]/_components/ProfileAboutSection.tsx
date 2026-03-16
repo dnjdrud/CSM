@@ -20,15 +20,15 @@ export function ProfileAboutSection({ user }: Props) {
   }
 
   return (
-    <div className="prose prose-sm max-w-none text-gray-800 font-sans">
+    <div className="prose prose-sm max-w-none text-theme-text font-sans">
       {user.bio && (
         <p className="leading-relaxed whitespace-pre-wrap">{user.bio}</p>
       )}
       {user.affiliation && (
-        <p className="mt-3 text-gray-500 text-sm">{user.affiliation}</p>
+        <p className="mt-3 text-theme-muted text-sm">{user.affiliation}</p>
       )}
       {aboutRoleCopy && (
-        <p className="mt-3 text-gray-600 text-sm italic">{aboutRoleCopy}</p>
+        <p className="mt-3 text-theme-text-2 text-sm italic">{aboutRoleCopy}</p>
       )}
     </div>
   );

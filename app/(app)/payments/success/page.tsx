@@ -76,7 +76,7 @@ function TossSuccessContent() {
   return (
     <div className="flex flex-col items-center gap-4 py-20 text-center">
       <span className="text-5xl">❌</span>
-      <p className="text-[17px] font-semibold text-red-600">결제 승인 실패</p>
+      <p className="text-[17px] font-semibold text-theme-danger">결제 승인 실패</p>
       <p className="text-[14px] text-theme-muted">{message}</p>
       <button
         onClick={() => router.replace("/settings/candles")}

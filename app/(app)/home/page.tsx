@@ -227,7 +227,7 @@ async function FeedTabContent({
       )}
 
       {firstPage.error ? (
-        <div className="mx-4 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="mx-4 my-4 rounded-xl border border-theme-danger/20 bg-theme-danger-bg px-4 py-3 text-sm text-theme-danger">
           {t.home.feedError} {firstPage.error}
         </div>
       ) : (
@@ -390,7 +390,7 @@ async function PrayerTabContent({
                         {PRAYER_CATEGORY_LABELS[prayer.category]}
                       </span>
                       {prayer.answeredAt && (
-                        <span className="text-[11px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
+                        <span className="text-[11px] bg-theme-success-bg text-theme-success px-2 py-0.5 rounded-full">
                           ✓ 응답
                         </span>
                       )}

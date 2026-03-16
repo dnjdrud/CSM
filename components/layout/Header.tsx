@@ -219,7 +219,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                 >
                   <BellIcon className="w-5 h-5" />
                   {displayCount > 0 && (
-                    <span className="absolute top-1 right-1 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white tabular-nums leading-4">
+                    <span className="absolute top-1 right-1 inline-flex min-w-[1rem] items-center justify-center rounded-full bg-theme-danger px-1 text-[10px] font-bold text-white tabular-nums leading-4">
                       {displayCount > 9 ? "9+" : displayCount}
                     </span>
                   )}
@@ -262,7 +262,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                       )}
                       <div className="border-t border-theme-border/60 mt-1 pt-1">
                         <form action={logoutAction}>
-                          <button type="submit" role="menuitem" className="w-full text-left flex items-center gap-2 px-3 py-2 text-[13px] text-red-500 hover:bg-theme-surface-2 transition-colors">
+                          <button type="submit" role="menuitem" className="w-full text-left flex items-center gap-2 px-3 py-2 text-[13px] text-theme-danger hover:bg-theme-surface-2 transition-colors">
                             {t.header.logout}
                           </button>
                         </form>
@@ -376,7 +376,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] text-theme-danger hover:bg-theme-danger-bg transition-colors"
                 >
                   <LogoutIcon className="w-5 h-5 shrink-0" />
                   {t.header.logout}

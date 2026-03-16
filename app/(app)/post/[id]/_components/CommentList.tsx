@@ -77,7 +77,7 @@ export function CommentList({
   return (
     <ul className="list-none p-0 space-y-0" role="list">
       {roots.map((root) => (
-        <li key={root.id} className="border-b border-gray-100 last:border-b-0">
+        <li key={root.id} className="border-b border-theme-border last:border-b-0">
           <CommentItem
             comment={root}
             postId={postId}
@@ -91,7 +91,7 @@ export function CommentList({
             updateCommentAction={updateCommentActionProp}
           />
           {replyingTo === root.id && currentUserId && (
-            <div className="ml-6 pl-3 border-l-2 border-gray-100 mt-1 mb-3">
+            <div className="ml-6 pl-3 border-l-2 border-theme-border mt-1 mb-3">
               <CommentForm
                 postId={postId}
                 parentId={root.id}

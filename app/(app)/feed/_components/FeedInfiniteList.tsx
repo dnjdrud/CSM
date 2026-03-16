@@ -87,7 +87,7 @@ export function FeedInfiniteList({
       </ul>
       <div ref={sentinelRef} aria-hidden className="min-h-[1px]" />
       {loading && (
-        <ul className="list-none p-0 border-t border-gray-100" role="list" aria-busy="true" aria-label="Loading more">
+        <ul className="list-none p-0 border-t border-theme-border" role="list" aria-busy="true" aria-label="Loading more">
           {[1, 2, 3].map((i) => (
             <li key={i}>
               <FeedSkeletonRow />
@@ -96,12 +96,12 @@ export function FeedInfiniteList({
         </ul>
       )}
       {error && (
-        <p className="py-4 px-4 text-center text-[13px] text-amber-600" role="alert">
+        <p className="py-4 px-4 text-center text-[13px] text-theme-warning" role="alert">
           {error}
         </p>
       )}
       {!loading && nextCursorStr === null && items.length > 0 && (
-        <p className="py-6 px-4 text-center text-[13px] text-gray-500 border-t border-gray-200">
+        <p className="py-6 px-4 text-center text-[13px] text-theme-muted border-t border-theme-border">
           You&apos;re all caught up.
         </p>
       )}

@@ -25,7 +25,7 @@ type Props = { user: User };
 
 // 필수 표시 별표
 function Req() {
-  return <span className="text-red-500 ml-0.5" aria-hidden>*</span>;
+  return <span className="text-theme-danger ml-0.5" aria-hidden>*</span>;
 }
 
 export function ProfileEditForm({ user }: Props) {
@@ -56,7 +56,7 @@ export function ProfileEditForm({ user }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [syncKey]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
 
     // 클라이언트 필수 검증
@@ -105,8 +105,8 @@ export function ProfileEditForm({ user }: Props) {
     }
   }
 
-  const inputCls = "mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400";
-  const inputReqCls = "mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500";
+  const inputCls = "mt-1.5 block w-full rounded-input border border-theme-border bg-theme-surface px-3 py-2.5 text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary transition-colors";
+  const inputReqCls = inputCls;
 
   // 프로필 미완성 여부 — 필수 항목 중 하나라도 없으면 안내 배너 표시
   const isIncomplete = !user.username || !user.denomination || !user.church;
@@ -115,11 +115,11 @@ export function ProfileEditForm({ user }: Props) {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* 필수 항목 미완성 안내 */}
       {isIncomplete && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-xl border border-theme-warning/30 bg-theme-warning-bg px-4 py-3 text-sm text-theme-warning">
           <p className="font-medium mb-0.5">프로필 정보를 완성해주세요</p>
-          <p className="text-amber-700 text-[13px]">
+          <p className="text-theme-warning/80 text-[13px]">
             사용자 이름, 교단, 교회는 필수 입력 항목입니다.{" "}
-            <span className="text-red-500">*</span> 표시 항목을 모두 입력해야 저장됩니다.
+            <span className="text-theme-danger">*</span> 표시 항목을 모두 입력해야 저장됩니다.
           </p>
         </div>
       )}
@@ -129,7 +129,7 @@ export function ProfileEditForm({ user }: Props) {
 
       {/* Name */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-800">
+        <label htmlFor="name" className="block text-sm font-medium text-theme-text">
           이름<Req />
         </label>
         <input
@@ -144,11 +144,11 @@ export function ProfileEditForm({ user }: Props) {
 
       {/* Username — 필수 */}
       <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-800">
+        <label htmlFor="username" className="block text-sm font-medium text-theme-text">
           사용자 이름<Req />
         </label>
         <div className="relative mt-1.5">
-          <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 text-sm">@</span>
+          <span className="absolute inset-y-0 left-3 flex items-center text-theme-muted text-sm">@</span>
           <input
             id="username"
             type="text"
@@ -158,17 +158,17 @@ export function ProfileEditForm({ user }: Props) {
             minLength={2}
             maxLength={30}
             required
-            className="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-7 pr-3 text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+            className="block w-full rounded-input border border-theme-border bg-theme-surface py-2.5 pl-7 pr-3 text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary transition-colors"
             autoComplete="username"
           />
         </div>
-        <p className="mt-1 text-xs text-gray-500">영문, 숫자, 밑줄(_) 2자 이상. 고유한 핸들로 사용됩니다.</p>
+        <p className="mt-1 text-xs text-theme-muted">영문, 숫자, 밑줄(_) 2자 이상. 고유한 핸들로 사용됩니다.</p>
       </div>
 
       {/* Role */}
       {user.role !== "ADMIN" && (
         <div>
-          <label className="block text-sm font-medium text-gray-800">역할</label>
+          <label className="block text-sm font-medium text-theme-text">역할</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
@@ -183,7 +183,7 @@ export function ProfileEditForm({ user }: Props) {
 
       {/* Denomination — 필수 */}
       <div>
-        <label htmlFor="denomination" className="block text-sm font-medium text-gray-800">
+        <label htmlFor="denomination" className="block text-sm font-medium text-theme-text">
           교단<Req />
         </label>
         <select
@@ -202,7 +202,7 @@ export function ProfileEditForm({ user }: Props) {
 
       {/* Church — 필수 */}
       <div>
-        <label htmlFor="church" className="block text-sm font-medium text-gray-800">
+        <label htmlFor="church" className="block text-sm font-medium text-theme-text">
           교회<Req />
         </label>
         <input
@@ -214,13 +214,13 @@ export function ProfileEditForm({ user }: Props) {
           required
           className={inputReqCls}
         />
-        <p className="mt-1 text-xs text-gray-500">같은 교회 이름을 여러 사람이 사용할 수 있습니다.</p>
+        <p className="mt-1 text-xs text-theme-muted">같은 교회 이름을 여러 사람이 사용할 수 있습니다.</p>
       </div>
 
       {/* Faith years — 선택 */}
       <div>
-        <label htmlFor="faithYears" className="block text-sm font-medium text-gray-800">
-          신앙 연수 <span className="text-gray-500 font-normal">(선택)</span>
+        <label htmlFor="faithYears" className="block text-sm font-medium text-theme-text">
+          신앙 연수 <span className="text-theme-muted font-normal">(선택)</span>
         </label>
         <input
           id="faithYears"
@@ -236,8 +236,8 @@ export function ProfileEditForm({ user }: Props) {
 
       {/* Affiliation — 선택, 중복 허용 */}
       <div>
-        <label htmlFor="affiliation" className="block text-sm font-medium text-gray-800">
-          소속 기관 <span className="text-gray-500 font-normal">(선택)</span>
+        <label htmlFor="affiliation" className="block text-sm font-medium text-theme-text">
+          소속 기관 <span className="text-theme-muted font-normal">(선택)</span>
         </label>
         <input
           id="affiliation"
@@ -247,13 +247,13 @@ export function ProfileEditForm({ user }: Props) {
           placeholder="선교단체 또는 네트워크"
           className={inputCls}
         />
-        <p className="mt-1 text-xs text-gray-500">같은 기관 이름을 여러 사람이 사용할 수 있습니다.</p>
+        <p className="mt-1 text-xs text-theme-muted">같은 기관 이름을 여러 사람이 사용할 수 있습니다.</p>
       </div>
 
       {/* Bio — 선택 */}
       <div>
-        <label htmlFor="bio" className="block text-sm font-medium text-gray-800">
-          자기소개 <span className="text-gray-500 font-normal">(선택)</span>
+        <label htmlFor="bio" className="block text-sm font-medium text-theme-text">
+          자기소개 <span className="text-theme-muted font-normal">(선택)</span>
         </label>
         <textarea
           id="bio"
@@ -261,27 +261,27 @@ export function ProfileEditForm({ user }: Props) {
           onChange={(e) => setBio(e.target.value)}
           rows={4}
           placeholder="간단한 소개를 적어주세요"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-y"
+          className="mt-1.5 block w-full rounded-input border border-theme-border bg-theme-surface px-3 py-2.5 text-sm text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary resize-y transition-colors"
           maxLength={500}
         />
-        <p className="mt-1 text-xs text-gray-400 text-right">{bio.length}/500</p>
+        <p className="mt-1 text-xs text-theme-muted text-right">{bio.length}/500</p>
       </div>
 
-      {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
-      {saved && <p className="text-sm text-green-600">저장되었습니다.</p>}
+      {error && <p className="text-sm text-theme-danger" role="alert">{error}</p>}
+      {saved && <p className="text-sm text-theme-success">저장되었습니다.</p>}
 
       <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-button bg-theme-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-theme-primary-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {pending ? "저장 중…" : "저장"}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+          className="rounded-button border border-theme-border px-5 py-2.5 text-sm font-medium text-theme-muted hover:bg-theme-surface-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2"
         >
           취소
         </button>

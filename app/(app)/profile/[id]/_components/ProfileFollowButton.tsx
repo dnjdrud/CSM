@@ -38,10 +38,10 @@ export function ProfileFollowButton({
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:opacity-90 disabled:opacity-50 ${
+      className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-button px-4 py-2.5 text-sm font-medium transition-colors duration-[120ms] focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:opacity-90 disabled:opacity-50 ${
         localFollowing
-          ? "border border-gray-200 bg-transparent text-gray-700 hover:bg-gray-50"
-          : "bg-gray-800 text-gray-50 hover:bg-gray-700"
+          ? "border border-theme-border bg-transparent text-theme-text hover:bg-theme-surface-2"
+          : "bg-theme-primary text-white hover:bg-theme-primary-2"
       }`}
     >
       {pending ? "…" : localFollowing ? t.profile.unfollow : t.profile.follow}

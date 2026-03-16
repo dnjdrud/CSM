@@ -13,6 +13,8 @@ const DENOMINATIONS = [
   "구세군", "루터교", "기타",
 ];
 
+const inputCls = "mt-1.5 block w-full rounded-input border border-theme-border bg-theme-surface px-3 py-2.5 text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary transition-colors";
+
 export function RequestAccessForm() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -25,7 +27,7 @@ export function RequestAccessForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!email.trim() || pending) return;
     setPending(true);
@@ -49,14 +51,14 @@ export function RequestAccessForm() {
 
   if (success) {
     return (
-      <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50/80 p-6">
-        <h2 className="text-lg font-medium text-gray-800">Thanks</h2>
-        <p className="mt-2 text-[15px] text-gray-600 leading-relaxed">
-          Your request is pending approval. We’ll email you with a link to complete signup once it’s reviewed.
+      <div className="mt-8 rounded-xl border border-theme-border bg-theme-surface-2/50 p-6">
+        <h2 className="text-lg font-medium text-theme-text">Thanks</h2>
+        <p className="mt-2 text-[15px] text-theme-text-2 leading-relaxed">
+          Your request is pending approval. We'll email you with a link to complete signup once it's reviewed.
         </p>
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-theme-muted">
           You can close this page. If you have questions,{" "}
-          <a href="/contact" className="text-gray-700 underline hover:text-gray-900">contact us</a>.
+          <a href="/contact" className="text-theme-text underline hover:text-theme-primary">contact us</a>.
         </p>
       </div>
     );
@@ -70,7 +72,7 @@ export function RequestAccessForm() {
       autoComplete="off"
     >
       <div>
-        <label htmlFor="request-email" className="block text-sm font-medium text-gray-800">
+        <label htmlFor="request-email" className="block text-sm font-medium text-theme-text">
           Email
         </label>
         <input
@@ -80,14 +82,14 @@ export function RequestAccessForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
           autoComplete="off"
           required
         />
       </div>
       <div>
-        <label htmlFor="request-name" className="block text-sm font-medium text-gray-800">
-          Name <span className="text-gray-500 font-normal">(optional)</span>
+        <label htmlFor="request-name" className="block text-sm font-medium text-theme-text">
+          Name <span className="text-theme-muted font-normal">(optional)</span>
         </label>
         <input
           id="request-name"
@@ -95,16 +97,16 @@ export function RequestAccessForm() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
           autoComplete="name"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-800">Role</label>
+        <label className="block text-sm font-medium text-theme-text">Role</label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
         >
           {ROLE_OPTIONS.map(({ value, label }) => (
             <option key={value} value={value}>{label}</option>
@@ -112,8 +114,8 @@ export function RequestAccessForm() {
         </select>
       </div>
       <div>
-        <label htmlFor="request-church" className="block text-sm font-medium text-gray-800">
-          Church <span className="text-gray-500 font-normal">(optional)</span>
+        <label htmlFor="request-church" className="block text-sm font-medium text-theme-text">
+          Church <span className="text-theme-muted font-normal">(optional)</span>
         </label>
         <input
           id="request-church"
@@ -121,18 +123,18 @@ export function RequestAccessForm() {
           value={church}
           onChange={(e) => setChurch(e.target.value)}
           placeholder="Your church or ministry"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
         />
       </div>
       <div>
-        <label htmlFor="request-denomination" className="block text-sm font-medium text-gray-800">
-          교단 <span className="text-gray-500 font-normal">(선택)</span>
+        <label htmlFor="request-denomination" className="block text-sm font-medium text-theme-text">
+          교단 <span className="text-theme-muted font-normal">(선택)</span>
         </label>
         <select
           id="request-denomination"
           value={denomination}
           onChange={(e) => setDenomination(e.target.value)}
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
         >
           <option value="">선택 안 함</option>
           {DENOMINATIONS.map((d) => (
@@ -141,8 +143,8 @@ export function RequestAccessForm() {
         </select>
       </div>
       <div>
-        <label htmlFor="request-bio" className="block text-sm font-medium text-gray-800">
-          Bio <span className="text-gray-500 font-normal">(optional)</span>
+        <label htmlFor="request-bio" className="block text-sm font-medium text-theme-text">
+          Bio <span className="text-theme-muted font-normal">(optional)</span>
         </label>
         <textarea
           id="request-bio"
@@ -150,12 +152,12 @@ export function RequestAccessForm() {
           onChange={(e) => setBio(e.target.value)}
           rows={3}
           placeholder="A short intro"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 resize-y"
+          className={`${inputCls} resize-y`}
         />
       </div>
       <div>
-        <label htmlFor="request-affiliation" className="block text-sm font-medium text-gray-800">
-          Affiliation <span className="text-gray-500 font-normal">(optional)</span>
+        <label htmlFor="request-affiliation" className="block text-sm font-medium text-theme-text">
+          Affiliation <span className="text-theme-muted font-normal">(optional)</span>
         </label>
         <input
           id="request-affiliation"
@@ -163,11 +165,11 @@ export function RequestAccessForm() {
           value={affiliation}
           onChange={(e) => setAffiliation(e.target.value)}
           placeholder="Organization or network"
-          className="mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+          className={inputCls}
         />
       </div>
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-theme-danger" role="alert">
           {error}
         </p>
       )}
@@ -175,7 +177,7 @@ export function RequestAccessForm() {
         type="submit"
         name="request_access_submit"
         disabled={pending}
-        className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+        className="rounded-button bg-theme-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-theme-primary-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 disabled:opacity-40 transition-colors"
       >
         {pending ? "Submitting…" : "Request access"}
       </button>

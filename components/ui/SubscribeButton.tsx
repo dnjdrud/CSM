@@ -78,7 +78,7 @@ export function SubscribeButton({
         aria-label={subscribed ? "구독 취소" : "까마귀 되기"}
         className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border transition-all disabled:opacity-50 ${
           subscribed
-            ? "border-theme-border text-theme-muted bg-theme-surface hover:border-red-300 hover:text-red-400"
+            ? "border-theme-border text-theme-muted bg-theme-surface hover:border-theme-danger/30 hover:text-theme-danger"
             : "border-theme-primary/30 text-theme-primary bg-theme-primary/5 hover:bg-theme-primary/10"
         }`}
       >
@@ -96,7 +96,7 @@ export function SubscribeButton({
         disabled={pending}
         className={`flex items-center gap-2 px-5 py-2 rounded-full text-[14px] font-semibold transition-all disabled:opacity-60 ${
           subscribed
-            ? "bg-theme-surface-2 border border-theme-border text-theme-muted hover:border-red-300 hover:text-red-500"
+            ? "bg-theme-surface-2 border border-theme-border text-theme-muted hover:border-theme-danger/30 hover:text-theme-danger"
             : "bg-theme-primary text-white hover:opacity-90"
         }`}
       >

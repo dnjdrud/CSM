@@ -96,26 +96,26 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-30 border-t border-theme-border/70 bg-theme-surface/95 backdrop-blur-sm shrink-0"
+      className="fixed bottom-0 inset-x-0 z-30 border-t border-theme-border/70 bg-theme-surface/95 backdrop-blur-sm shrink-0 pb-[env(safe-area-inset-bottom)]"
       aria-label="Primary tabs"
     >
-      <ul className="flex items-stretch justify-evenly px-2 py-1.5">
+      <ul className="flex items-stretch justify-evenly px-1 sm:px-2">
         {TABS.map((tab) => {
           const active = isActive(tab, pathname);
           return (
-            <li key={tab.key} className="flex-1">
+            <li key={tab.key} className="flex-1 flex min-w-0">
               <Link
                 href={tab.href}
-                className={`flex w-full flex-col items-center justify-center gap-0.5 rounded-md py-1.5 text-[11px] ${
+                className={`flex w-full min-h-[44px] sm:min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-[11px] transition-colors active:bg-theme-surface-2/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-inset ${
                   active
                     ? "text-theme-primary font-medium"
                     : "text-theme-muted hover:text-theme-text"
                 }`}
               >
-                <span aria-hidden className="text-lg leading-none">
-                  <tab.Icon className="w-5 h-5" />
+                <span aria-hidden className="text-lg leading-none shrink-0">
+                  <tab.Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </span>
-                <span>{labels[tab.key]}</span>
+                <span className="truncate max-w-[4.5rem] sm:max-w-none">{labels[tab.key]}</span>
               </Link>
             </li>
           );

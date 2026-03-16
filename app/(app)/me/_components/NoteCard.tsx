@@ -25,6 +25,9 @@ type Props = {
   onUpdated: () => void;
 };
 
+const linkBtn = "text-[13px] font-medium text-theme-text hover:text-theme-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded transition-colors";
+const ghostBtn = "text-[13px] text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded transition-colors";
+
 export function NoteCard({ note, onDeleted, onUpdated }: Props) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [publishPending, setPublishPending] = useState(false);
@@ -45,31 +48,17 @@ export function NoteCard({ note, onDeleted, onUpdated }: Props) {
     const { publishNoteAction } = await import("../actions");
     const res = await publishNoteAction(note.id);
     setPublishPending(false);
-    if (res.ok) {
-      onUpdated();
-      toast.show("Shared.");
-    } else {
-      toast.error();
-    }
+    if (res.ok) { onUpdated(); toast.show("Shared."); } else { toast.error(); }
   }
 
   async function handleSaveAnswerNote() {
     setAnswerSaving(true);
     const res = await updatePrayerAnswerAction(note.id, answerDraft);
     setAnswerSaving(false);
-    if (res.ok) {
-      setAnswerModalOpen(false);
-      onUpdated();
-      toast.show("Saved.");
-    } else {
-      toast.error();
-    }
+    if (res.ok) { setAnswerModalOpen(false); onUpdated(); toast.show("Saved."); } else { toast.error(); }
   }
 
-  function openAnswerModal() {
-    setAnswerDraft(note.answerNote ?? "");
-    setAnswerModalOpen(true);
-  }
+  function openAnswerModal() { setAnswerDraft(note.answerNote ?? ""); setAnswerModalOpen(true); }
 
   async function handleShareTestimony() {
     if (sharedAsTestimony || testimonyPending) return;
@@ -77,68 +66,48 @@ export function NoteCard({ note, onDeleted, onUpdated }: Props) {
     const { publishTestimonyAction } = await import("../actions");
     const res = await publishTestimonyAction(note.id);
     setTestimonyPending(false);
-    if (res.ok) {
-      onUpdated();
-      toast.show("Shared.");
-    } else {
-      toast.error();
-    }
+    if (res.ok) { onUpdated(); toast.show("Shared."); } else { toast.error(); }
   }
 
   return (
     <>
-      <Card role="article" className="border-gray-100 bg-gray-50/30">
-        <CardContent className="hover:bg-gray-50/50 transition-colors">
+      <Card role="article">
+        <CardContent>
         {note.type === "GRATITUDE" && (
           <Badge variant="muted" className="mb-1.5 inline-block">Gratitude</Badge>
         )}
         {note.title && (
-          <h3 className="text-[15px] font-medium text-gray-900 mb-0.5">{note.title}</h3>
+          <h3 className="text-[15px] font-medium text-theme-text mb-0.5">{note.title}</h3>
         )}
-        <p className="text-[15px] text-gray-800 leading-relaxed whitespace-pre-wrap font-sans">
+        <p className="text-[15px] text-theme-text-2 leading-relaxed whitespace-pre-wrap font-sans">
           {note.content}
         </p>
         {note.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-0">
             {note.tags.map((tag) => (
-              <span
-                key={tag}
-                className="text-[12px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded"
-              >
+              <span key={tag} className="text-[12px] text-theme-muted bg-theme-surface-2 px-1.5 py-0.5 rounded">
                 #{tag}
               </span>
             ))}
           </div>
         )}
         {showAnswerSection && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <p className="text-[12px] font-medium text-gray-600 mb-1.5">Answer</p>
+          <div className="mt-3 pt-3 border-t border-theme-border">
+            <p className="text-[12px] font-medium text-theme-muted mb-1.5">Answer</p>
             {note.answerNote ? (
               <>
-                <p className="text-[14px] text-gray-800 leading-relaxed whitespace-pre-wrap mb-1.5">
+                <p className="text-[14px] text-theme-text-2 leading-relaxed whitespace-pre-wrap mb-1.5">
                   {note.answerNote}
                 </p>
-                <button
-                  type="button"
-                  onClick={openAnswerModal}
-                  className="text-[13px] text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
-                >
-                  Edit
-                </button>
+                <button type="button" onClick={openAnswerModal} className={ghostBtn}>Edit</button>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={openAnswerModal}
-                className="text-[13px] font-medium text-gray-800 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
-              >
-                Add answer note
-              </button>
+              <button type="button" onClick={openAnswerModal} className={linkBtn}>Add answer note</button>
             )}
           </div>
         )}
         <div className="mt-3 flex items-center justify-between">
-          <time dateTime={note.createdAt} className="text-[12px] text-gray-500">
+          <time dateTime={note.createdAt} className="text-[12px] text-theme-muted">
             {formatDate(note.createdAt)}
           </time>
           <div className="flex flex-wrap items-center gap-2">
@@ -146,46 +115,36 @@ export function NoteCard({ note, onDeleted, onUpdated }: Props) {
               <>
                 {sharedAsTestimony ? (
                   <>
-                    <span className="text-[13px] text-gray-500">Shared as testimony</span>
-                    <Link
-                      href={`/post/${note.publishedPostId}`}
-                      className="text-[13px] font-medium text-gray-800 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
-                    >
-                      View post
-                    </Link>
+                    <span className="text-[13px] text-theme-muted">Shared as testimony</span>
+                    <Link href={`/post/${note.publishedPostId}`} className={linkBtn}>View post</Link>
                   </>
                 ) : canShareTestimony ? (
                   <>
-                    <p className="text-[12px] text-gray-500 w-full">
+                    <p className="text-[12px] text-theme-muted w-full">
                       Share this answered prayer with the community as a testimony.
                     </p>
                     <button
                       type="button"
                       onClick={handleShareTestimony}
                       disabled={testimonyPending}
-                      className="text-[13px] font-medium text-gray-800 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`${linkBtn} disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {testimonyPending ? "Sharing…" : "Share as testimony"}
                     </button>
                   </>
                 ) : isPublished ? (
                   <>
-                    <span className="text-[13px] text-gray-500">Published</span>
-                    <Link
-                      href={`/post/${note.publishedPostId}`}
-                      className="text-[13px] font-medium text-gray-800 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
-                    >
-                      View post
-                    </Link>
+                    <span className="text-[13px] text-theme-muted">Published</span>
+                    <Link href={`/post/${note.publishedPostId}`} className={linkBtn}>View post</Link>
                   </>
                 ) : (
                   <>
-                    <p className="text-[12px] text-gray-500 w-full">This will create a post in the community feed.</p>
+                    <p className="text-[12px] text-theme-muted w-full">This will create a post in the community feed.</p>
                     <button
                       type="button"
                       onClick={handlePublish}
                       disabled={publishPending}
-                      className="text-[13px] font-medium text-gray-800 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`${linkBtn} disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {publishPending ? "Publishing…" : "Publish to Community"}
                     </button>
@@ -200,38 +159,22 @@ export function NoteCard({ note, onDeleted, onUpdated }: Props) {
                 onChange={async () => {
                   const { toggleShareToProfileAction } = await import("../actions");
                   const res = await toggleShareToProfileAction(note.id, !note.shareToProfile);
-                  if (res.ok) {
-                    onUpdated();
-                    toast.show("Updated.");
-                  } else {
-                    toast.error();
-                  }
+                  if (res.ok) { onUpdated(); toast.show("Updated."); } else { toast.error(); }
                 }}
-                className="rounded border-gray-300 text-gray-800 focus:ring-gray-700"
+                className="rounded border-theme-border text-theme-primary focus:ring-theme-accent"
               />
-              <span className="text-[13px] text-gray-600">Show on my profile</span>
+              <span className="text-[13px] text-theme-muted">Show on my profile</span>
             </label>
-            <button
-              type="button"
-              onClick={() => setEditorOpen(true)}
-              className="text-[13px] text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
-            >
-              Edit
-            </button>
+            <button type="button" onClick={() => setEditorOpen(true)} className={ghostBtn}>Edit</button>
             <button
               type="button"
               onClick={async () => {
                 if (!confirm("Delete this note?")) return;
                 const { deleteNoteAction } = await import("../actions");
                 const res = await deleteNoteAction(note.id);
-                if (res.ok) {
-                  onDeleted();
-                  toast.show("Deleted.");
-                } else {
-                  toast.error();
-                }
+                if (res.ok) { onDeleted(); toast.show("Deleted."); } else { toast.error(); }
               }}
-              className="text-[13px] text-red-600 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 rounded"
+              className="text-[13px] text-theme-danger hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-danger focus-visible:ring-offset-2 rounded transition-opacity"
             >
               Delete
             </button>
@@ -243,10 +186,7 @@ export function NoteCard({ note, onDeleted, onUpdated }: Props) {
         <NoteEditorModal
           note={note}
           onClose={() => setEditorOpen(false)}
-          onSaved={() => {
-            setEditorOpen(false);
-            onUpdated();
-          }}
+          onSaved={() => { setEditorOpen(false); onUpdated(); }}
         />
       )}
       {answerModalOpen && (
@@ -258,27 +198,23 @@ export function NoteCard({ note, onDeleted, onUpdated }: Props) {
           aria-labelledby="answer-note-title"
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-md w-full p-4"
+            className="bg-theme-surface rounded-xl shadow-xl max-w-md w-full p-4 border border-theme-border"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="answer-note-title" className="text-[15px] font-medium text-gray-900 mb-2">
-              Answer
-            </h2>
+            <h2 id="answer-note-title" className="text-[15px] font-medium text-theme-text mb-2">Answer</h2>
             <textarea
               value={answerDraft}
               onChange={(e) => setAnswerDraft(e.target.value)}
               placeholder="How was this prayer answered?"
               rows={4}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-[14px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-transparent"
+              className="w-full border border-theme-border rounded-md px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-muted bg-theme-surface-2 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-transparent transition-colors"
             />
-            <p className="text-[12px] text-gray-500 mt-1.5 mb-3">
-              Remembering answered prayers builds faith.
-            </p>
+            <p className="text-[12px] text-theme-muted mt-1.5 mb-3">Remembering answered prayers builds faith.</p>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => !answerSaving && setAnswerModalOpen(false)}
-                className="px-3 py-1.5 text-[13px] text-gray-600 hover:text-gray-900 rounded border border-gray-300"
+                className="px-3 py-1.5 text-[13px] text-theme-muted hover:text-theme-text rounded border border-theme-border hover:bg-theme-surface-2 transition-colors"
               >
                 Cancel
               </button>
@@ -286,7 +222,7 @@ export function NoteCard({ note, onDeleted, onUpdated }: Props) {
                 type="button"
                 onClick={handleSaveAnswerNote}
                 disabled={answerSaving}
-                className="px-3 py-1.5 text-[13px] font-medium text-white bg-gray-800 hover:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-[13px] font-medium text-white bg-theme-primary hover:bg-theme-primary-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {answerSaving ? "Saving…" : "Save"}
               </button>

@@ -37,7 +37,7 @@ export default async function RootLayout({
           <LanguageProvider initialLocale={initialLocale}>
             <HeaderWrapper />
             <div className="flex flex-1 min-h-0 md:flex-row">
-              <main className="flex flex-1 min-w-0 flex justify-center pb-16" id="main-content">
+              <main className="flex flex-1 min-w-0 flex justify-center pb-bottom-nav" id="main-content">
                 {children}
               </main>
             </div>

@@ -40,11 +40,11 @@ export function FollowButton({
   }
 
   const base =
-    "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:opacity-90 disabled:opacity-50";
-  const size = compact ? "min-h-[36px] px-3 py-1.5 text-xs" : "min-h-[44px] min-w-[44px] px-4 py-2.5 text-sm";
+    "inline-flex items-center justify-center rounded-button font-medium transition-colors duration-[120ms] focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:opacity-90 disabled:opacity-50";
+  const size = compact ? "min-h-[44px] min-w-[44px] px-3 py-2 text-xs" : "min-h-[44px] min-w-[44px] px-4 py-2.5 text-sm";
   const variant = localFollowing
     ? "border border-theme-border bg-transparent text-theme-text hover:bg-theme-surface-2"
-    : "bg-gray-800 text-white hover:bg-gray-700 border border-transparent";
+    : "bg-theme-primary text-white hover:bg-theme-primary-2 border border-transparent";
 
   return (
     <button

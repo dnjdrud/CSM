@@ -249,13 +249,13 @@ function ImageUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
             </div>
           )}
           {state.status === "done" && (
-            <div className="absolute top-2 left-2 bg-green-600/90 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
+            <div className="absolute top-2 left-2 bg-theme-success/90 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
               {t.write.uploadDone}
             </div>
           )}
           {state.status === "error" && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center px-4">
-              <p className="text-red-400 text-[13px] text-center">{state.message}</p>
+              <p className="text-theme-danger text-[13px] text-center">{state.message}</p>
             </div>
           )}
           <button type="button" onClick={handleRemove} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 text-[14px] leading-none" aria-label={t.write.removePhoto}>
@@ -265,7 +265,7 @@ function ImageUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
       )}
 
       {state.status === "error" && !state.previewUrl && (
-        <p className="mt-1 text-[12px] text-red-500">{state.message}</p>
+        <p className="mt-1 text-[12px] text-theme-danger">{state.message}</p>
       )}
       {state.status === "error" && state.previewUrl && (
         <button type="button" onClick={handleRetry} className="mt-2 w-full py-2 rounded-lg bg-theme-primary/10 text-theme-primary text-[13px] font-medium hover:bg-theme-primary/20 transition-colors">
@@ -316,7 +316,7 @@ function ComposeForm({
     setYoutubeWarning(youtubeUrl.trim().length > 0 && !isYouTube);
   }, [youtubeUrl, postType.showYoutubeUrl]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!content.trim()) return;
     if (postType.showRequestType && !requestType) {
@@ -377,7 +377,7 @@ function ComposeForm({
         {postType.showRequestType && (
           <div>
             <label className="block text-[12px] font-medium text-theme-muted mb-2">
-              {t.write.requestTypeLabel} <span className="font-normal text-red-500">*</span>
+              {t.write.requestTypeLabel} <span className="font-normal text-theme-danger">*</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {requestTypeOptions.map((opt) => (
@@ -401,7 +401,7 @@ function ComposeForm({
         {postType.showMissionCountry && (
           <div>
             <label className="block text-[12px] font-medium text-theme-muted mb-1">
-              {t.write.missionCountryLabel} <span className="font-normal text-red-500">*</span>
+              {t.write.missionCountryLabel} <span className="font-normal text-theme-danger">*</span>
             </label>
             <select
               value={missionCountry}
@@ -453,7 +453,7 @@ function ComposeForm({
               className="w-full text-[14px] border border-theme-border rounded-lg px-3 py-2 bg-theme-surface text-theme-text placeholder:text-theme-muted focus:outline-none focus:ring-2 focus:ring-theme-primary/40"
             />
             {youtubeWarning && (
-              <p className="mt-1 text-[12px] text-amber-600">{t.write.youtubeLinkWarning}</p>
+              <p className="mt-1 text-[12px] text-theme-warning">{t.write.youtubeLinkWarning}</p>
             )}
           </div>
         )}
@@ -512,7 +512,7 @@ function ComposeForm({
         )}
 
         {error && (
-          <p className="text-[13px] text-red-600" role="alert">{error}</p>
+          <p className="text-[13px] text-theme-danger" role="alert">{error}</p>
         )}
 
         <button

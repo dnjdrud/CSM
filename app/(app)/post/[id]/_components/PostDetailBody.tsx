@@ -30,7 +30,7 @@ export function PostDetailBody({ post }: Props) {
         </div>
       )}
 
-      <div className="mt-4 text-[15px] leading-7 text-gray-900 whitespace-pre-wrap font-sans">
+      <div className="mt-4 text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans">
         {post.content}
       </div>
 
@@ -40,7 +40,7 @@ export function PostDetailBody({ post }: Props) {
             <Link
               key={tag}
               href={`/topics/${encodeURIComponent(tag)}`}
-              className="text-[13px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+              className="text-[13px] text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
             >
               #{tag}
             </Link>
@@ -49,9 +49,9 @@ export function PostDetailBody({ post }: Props) {
       )}
 
       {post.reflectionPrompt && (
-        <aside className="mt-6 pt-6 border-t border-gray-200" aria-label="묵상 질문">
-          <p className="text-[13px] font-medium text-gray-700 mb-1">묵상 질문</p>
-          <p className="text-[15px] text-gray-800 leading-relaxed italic font-sans">
+        <aside className="mt-6 pt-6 border-t border-theme-border" aria-label="묵상 질문">
+          <p className="text-[13px] font-medium text-theme-text-2 mb-1">묵상 질문</p>
+          <p className="text-[15px] text-theme-text leading-relaxed italic font-sans">
             {post.reflectionPrompt}
           </p>
         </aside>

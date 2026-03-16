@@ -118,7 +118,7 @@ export function CommentForm({
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmed = content.trim();
     if (!trimmed || pending) return;
@@ -153,7 +153,7 @@ export function CommentForm({
           onKeyDown={handleKeyDown}
           placeholder={t.comments.placeholder}
           rows={2}
-          className="block w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[15px] leading-7 text-gray-900 placeholder:text-neutral-500 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-400 resize-y min-h-[4rem]"
+          className="block w-full rounded-md border border-theme-border bg-theme-surface-2/80 px-3 py-2 text-[15px] leading-7 text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:bg-theme-surface focus:outline-none focus:ring-1 focus:ring-theme-primary resize-y min-h-[4rem]"
           disabled={pending}
           aria-label={t.comments.placeholder}
         />
@@ -183,7 +183,7 @@ export function CommentForm({
       </div>
 
       {submitError && (
-        <p className="mt-2 text-[13px] text-red-600" role="alert">
+        <p className="mt-2 text-[13px] text-theme-danger" role="alert">
           {submitError}
         </p>
       )}
@@ -191,7 +191,7 @@ export function CommentForm({
         <button
           type="submit"
           disabled={!hasContent || pending}
-          className="rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-button bg-theme-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-theme-primary-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {pending ? t.common.loading : t.comments.post}
         </button>
@@ -199,7 +199,7 @@ export function CommentForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+            className="rounded-button border border-theme-border px-3 py-1.5 text-xs font-medium text-theme-muted hover:bg-theme-surface-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2"
           >
             {t.common.cancel}
           </button>

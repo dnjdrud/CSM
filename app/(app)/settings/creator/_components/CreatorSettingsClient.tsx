@@ -13,7 +13,7 @@ export function CreatorSettingsClient({ candlesPerMonth }: Props) {
   const [disabling, setDisabling] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "ok" | "error"; msg: string } | null>(null);
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSave(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const parsed = parseInt(candles, 10);
     if (isNaN(parsed)) {
@@ -88,7 +88,7 @@ export function CreatorSettingsClient({ candlesPerMonth }: Props) {
 
           {feedback && (
             <p
-              className={`text-[13px] ${feedback.type === "ok" ? "text-green-600" : "text-red-500"}`}
+              className={`text-[13px] ${feedback.type === "ok" ? "text-theme-success" : "text-theme-danger"}`}
               role="alert"
             >
               {feedback.msg}
@@ -109,7 +109,7 @@ export function CreatorSettingsClient({ candlesPerMonth }: Props) {
                 type="button"
                 onClick={handleDisable}
                 disabled={disabling}
-                className="px-4 py-2.5 rounded-xl border border-theme-border text-[14px] font-medium text-theme-muted hover:border-red-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                className="px-4 py-2.5 rounded-xl border border-theme-border text-[14px] font-medium text-theme-muted hover:border-theme-danger/30 hover:text-theme-danger transition-colors disabled:opacity-50"
               >
                 {disabling ? "처리 중…" : "구독 비활성화"}
               </button>

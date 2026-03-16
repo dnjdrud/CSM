@@ -36,7 +36,7 @@ export function SearchForm({
   const [denomination, setDenomination] = useState(initialDenomination ?? "");
   const tab = initialTab;
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const next = new URLSearchParams(searchParams);
     next.set("tab", tab);
@@ -98,7 +98,7 @@ export function SearchForm({
           </summary>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="filter-role" className="block text-[11px] font-medium text-gray-500 mb-1">역할</label>
+              <label htmlFor="filter-role" className="block text-[11px] font-medium text-theme-muted mb-1">역할</label>
               <select id="filter-role" value={role} onChange={(e) => setRole(e.target.value)} className={selectCls}>
                 <option value="">전체 역할</option>
                 {ROLES.map((r) => (
@@ -107,7 +107,7 @@ export function SearchForm({
               </select>
             </div>
             <div>
-              <label htmlFor="filter-denomination" className="block text-[11px] font-medium text-gray-500 mb-1">교단</label>
+              <label htmlFor="filter-denomination" className="block text-[11px] font-medium text-theme-muted mb-1">교단</label>
               <select id="filter-denomination" value={denomination} onChange={(e) => setDenomination(e.target.value)} className={selectCls}>
                 <option value="">전체 교단</option>
                 {DENOMINATIONS.map((d) => (

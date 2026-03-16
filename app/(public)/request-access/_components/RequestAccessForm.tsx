@@ -4,6 +4,7 @@ import { useState } from "react";
 import { requestAccessAction } from "../actions";
 import { ROLE_DISPLAY, type UserRole } from "@/lib/domain/types";
 import { useT } from "@/lib/i18n";
+import { INPUT, BTN_PRIMARY } from "@/lib/design/tokens";
 
 const ROLES: UserRole[] = ["LAY", "MINISTRY_WORKER", "PASTOR", "MISSIONARY", "SEMINARIAN"];
 const ROLE_OPTIONS = ROLES.map((value) => ({ value, label: ROLE_DISPLAY[value] }));
@@ -36,7 +37,7 @@ export function RequestAccessForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!email.trim() || pending) return;
 
@@ -65,21 +66,22 @@ export function RequestAccessForm() {
 
   if (success) {
     return (
-      <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50/80 p-6">
-        <h2 className="text-lg font-medium text-gray-800">{sf.successTitle}</h2>
-        <p className="mt-2 text-[15px] text-gray-600 leading-relaxed">
+      <div className="mt-8 rounded-xl border border-theme-border bg-theme-surface-2/50 p-6">
+        <h2 className="text-lg font-medium text-theme-text">{sf.successTitle}</h2>
+        <p className="mt-2 text-[15px] text-theme-text-2 leading-relaxed">
           {sf.successDesc}
         </p>
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-theme-muted">
           {sf.successNote}{" "}
-          <a href="/contact" className="text-gray-700 underline hover:text-gray-900">{sf.successContact}</a>.
+          <a href="/contact" className="text-theme-primary underline-offset-2 hover:underline">{sf.successContact}</a>.
         </p>
       </div>
     );
   }
 
-  const inputCls = "mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400";
-  const inputReqCls = "mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500";
+  const labelCls = "block text-sm font-medium text-theme-text";
+  const optionalCls = "text-theme-muted font-normal";
+  const reqMark = <span className="text-theme-danger">*</span>;
 
   return (
     <form
@@ -88,10 +90,10 @@ export function RequestAccessForm() {
       className="mt-8 space-y-5"
       autoComplete="off"
     >
-      {/* Email — required */}
+      {/* Email */}
       <div>
-        <label htmlFor="request-email" className="block text-sm font-medium text-gray-800">
-          {sf.email} <span className="text-red-500">*</span>
+        <label htmlFor="request-email" className={labelCls}>
+          {sf.email} {reqMark}
         </label>
         <input
           id="request-email"
@@ -100,16 +102,16 @@ export function RequestAccessForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className={inputReqCls}
+          className={`mt-1.5 ${INPUT}`}
           autoComplete="off"
           required
         />
       </div>
 
-      {/* Name — required */}
+      {/* Name */}
       <div>
-        <label htmlFor="request-name" className="block text-sm font-medium text-gray-800">
-          {sf.name} <span className="text-red-500">*</span>
+        <label htmlFor="request-name" className={labelCls}>
+          {sf.name} {reqMark}
         </label>
         <input
           id="request-name"
@@ -118,17 +120,17 @@ export function RequestAccessForm() {
           onChange={(e) => setName(e.target.value)}
           placeholder={sf.namePlaceholder}
           required
-          className={inputReqCls}
+          className={`mt-1.5 ${INPUT}`}
         />
       </div>
 
       {/* Role */}
       <div>
-        <label className="block text-sm font-medium text-gray-800">{sf.role}</label>
+        <label className={labelCls}>{sf.role}</label>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as UserRole)}
-          className={inputCls}
+          className={`mt-1.5 ${INPUT}`}
         >
           {ROLE_OPTIONS.map(({ value, label }) => (
             <option key={value} value={value}>{label}</option>
@@ -136,17 +138,17 @@ export function RequestAccessForm() {
         </select>
       </div>
 
-      {/* Denomination — required */}
+      {/* Denomination */}
       <div>
-        <label htmlFor="request-denomination" className="block text-sm font-medium text-gray-800">
-          {sf.denomination} <span className="text-red-500">*</span>
+        <label htmlFor="request-denomination" className={labelCls}>
+          {sf.denomination} {reqMark}
         </label>
         <select
           id="request-denomination"
           value={denomination}
           onChange={(e) => setDenomination(e.target.value)}
           required
-          className={inputReqCls}
+          className={`mt-1.5 ${INPUT}`}
         >
           <option value="">{sf.denominationPlaceholder}</option>
           {DENOMINATIONS.map((d) => (
@@ -155,10 +157,10 @@ export function RequestAccessForm() {
         </select>
       </div>
 
-      {/* Church — required */}
+      {/* Church */}
       <div>
-        <label htmlFor="request-church" className="block text-sm font-medium text-gray-800">
-          {sf.church} <span className="text-red-500">*</span>
+        <label htmlFor="request-church" className={labelCls}>
+          {sf.church} {reqMark}
         </label>
         <input
           id="request-church"
@@ -167,14 +169,14 @@ export function RequestAccessForm() {
           onChange={(e) => setChurch(e.target.value)}
           placeholder={sf.churchPlaceholder}
           required
-          className={inputReqCls}
+          className={`mt-1.5 ${INPUT}`}
         />
       </div>
 
-      {/* Bio — optional */}
+      {/* Bio */}
       <div>
-        <label htmlFor="request-bio" className="block text-sm font-medium text-gray-800">
-          {sf.bio} <span className="text-gray-500 font-normal">{sf.optional}</span>
+        <label htmlFor="request-bio" className={labelCls}>
+          {sf.bio} <span className={optionalCls}>{sf.optional}</span>
         </label>
         <textarea
           id="request-bio"
@@ -182,14 +184,14 @@ export function RequestAccessForm() {
           onChange={(e) => setBio(e.target.value)}
           rows={3}
           placeholder={sf.bioPlaceholder}
-          className={`${inputCls} resize-y text-sm`}
+          className={`mt-1.5 ${INPUT} resize-y text-sm`}
         />
       </div>
 
-      {/* Affiliation — optional */}
+      {/* Affiliation */}
       <div>
-        <label htmlFor="request-affiliation" className="block text-sm font-medium text-gray-800">
-          {sf.affiliation} <span className="text-gray-500 font-normal">{sf.optional}</span>
+        <label htmlFor="request-affiliation" className={labelCls}>
+          {sf.affiliation} <span className={optionalCls}>{sf.optional}</span>
         </label>
         <input
           id="request-affiliation"
@@ -197,18 +199,18 @@ export function RequestAccessForm() {
           value={affiliation}
           onChange={(e) => setAffiliation(e.target.value)}
           placeholder={sf.affiliationPlaceholder}
-          className={inputCls}
+          className={`mt-1.5 ${INPUT}`}
         />
       </div>
 
       {error && (
-        <p className="text-sm text-red-600" role="alert">{error}</p>
+        <p className="text-sm text-theme-danger" role="alert">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+        className={BTN_PRIMARY}
       >
         {pending ? sf.submitting : sf.submitRequest}
       </button>

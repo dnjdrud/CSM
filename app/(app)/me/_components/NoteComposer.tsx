@@ -11,7 +11,6 @@ const GRATITUDE_MAX_LENGTH = 500;
 type Props = {
   type: NoteType;
   disabled?: boolean;
-  /** Optional placeholder for the main textarea (e.g. daily prompt). */
   placeholder?: string;
 };
 
@@ -27,18 +26,14 @@ export function NoteComposer({ type, disabled, placeholder }: Props) {
   const isGratitude = type === "GRATITUDE";
   const isPrayer = type === "PRAYER";
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmed = content.trim();
     if (!trimmed || pending || disabled) return;
     if (isGratitude && trimmed.length > GRATITUDE_MAX_LENGTH) return;
     setPending(true);
     const tags = tagsInput
-      ? tagsInput
-          .split(",")
-          .map((t) => t.trim().toLowerCase())
-          .filter(Boolean)
-          .slice(0, 5)
+      ? tagsInput.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean).slice(0, 5)
       : undefined;
     const result = await createNoteAction(type, trimmed, title.trim() || undefined, tags);
     setPending(false);
@@ -55,15 +50,17 @@ export function NoteComposer({ type, disabled, placeholder }: Props) {
 
   if (type === "MEDITATION") return null;
 
+  const inputCls = "block w-full rounded-md border border-theme-border bg-theme-surface-2/80 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:bg-theme-surface focus:outline-none focus:ring-1 focus:ring-theme-primary transition-colors";
+
   return (
-    <form onSubmit={handleSubmit} className="border-b border-gray-200 bg-white px-4 py-3">
+    <form onSubmit={handleSubmit} className="border-b border-theme-border bg-theme-surface px-4 py-3">
       {isPrayer && (
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Title (optional)"
-          className="block w-full rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2"
+          className={`${inputCls} mb-2`}
           disabled={pending}
         />
       )}
@@ -75,14 +72,14 @@ export function NoteComposer({ type, disabled, placeholder }: Props) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title (optional)"
-              className="block w-full rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-2"
+              className={`${inputCls} mb-2`}
               disabled={pending}
             />
           ) : (
             <button
               type="button"
               onClick={() => setShowTitle(true)}
-              className="text-[13px] text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded mb-2"
+              className="text-[13px] text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded mb-2 transition-colors"
             >
               + Add title (optional)
             </button>
@@ -98,12 +95,12 @@ export function NoteComposer({ type, disabled, placeholder }: Props) {
         }
         rows={isGratitude ? 2 : 3}
         maxLength={isGratitude ? GRATITUDE_MAX_LENGTH : undefined}
-        className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2 text-[15px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+        className={`${inputCls} resize-none`}
         disabled={pending}
         required
       />
       {isGratitude && (
-        <p className="mt-1 text-[12px] text-gray-500">
+        <p className="mt-1 text-[12px] text-theme-muted">
           {content.length}/{GRATITUDE_MAX_LENGTH}
         </p>
       )}
@@ -112,14 +109,14 @@ export function NoteComposer({ type, disabled, placeholder }: Props) {
         value={tagsInput}
         onChange={(e) => setTagsInput(e.target.value)}
         placeholder="Tags (optional, comma-separated, max 5)"
-        className="mt-2 block w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+        className="mt-2 block w-full rounded-md border border-theme-border bg-theme-surface px-3 py-1.5 text-[13px] text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary transition-colors"
         disabled={pending}
       />
       <div className="mt-3 flex justify-end">
         <button
           type="submit"
           disabled={!content.trim() || pending || disabled || (isGratitude && content.length > GRATITUDE_MAX_LENGTH)}
-          className="rounded-md bg-gray-800 px-4 py-2 text-[14px] font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+          className="rounded-button bg-theme-primary px-4 py-2 text-[14px] font-medium text-white hover:bg-theme-primary-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save note"}
         </button>

@@ -22,6 +22,8 @@ const DENOMINATIONS = [
 
 type Props = { token: string; request: SignupRequest; initialError?: string | null };
 
+const inputCls = "mt-1.5 block w-full rounded-input border border-theme-border bg-theme-surface px-3 py-2.5 text-theme-text placeholder:text-theme-muted focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary transition-colors";
+
 export function CompleteSignupForm({ token, request, initialError }: Props) {
   const t = useT();
   const sf = t.signupForm;
@@ -48,16 +50,13 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
     church.trim().length > 0 &&
     !pending;
 
-  const inputCls = "mt-1.5 block w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400";
-  const inputReqCls = "mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-gray-800 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500";
-
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-xl">
-        <h1 className="text-xl font-serif font-normal text-gray-800 tracking-tight">
+        <h1 className="text-xl font-serif font-normal text-theme-text tracking-tight">
           {sf.completeWebTitle}
         </h1>
-        <p className="mt-3 text-[15px] text-gray-600 leading-relaxed">
+        <p className="mt-3 text-[15px] text-theme-text-2 leading-relaxed">
           {sf.completeWebDesc}
         </p>
 
@@ -70,14 +69,14 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
           <input type="hidden" name="token" value={token} />
 
           <div>
-            <label className="block text-sm font-medium text-gray-800">{sf.email}</label>
-            <p className="mt-1 text-[15px] text-gray-700">{request.email}</p>
+            <label className="block text-sm font-medium text-theme-text">{sf.email}</label>
+            <p className="mt-1 text-[15px] text-theme-text">{request.email}</p>
           </div>
 
           {/* Username — required */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-800">
-              {sf.username} <span className="text-red-500">*</span>
+            <label htmlFor="username" className="block text-sm font-medium text-theme-text">
+              {sf.username} <span className="text-theme-danger">*</span>
             </label>
             <input
               id="username"
@@ -89,16 +88,16 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               minLength={2}
               maxLength={30}
               required
-              className={inputReqCls}
+              className={inputCls}
               autoComplete="username"
             />
-            <p className="mt-1 text-xs text-gray-500">{sf.usernameHelper}</p>
+            <p className="mt-1 text-xs text-theme-muted">{sf.usernameHelper}</p>
           </div>
 
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-800">
-              {sf.name} <span className="text-red-500">*</span>
+            <label htmlFor="name" className="block text-sm font-medium text-theme-text">
+              {sf.name} <span className="text-theme-danger">*</span>
             </label>
             <input
               id="name"
@@ -106,14 +105,14 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={inputReqCls}
+              className={inputCls}
               required
             />
           </div>
 
           {/* Role */}
           <div>
-            <label className="block text-sm font-medium text-gray-800">{sf.role}</label>
+            <label className="block text-sm font-medium text-theme-text">{sf.role}</label>
             <select
               name="role"
               value={role}
@@ -128,8 +127,8 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
 
           {/* Denomination — required */}
           <div>
-            <label htmlFor="denomination" className="block text-sm font-medium text-gray-800">
-              {sf.denomination} <span className="text-red-500">*</span>
+            <label htmlFor="denomination" className="block text-sm font-medium text-theme-text">
+              {sf.denomination} <span className="text-theme-danger">*</span>
             </label>
             <select
               id="denomination"
@@ -137,7 +136,7 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               value={denomination}
               onChange={(e) => setDenomination(e.target.value)}
               required
-              className={inputReqCls}
+              className={inputCls}
             >
               <option value="">{sf.denominationPlaceholder}</option>
               {DENOMINATIONS.map((d) => (
@@ -148,8 +147,8 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
 
           {/* Church — required */}
           <div>
-            <label htmlFor="church" className="block text-sm font-medium text-gray-800">
-              {sf.church} <span className="text-red-500">*</span>
+            <label htmlFor="church" className="block text-sm font-medium text-theme-text">
+              {sf.church} <span className="text-theme-danger">*</span>
             </label>
             <input
               id="church"
@@ -159,14 +158,14 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
               onChange={(e) => setChurch(e.target.value)}
               placeholder={sf.churchPlaceholder}
               required
-              className={inputReqCls}
+              className={inputCls}
             />
           </div>
 
           {/* Bio — optional */}
           <div>
-            <label htmlFor="bio" className="block text-sm font-medium text-gray-800">
-              {sf.bio} <span className="text-gray-500 font-normal">{sf.optional}</span>
+            <label htmlFor="bio" className="block text-sm font-medium text-theme-text">
+              {sf.bio} <span className="text-theme-muted font-normal">{sf.optional}</span>
             </label>
             <textarea
               id="bio"
@@ -180,8 +179,8 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
 
           {/* Affiliation — optional */}
           <div>
-            <label htmlFor="affiliation" className="block text-sm font-medium text-gray-800">
-              {sf.affiliation} <span className="text-gray-500 font-normal">{sf.optional}</span>
+            <label htmlFor="affiliation" className="block text-sm font-medium text-theme-text">
+              {sf.affiliation} <span className="text-theme-muted font-normal">{sf.optional}</span>
             </label>
             <input
               id="affiliation"
@@ -194,21 +193,21 @@ export function CompleteSignupForm({ token, request, initialError }: Props) {
           </div>
 
           {error && (
-            <p className="text-sm text-red-600" role="alert">{error}</p>
+            <p className="text-sm text-theme-danger" role="alert">{error}</p>
           )}
 
           <div className="pt-2">
             <button
               type="submit"
               disabled={!canSubmit}
-              className="rounded-lg bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-50 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-button bg-theme-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-theme-primary-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {pending ? sf.creatingAccount : sf.completeSignup}
             </button>
           </div>
         </form>
 
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-theme-muted">
           {sf.completeWebFooter}
         </p>
       </div>

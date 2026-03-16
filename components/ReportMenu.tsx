@@ -30,7 +30,7 @@ export function ReportMenu({
     { value: "other", label: t.report.reasons.other },
   ] as const;
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!reason || pending) return;
     setPending(true);
@@ -57,7 +57,7 @@ export function ReportMenu({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+        className="text-sm text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded transition-colors"
         aria-expanded={open}
         aria-haspopup="true"
       >
@@ -70,21 +70,21 @@ export function ReportMenu({
             aria-hidden
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full mt-1 z-20 w-56 rounded-md border border-gray-200 bg-white py-2 shadow-lg">
+          <div className="absolute right-0 top-full mt-1 z-20 w-56 rounded-xl border border-theme-border bg-theme-surface py-2 shadow-md">
             <form onSubmit={handleSubmit} className="px-3">
               {error && (
-                <p className="mb-2 text-sm text-amber-600" role="alert">
+                <p className="mb-2 text-sm text-theme-warning" role="alert">
                   {error}
                 </p>
               )}
-              <label htmlFor="report-reason" className="block text-sm font-medium text-gray-800 mb-2">
+              <label htmlFor="report-reason" className="block text-sm font-medium text-theme-text mb-2">
                 {t.report.reasonLabel}
               </label>
               <select
                 id="report-reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="block w-full rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-800 focus:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-700"
+                className="block w-full rounded-md border border-theme-border bg-theme-surface-2 px-2 py-1.5 text-sm text-theme-text focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
                 required
               >
                 <option value="">{t.report.selectPlaceholder}</option>
@@ -98,14 +98,14 @@ export function ReportMenu({
                 <button
                   type="submit"
                   disabled={pending}
-                  className="rounded bg-gray-800 px-2 py-1 text-sm font-medium text-gray-50 hover:bg-gray-700 disabled:opacity-40"
+                  className="rounded-button bg-theme-primary px-2 py-1 text-sm font-medium text-white hover:bg-theme-primary-2 transition-colors disabled:opacity-40"
                 >
                   {t.report.submit}
                 </button>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded border border-gray-200 px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="rounded-button border border-theme-border px-2 py-1 text-sm font-medium text-theme-muted hover:bg-theme-surface-2 transition-colors"
                 >
                   {t.report.cancel}
                 </button>

@@ -75,26 +75,26 @@ export function NotificationList({
               onClick={() => {
                 if (g.unread && onMarkRead) onMarkRead(g.ids);
               }}
-              className={`flex items-center gap-3 rounded-md py-3 px-3 text-[15px] leading-7 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 min-h-[44px] ${
-                g.unread ? "bg-gray-50/80" : ""
+              className={`flex items-center gap-3 rounded-md py-3 px-3 text-[15px] leading-7 hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 min-h-[44px] transition-colors ${
+                g.unread ? "bg-theme-surface-2/60" : ""
               }`}
             >
               <span className="shrink-0 w-2 flex justify-center" aria-hidden>
                 {g.unread ? (
-                  <span className="w-2 h-2 rounded-full bg-gray-400" />
+                  <span className="w-2 h-2 rounded-full bg-theme-accent" />
                 ) : null}
               </span>
               {firstActor ? (
                 <Avatar name={firstActor.name} src={firstActor.avatarUrl} size="sm" className="shrink-0" />
               ) : (
-                <span className="shrink-0 w-8 h-8 rounded-full bg-gray-200" aria-hidden />
+                <span className="shrink-0 w-8 h-8 rounded-full bg-theme-surface-2" aria-hidden />
               )}
-              <span className={`min-w-0 flex-1 ${g.unread ? "font-medium text-gray-900" : "text-gray-800"}`}>
+              <span className={`min-w-0 flex-1 ${g.unread ? "font-medium text-theme-text" : "text-theme-text-2"}`}>
                 {label}
               </span>
               <time
                 dateTime={g.latestCreatedAt.toISOString()}
-                className="shrink-0 text-xs text-neutral-500"
+                className="shrink-0 text-xs text-theme-muted"
               >
                 {timeStr}
               </time>

@@ -188,7 +188,7 @@ export function ComposeBox({
               </div>
             </div>
             <div>
-              <label htmlFor="compose-tags" className="text-xs font-medium text-neutral-600">
+              <label htmlFor="compose-tags" className="text-xs font-medium text-theme-muted">
                 {tagsLabel}
               </label>
               <input

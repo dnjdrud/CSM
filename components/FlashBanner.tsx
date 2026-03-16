@@ -11,12 +11,12 @@ export function FlashBanner({ title, body, optional }: FlashBannerProps) {
   return (
     <div
       role="status"
-      className="border border-gray-200 bg-gray-50 text-gray-800 rounded-lg px-4 py-3"
+      className="border border-theme-border bg-theme-surface-2 text-theme-text rounded-xl px-4 py-3"
       aria-live="polite"
     >
       <p className="font-medium text-[15px]">{title}</p>
-      <p className="mt-1 text-[14px] text-gray-600">{body}</p>
-      {optional && <p className="mt-2 text-[13px] text-gray-500">{optional}</p>}
+      <p className="mt-1 text-[14px] text-theme-text-2">{body}</p>
+      {optional && <p className="mt-2 text-[13px] text-theme-muted">{optional}</p>}
     </div>
   );
 }

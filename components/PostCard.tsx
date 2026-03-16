@@ -47,6 +47,10 @@ type AddCommentAction = (postId: string, content: string, parentId?: string) => 
 type DeleteCommentAction = (commentId: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
 type UpdateCommentAction = (commentId: string, content: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
 
+/* Shared action button style: touch target, hover/active/focus */
+const actionBtnBase =
+  "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-transparent px-3 py-2.5 text-sm font-medium text-theme-muted transition-colors duration-150 hover:bg-theme-surface-2 hover:text-theme-text active:bg-theme-surface-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2";
+
 function ShareButton({ postId }: { postId: string }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
@@ -73,12 +77,12 @@ function ShareButton({ postId }: { postId: string }) {
       onClick={handleCopy}
       aria-label={t.postCard.shareLink}
       title={copied ? t.postCard.copied : t.postCard.shareLink}
-      className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-lg border border-transparent bg-transparent px-2 py-2 text-theme-muted transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2"
+      className={`${actionBtnBase} -ml-1`}
     >
       {copied ? (
-        <svg viewBox="0 0 24 24" className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12" /></svg>
+        <svg viewBox="0 0 24 24" className="h-4 w-4 text-theme-success shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="20 6 9 17 4 12" /></svg>
       ) : (
-        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
       )}
     </button>
   );
@@ -226,46 +230,50 @@ export function PostCard({
       data-post-id={post.id}
       className={isDailyPrayer && !isTestimony ? "border-theme-accent/30 bg-theme-surface-2/30" : undefined}
     >
-      <CardContent className="py-4 px-4 sm:px-5">
+      <CardContent className="px-4 py-4 sm:px-5 sm:py-5">
       {isTestimony && (
-        <div className="mb-2">
+        <div className="mb-3">
           <Badge variant="testimony">{t.postCard.testimony}</Badge>
         </div>
       )}
       {isDailyPrayer && !isTestimony && (
-        <p className="mb-2 text-[12px] text-theme-muted">{t.postCard.dailyPrayer}</p>
+        <p className="mb-3 text-meta text-theme-muted">{t.postCard.dailyPrayer}</p>
       )}
 
-      <header className="flex items-start gap-3">
-        <Avatar name={post.author.name} src={post.author.avatarUrl} size="md" />
+      {/* Author section */}
+      <header className="flex items-start gap-3 sm:gap-4">
+        <Link
+          href={`/profile/${post.author.id}`}
+          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
+        >
+          <Avatar name={post.author.name} src={post.author.avatarUrl} size="md" />
+        </Link>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
             <Link
               href={`/profile/${post.author.id}`}
-              className="text-[15px] font-medium text-theme-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
+              className="text-[15px] font-semibold text-theme-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
             >
               {post.author.name}
             </Link>
-            <span className="text-[12px] text-theme-muted">{ROLE_DISPLAY[post.author.role]}</span>
+            <span className="text-meta text-theme-muted">{ROLE_DISPLAY[post.author.role]}</span>
             {post.author.affiliation && (
-              <span className="text-[12px] text-theme-muted truncate" title={post.author.affiliation}>
+              <span className="text-meta text-theme-muted truncate max-w-[140px] sm:max-w-[200px]" title={post.author.affiliation}>
                 · {post.author.affiliation}
               </span>
             )}
           </div>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <time dateTime={post.createdAt} className="text-[11px] text-theme-muted">
-              {relativeTime(post.createdAt, locale)}
-            </time>
+          <div className="mt-1 flex items-center gap-2 text-caption text-theme-muted">
+            <time dateTime={post.createdAt}>{relativeTime(post.createdAt, locale)}</time>
             {post.visibility === "PRIVATE" && (
-              <span className="text-[11px] text-theme-muted" title="나만 보기" aria-label="비공개">🔒</span>
+              <span title="나만 보기" aria-label="비공개">🔒</span>
             )}
             {post.visibility === "FOLLOWERS" && (
-              <span className="text-[11px] text-theme-muted" title="팔로워 공개" aria-label="팔로워 공개">👥</span>
+              <span title="팔로워 공개" aria-label="팔로워 공개">👥</span>
             )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1">
           {isAuthor && (
             <PostActionsMenu
               post={post}
@@ -282,25 +290,24 @@ export function PostCard({
         </div>
       </header>
 
-      <div className="mt-2">
+      {/* Content */}
+      <div className="mt-4">
         {post.subscribersOnly && !post.isViewerSubscriber && effectiveUserId !== post.authorId ? (
-          <div className="relative rounded-xl overflow-hidden border border-theme-border/60">
-            {/* Blurred preview of first ~120 chars */}
-            <div className="px-4 py-3 text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans blur-sm select-none pointer-events-none line-clamp-3">
+          <div className="relative rounded-xl overflow-hidden border border-theme-border bg-theme-surface-2/50">
+            <div className="px-4 py-3 text-[15px] leading-[1.65] text-theme-text whitespace-pre-wrap blur-sm select-none pointer-events-none line-clamp-3 break-words">
               {post.content.slice(0, 120)}
             </div>
-            {/* Lock overlay */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-theme-surface/80 backdrop-blur-sm px-4 py-4 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-theme-surface/90 backdrop-blur-sm px-5 py-5 text-center">
               <span className="text-2xl" aria-hidden>🔒</span>
-              <p className="text-[13px] font-medium text-theme-text">구독 후 열람 가능</p>
+              <p className="text-sm font-medium text-theme-text">구독 후 열람 가능</p>
               {post.authorSubscriptionPriceKrw && (
-                <p className="text-[12px] text-theme-muted">
+                <p className="text-meta text-theme-muted">
                   월 {post.authorSubscriptionPriceKrw.toLocaleString()}원
                 </p>
               )}
               <Link
                 href={`/profile/${post.authorId}?tab=crow`}
-                className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-theme-primary text-white text-[12px] font-semibold hover:opacity-90 transition-opacity"
+                className="mt-1 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-theme-primary text-white text-sm font-semibold hover:bg-theme-primary-2 active:scale-[0.98] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
               >
                 <span aria-hidden>🐦</span> 구독하기
               </Link>
@@ -308,25 +315,25 @@ export function PostCard({
           </div>
         ) : shouldClamp ? (
           <>
-            <div className="line-clamp-6 text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans">
+            <div className="line-clamp-6 text-[15px] leading-[1.65] text-theme-text whitespace-pre-wrap break-words">
               {post.content}
             </div>
             <Link
               href={`/post/${post.id}`}
-              className="mt-1 inline-block text-xs font-medium text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
+              className="mt-2 inline-block text-sm font-medium text-theme-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
             >
               {t.postCard.readMore}
             </Link>
           </>
         ) : (
-          <div className="text-[15px] leading-7 text-theme-text whitespace-pre-wrap font-sans">
+          <div className="text-[15px] leading-[1.65] text-theme-text whitespace-pre-wrap break-words">
             {post.content}
           </div>
         )}
       </div>
 
       {Array.isArray(post.mediaUrls) && post.mediaUrls.length > 0 && post.mediaUrls[0] && (
-        <div className="mt-3 relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+        <div className="mt-4 relative w-full aspect-video rounded-xl overflow-hidden bg-theme-surface-3">
           <Image src={post.mediaUrls[0]} alt={t.postCard.photoAlt} fill className="object-contain" unoptimized />
         </div>
       )}
@@ -335,7 +342,7 @@ export function PostCard({
         const ytMatch = post.youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
         const videoId = ytMatch?.[1];
         return videoId ? (
-          <div className="mt-3 relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+          <div className="mt-4 relative w-full aspect-video rounded-xl overflow-hidden bg-black">
             <iframe
               src={`https://www.youtube.com/embed/${videoId}`}
               title="YouTube video"
@@ -348,12 +355,12 @@ export function PostCard({
       })()}
 
       {Array.isArray(post.tags) && post.tags.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Topics">
+        <div className="mt-4 flex flex-wrap gap-2" aria-label="Topics">
           {post.tags.map((tag) => (
             <Link
               key={tag}
               href={`/topics/${encodeURIComponent(tag)}`}
-              className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-2.5 py-0.5 text-[12px] text-theme-text hover:bg-theme-surface hover:border-theme-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2"
+              className="inline-flex items-center rounded-full border border-theme-border bg-theme-surface-2 px-3 py-1 text-meta text-theme-text hover:bg-theme-surface-3 hover:border-theme-border-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 transition-colors duration-150"
             >
               #{tag}
             </Link>
@@ -361,8 +368,9 @@ export function PostCard({
         </div>
       )}
 
+      {/* Reaction & actions bar */}
       <div
-        className="mt-4 flex flex-wrap items-center gap-4 sm:gap-6 border-t border-theme-border pt-3 text-[12px] text-theme-muted"
+        className="mt-5 flex flex-wrap items-center gap-1 border-t border-theme-border pt-4"
         role="group"
         aria-label="Respond to this post"
       >
@@ -371,44 +379,44 @@ export function PostCard({
             <button
               type="button"
               onClick={handlePrayed}
-              className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "prayed" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.prayed ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
+              className={`${actionBtnBase} -ml-1 ${justActivated === "prayed" ? "animate-reaction-on " : ""} ${responses.prayed ? "bg-theme-accent-bg/60 text-theme-primary border-theme-accent/40" : ""}`}
             >
               <span aria-hidden>🙏</span>
-              {t.reactions.prayed}
+              <span>{t.reactions.prayed}</span>
               {counts.prayed > 0 && (
                 getReactorsAction ? (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openReactorsModal("PRAYED"); }}
-                    className="ml-1 tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
+                    className="ml-0.5 tabular-nums text-inherit opacity-80 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-1 rounded"
                     aria-label={`${counts.prayed} prayed`}
                   >
                     {counts.prayed}
                   </button>
                 ) : (
-                  <span className="ml-1 tabular-nums text-theme-muted">{counts.prayed}</span>
+                  <span className="ml-0.5 tabular-nums opacity-80">{counts.prayed}</span>
                 )
               )}
             </button>
             <button
               type="button"
               onClick={handleWithYou}
-              className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${justActivated === "withYou" ? "animate-reaction-on font-medium text-theme-text" : ""} ${responses.withYou ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
+              className={`${actionBtnBase} -ml-1 ${justActivated === "withYou" ? "animate-reaction-on " : ""} ${responses.withYou ? "bg-theme-accent-bg/60 text-theme-primary border-theme-accent/40" : ""}`}
             >
               <span aria-hidden>🤍</span>
-              {t.reactions.withYou}
+              <span>{t.reactions.withYou}</span>
               {counts.withYou > 0 && (
                 getReactorsAction ? (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openReactorsModal("WITH_YOU"); }}
-                    className="ml-1 tabular-nums text-theme-muted underline-offset-2 hover:underline focus:outline-none"
+                    className="ml-0.5 tabular-nums text-inherit opacity-80 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-1 rounded"
                     aria-label={`${counts.withYou} with you`}
                   >
                     {counts.withYou}
                   </button>
                 ) : (
-                  <span className="ml-1 tabular-nums text-theme-muted">{counts.withYou}</span>
+                  <span className="ml-0.5 tabular-nums opacity-80">{counts.withYou}</span>
                 )
               )}
             </button>
@@ -420,23 +428,20 @@ export function PostCard({
             onClick={toggleComments}
             aria-expanded={commentsOpen}
             aria-controls={`comments-${post.id}`}
-            className={`flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2 ${commentsOpen ? "font-medium text-theme-text border-theme-accent/50" : ""}`}
+            className={`${actionBtnBase} -ml-1 ${commentsOpen ? "bg-theme-accent-bg/60 text-theme-primary border-theme-accent/40" : ""}`}
           >
             <span aria-hidden>💬</span>
-            {t.postCard.comment}
+            <span>{t.postCard.comment}</span>
             {commentCount > 0 && (
-              <span className="ml-1 tabular-nums text-theme-muted">{commentCount}</span>
+              <span className="ml-0.5 tabular-nums opacity-80">{commentCount}</span>
             )}
           </button>
         ) : (
-          <Link
-            href={`/post/${post.id}`}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg border border-theme-border bg-transparent px-2 py-2 -ml-1 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-2"
-          >
+          <Link href={`/post/${post.id}`} className={`${actionBtnBase} -ml-1`}>
             <span aria-hidden>💬</span>
-            {t.postCard.comment}
+            <span>{t.postCard.comment}</span>
             {commentCount > 0 && (
-              <span className="ml-1 tabular-nums text-theme-muted">{commentCount}</span>
+              <span className="ml-0.5 tabular-nums opacity-80">{commentCount}</span>
             )}
           </Link>
         )}
@@ -446,9 +451,9 @@ export function PostCard({
             type="button"
             onClick={handleBookmark}
             aria-label={bookmarked ? t.postCard.unbookmark : t.postCard.bookmark}
-            className={`ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-transparent bg-transparent px-2 py-2 transition-colors duration-200 hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${bookmarked ? "text-theme-text" : "text-theme-muted"}`}
+            className={`${actionBtnBase} ml-auto -mr-1 ${bookmarked ? "text-theme-primary" : ""}`}
           >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
             </svg>
           </button>
@@ -456,11 +461,11 @@ export function PostCard({
       </div>
 
       {getCommentsForPost && commentsOpen && (
-        <div id={`comments-${post.id}`} className="mt-4 border-t border-theme-border pt-4 pb-2">
-          <h3 className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-3">
+        <div id={`comments-${post.id}`} className="mt-5 border-t border-theme-border pt-5">
+          <h3 className="text-caption font-semibold text-theme-muted uppercase tracking-wider mb-4">
             {t.postCard.comment}
           </h3>
-          <div className="pl-3 sm:pl-4 text-[13px] leading-6 text-theme-text">
+          <div className="rounded-lg bg-theme-surface-2/40 px-4 py-3 sm:px-5 sm:py-4 text-[13px] leading-relaxed text-theme-text">
           {commentsLoading && comments === null ? (
             <>
               {canCommentInline && (

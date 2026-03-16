@@ -66,7 +66,7 @@ export function UserActionsMenu({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded transition-colors duration-200 text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 active:bg-gray-200/80"
+        className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded transition-colors duration-[120ms] text-theme-muted hover:text-theme-text hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:bg-theme-surface-3"
         aria-expanded={open}
         aria-haspopup="true"
         aria-label="User actions"
@@ -80,12 +80,12 @@ export function UserActionsMenu({
             aria-hidden
             onClick={() => { setOpen(false); setShowReportForm(false); setReportStatus("idle"); }}
           />
-          <div className="absolute right-0 top-full mt-1 z-20 w-56 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+          <div className="absolute right-0 top-full mt-1 z-20 w-56 rounded-xl border border-theme-border bg-theme-surface py-1 shadow-md">
             <button
               type="button"
               onClick={handleMute}
               disabled={pending}
-              className="block w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-inset disabled:opacity-50"
+              className="block w-full text-left px-3 py-2 text-sm text-theme-text hover:bg-theme-surface-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-inset disabled:opacity-50"
             >
               {isMuted ? t.userMenu.unmute : t.userMenu.mute}
             </button>
@@ -93,49 +93,49 @@ export function UserActionsMenu({
               type="button"
               onClick={handleBlock}
               disabled={pending}
-              className="block w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-inset disabled:opacity-50"
+              className="block w-full text-left px-3 py-2 text-sm text-theme-text hover:bg-theme-surface-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-inset disabled:opacity-50"
             >
               {isBlocked ? t.userMenu.unblock : t.userMenu.block}
             </button>
-            <hr className="my-1 border-gray-100" />
+            <hr className="my-1 border-theme-border" />
             {!showReportForm ? (
               <button
                 type="button"
                 onClick={() => setShowReportForm(true)}
-                className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-inset"
+                className="block w-full text-left px-3 py-2 text-sm text-theme-danger hover:bg-theme-danger-bg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-danger focus-visible:ring-inset"
               >
                 {t.userMenu.report}
               </button>
             ) : (
               <div className="px-3 py-2 space-y-2">
                 {reportStatus === "done" ? (
-                  <p className="text-xs text-green-600 font-medium">{t.userMenu.reportSuccess}</p>
+                  <p className="text-xs text-theme-success font-medium">{t.userMenu.reportSuccess}</p>
                 ) : (
                   <>
-                    <p className="text-xs font-medium text-gray-700">{targetUserName} {t.userMenu.reportTitle}</p>
+                    <p className="text-xs font-medium text-theme-text">{targetUserName} {t.userMenu.reportTitle}</p>
                     <textarea
                       rows={2}
                       value={reportReason}
                       onChange={(e) => setReportReason(e.target.value)}
                       placeholder={t.userMenu.reportPlaceholder}
-                      className="w-full rounded border border-gray-200 px-2 py-1 text-xs resize-none focus:outline-none focus:border-gray-400"
+                      className="w-full rounded border border-theme-border bg-theme-surface-2 px-2 py-1 text-xs resize-none focus:outline-none focus:border-theme-primary"
                     />
                     {reportStatus === "error" && (
-                      <p className="text-xs text-red-600">{t.userMenu.reportError}</p>
+                      <p className="text-xs text-theme-danger">{t.userMenu.reportError}</p>
                     )}
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={handleReport}
                         disabled={pending}
-                        className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
+                        className="rounded bg-theme-danger px-2 py-1 text-xs text-white hover:opacity-90 transition-opacity disabled:opacity-50"
                       >
                         {pending ? `${t.common.loading}` : t.userMenu.reportSubmit}
                       </button>
                       <button
                         type="button"
                         onClick={() => { setShowReportForm(false); setReportStatus("idle"); setReportReason(""); }}
-                        className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                        className="rounded border border-theme-border px-2 py-1 text-xs text-theme-muted hover:bg-theme-surface-2 transition-colors"
                       >
                         {t.common.cancel}
                       </button>
