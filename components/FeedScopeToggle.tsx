@@ -37,7 +37,7 @@ export function FeedScopeToggle({ initialScope = "all", context = "feed" }: Prop
     router.push(value === "all" ? "/feed" : "/feed?scope=following");
   }
 
-  const tabBase = `${PADDING.tab} ${TYPOGRAPHY.tab} border-b-2 -mb-px rounded-t ${TRANSITION} ${FOCUS_RING} active:bg-theme-surface-2`;
+  const tabBase = `flex-1 text-center ${PADDING.tab} ${TYPOGRAPHY.tab} border-b-2 -mb-px rounded-t ${TRANSITION} ${FOCUS_RING} active:bg-theme-surface-2`;
 
   return (
     <div role="tablist" aria-label="Feed scope" className={`flex border-b ${BORDER.default}`}>

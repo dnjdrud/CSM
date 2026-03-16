@@ -293,14 +293,7 @@ function DailyPrayerBanner({
             </div>
           </div>
         </Link>
-      ) : (
-        <Link href="/home?tab=prayer" className="flex items-center gap-3 group">
-          <span className="text-xl shrink-0" aria-hidden>🙏</span>
-          <p className="text-[14px] text-theme-muted group-hover:text-theme-primary transition-colors">
-            {t.home.viewPrayerBoard}
-          </p>
-        </Link>
-      )}
+      ) : null}
     </div>
   );
 }
