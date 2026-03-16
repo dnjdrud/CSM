@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "컨텐츠 – Cellah" };
 
 const PAGE_SIZE = 20;
-const CONTENT_CATEGORIES = ["CONTENT", "PHOTO"] as const;
+const CONTENT_CATEGORIES = ["CONTENT", "PHOTO", "MISSION"] as const;
 
 export default async function ContentsPage({
   searchParams,
