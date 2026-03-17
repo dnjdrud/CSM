@@ -49,7 +49,7 @@ export default async function MissionPage() {
                           {country.flag}
                         </span>
                         <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-theme-text group-hover:text-blue-700 transition-colors truncate">
+                          <p className="text-[13px] font-semibold text-theme-text transition-colors truncate">
                             {country.name}
                           </p>
                           <p className="text-[11px] text-theme-muted truncate">
@@ -68,15 +68,15 @@ export default async function MissionPage() {
         {/* Write CTA */}
         <div className="px-4 pt-2 border-t border-theme-border/40">
           <div className="rounded-2xl border border-theme-border bg-theme-surface px-5 py-4 space-y-2">
-            <p className="text-[14px] font-semibold text-blue-900">선교 소식 나누기</p>
-            <p className="text-[13px] text-blue-700/80 leading-relaxed">
+            <p className="text-[14px] font-semibold text-theme-text">선교 소식 나누기</p>
+            <p className="text-[13px] text-theme-muted leading-relaxed">
               현장의 기도 제목, 사역 업데이트, 감사 나눔을
               <br />
               선교 탭에 올려보세요.
             </p>
             <Link
               href="/write?category=MISSION"
-              className="inline-block mt-1 text-[13px] font-semibold text-blue-600 hover:opacity-80"
+              className="inline-block mt-1 text-[13px] font-semibold text-theme-primary hover:opacity-80"
             >
               + 선교 소식 올리기 →
             </Link>

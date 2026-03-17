@@ -19,7 +19,7 @@ function relativeTime(iso: string): string {
 
 function MissionPostCard({ post }: { post: PostWithAuthor }) {
   return (
-    <article className="px-4 py-4 border-b border-theme-border/50 last:border-b-0">
+    <article className="px-4 py-4">
       <div className="flex items-center gap-2.5 mb-2.5">
         <Link
           href={`/profile/${post.author.id}`}
@@ -119,7 +119,7 @@ export function MissionFeedSection({ items, country, writeUrl }: Props) {
   }
 
   return (
-    <ul className="list-none p-0" role="list">
+    <ul className="list-none p-0 space-y-4" role="list">
       {items.map((post) => (
         <li key={post.id}>
           <MissionPostCard post={post} />

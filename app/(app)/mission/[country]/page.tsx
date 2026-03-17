@@ -141,10 +141,10 @@ export default async function MissionCountryPage({
           <div className="flex items-center gap-3">
             <span className="text-3xl" aria-hidden>{countryData.flag}</span>
             <div>
-              <h1 className="text-[18px] font-bold text-blue-900">
+              <h1 className="text-[18px] font-bold text-theme-text">
                 {countryData.name}
               </h1>
-              <p className="text-[12px] text-blue-600/80">{countryData.nameEn}</p>
+              <p className="text-[12px] text-theme-muted">{countryData.nameEn}</p>
             </div>
           </div>
           <Link
@@ -154,7 +154,7 @@ export default async function MissionCountryPage({
             + 선교 소식
           </Link>
         </div>
-        <p className="text-[13px] text-blue-800/70 leading-relaxed mt-1">
+        <p className="text-[13px] text-theme-muted leading-relaxed mt-1">
           {countryData.description}
         </p>
         <div className="flex flex-wrap gap-1.5 mt-2.5">

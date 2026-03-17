@@ -1,28 +1,25 @@
 import Link from "next/link";
 import type { CellTopic } from "@/lib/cells/topics";
-import { TOPIC_COLOR_CLASSES } from "@/lib/cells/topics";
 
 type Props = {
   topic: CellTopic;
 };
 
 export function TopicCard({ topic }: Props) {
-  const colors = TOPIC_COLOR_CLASSES[topic.color] ?? TOPIC_COLOR_CLASSES["blue"]!;
-
   return (
     <Link
       href={`/cells/topics/${topic.slug}`}
-      className={`flex flex-col gap-3 rounded-2xl border p-4 bg-theme-surface hover:shadow-sm transition-all group ${colors.border}`}
+      className="flex flex-col gap-3 rounded-2xl border border-theme-border p-4 bg-theme-surface hover:bg-theme-surface-2 transition-all duration-200 group"
     >
       {/* 아이콘 + 이름 */}
       <div className="flex items-center gap-2.5">
         <span
-          className={`text-xl w-9 h-9 flex items-center justify-center rounded-xl ${colors.bg}`}
+          className="text-xl w-9 h-9 flex items-center justify-center rounded-xl bg-theme-surface-2 text-theme-text"
           aria-hidden
         >
           {topic.icon}
         </span>
-        <span className={`text-[15px] font-semibold transition-colors group-hover:${colors.text} text-theme-text`}>
+        <span className="text-[15px] font-semibold text-theme-text transition-colors">
           {topic.name}
         </span>
       </div>
@@ -37,7 +34,7 @@ export function TopicCard({ topic }: Props) {
         {topic.hashtags.map((tag) => (
           <span
             key={tag}
-            className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${colors.badge}`}
+            className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-theme-surface-2 text-theme-muted border border-theme-border"
           >
             {tag}
           </span>
