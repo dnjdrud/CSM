@@ -36,36 +36,36 @@ const config: Config = {
         caps:    "0.08em",
       },
 
-      /* ── Colors: Dark Navy + Gold theme ── */
+      /* ── Colors: Light — Black + Navy + Gold ── */
       colors: {
         theme: {
-          bg:            "#0B1220",
-          surface:       "#111827",
-          "surface-2":   "#1F2937",
-          "surface-3":   "#374151",
-          text:          "#F9FAFB",
-          "text-2":      "#E5E7EB",
-          muted:         "#9CA3AF",
+          bg:            "#FAFAFA",
+          surface:       "#FFFFFF",
+          "surface-2":   "#E8EAED",
+          "surface-3":   "#D1D5DB",
+          text:          "#111111",
+          "text-2":      "#374151",
+          muted:         "#4B5563",
           subtle:        "#6B7280",
           primary:       "#C9A227",
           "primary-soft":"#E5C76B",
           "primary-dark": "#A68B28",
           "primary-2":   "#B8962E",
-          border:        "#1F2937",
-          "border-2":    "#374151",
+          border:        "#E5E7EB",
+          "border-2":    "#D1D5DB",
           accent:        "#C9A227",
-          "accent-bg":   "rgba(201, 162, 39, 0.14)",
-          danger:        "#EF4444",
-          "danger-bg":   "rgba(239, 68, 68, 0.12)",
-          success:       "#22C55E",
-          "success-bg":  "rgba(34, 197, 94, 0.12)",
+          "accent-bg":   "rgba(201, 162, 39, 0.12)",
+          danger:        "#DC2626",
+          "danger-bg":   "rgba(220, 38, 38, 0.08)",
+          success:       "#16A34A",
+          "success-bg":  "rgba(22, 163, 74, 0.08)",
           warning:       "#C9A227",
-          "warning-bg":  "rgba(201, 162, 39, 0.14)",
+          "warning-bg":  "rgba(201, 162, 39, 0.12)",
         },
       },
 
       borderColor: {
-        DEFAULT: "#1F2937",
+        DEFAULT: "#E5E7EB",
       },
 
       /* ── Border radius ── */
