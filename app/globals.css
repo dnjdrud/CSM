@@ -9,34 +9,31 @@
    Philosophy: editorial warmth × digital clarity
    ───────────────────────────────────────── */
 :root {
-  /* ── Backgrounds ── */
-  --bg:        #F7F5EF;   /* page background: warm paper */
-  --surface:   #FFFFFF;   /* card, modal, input */
-  --surface-2: #EFEDE6;   /* hover, subtle fill */
-  --surface-3: #E6E3DA;   /* active, strong fill, divider */
+  /* ── Dark Navy + Gold ── */
+  --bg:        #0B1220;
+  --surface:   #111827;
+  --surface-2: #1F2937;
+  --surface-3: #374151;
 
-  /* ── Text ── */
-  --text:      #111009;   /* primary — near-black with warmth */
-  --text-2:    #3A3830;   /* secondary body text */
-  --muted:     #6B685F;   /* placeholder, timestamps, captions */
+  --text:      #F9FAFB;
+  --text-2:    #E5E7EB;
+  --muted:     #9CA3AF;
+  --subtle:    #6B7280;
 
-  /* ── Borders ── */
-  --border:    #DDD9D0;   /* default border */
-  --border-2:  #C9C5BC;   /* emphasized border */
+  --border:    #1F2937;
+  --border-2:  #374151;
 
-  /* ── Brand ── */
-  --primary:       #0D3635;  /* teal — CTA, links */
-  --primary-2:     #092928;  /* hover / pressed */
-  --accent:        #C8943A;  /* amber gold — highlights */
-  --accent-bg:     #FEF6E7;  /* accent tinted bg */
+  --primary:       #F59E0B;
+  --primary-2:     #D97706;
+  --accent:        #F59E0B;
+  --accent-bg:     rgba(245, 158, 11, 0.12);
 
-  /* ── Semantic ── */
-  --danger:        #B42318;
-  --danger-bg:     #FFF1F0;
-  --success:       #15622D;
-  --success-bg:    #F0FDF4;
-  --warning:       #92400E;
-  --warning-bg:    #FFFBEB;
+  --danger:        #EF4444;
+  --danger-bg:     rgba(239, 68, 68, 0.12);
+  --success:       #22C55E;
+  --success-bg:    rgba(34, 197, 94, 0.12);
+  --warning:       #F59E0B;
+  --warning-bg:    rgba(245, 158, 11, 0.12);
 }
 
 /* ── Base ── */
@@ -73,7 +70,7 @@ h1, h2, h3, h4 {
 
 /* ── Focus ring ── */
 *:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid #F59E0B;
   outline-offset: 2px;
   border-radius: 4px;
 }

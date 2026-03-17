@@ -31,7 +31,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   PENDING: "text-yellow-700 bg-yellow-50",
-  APPROVED: "text-blue-700 bg-blue-50",
+  APPROVED: "text-theme-primary bg-theme-accent-bg",
   REJECTED: "text-red-700 bg-red-50",
   COMPLETED: "text-green-700 bg-green-50",
 };
@@ -87,14 +87,14 @@ export function SignupRequestsTable({ requests, readOnly = false }: Props) {
       )}
       <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-2 pr-4 font-medium text-gray-700">Email</th>
-            <th className="text-left py-2 pr-4 font-medium text-gray-700">Name</th>
-            <th className="text-left py-2 pr-4 font-medium text-gray-700">Role</th>
-            <th className="text-left py-2 pr-4 font-medium text-gray-700">Church</th>
-            <th className="text-left py-2 pr-4 font-medium text-gray-700">Submitted</th>
-            {!readOnly && <th className="text-left py-2 pr-4 font-medium text-gray-700">Reviewed</th>}
-            <th className="text-left py-2 font-medium text-gray-700">
+          <tr className="border-b border-theme-border">
+            <th className="text-left py-2 pr-4 font-medium text-theme-text">Email</th>
+            <th className="text-left py-2 pr-4 font-medium text-theme-text">Name</th>
+            <th className="text-left py-2 pr-4 font-medium text-theme-text">Role</th>
+            <th className="text-left py-2 pr-4 font-medium text-theme-text">Church</th>
+            <th className="text-left py-2 pr-4 font-medium text-theme-text">Submitted</th>
+            {!readOnly && <th className="text-left py-2 pr-4 font-medium text-theme-text">Reviewed</th>}
+            <th className="text-left py-2 font-medium text-theme-text">
               {readOnly ? "Status" : "Actions"}
             </th>
           </tr>
@@ -102,17 +102,17 @@ export function SignupRequestsTable({ requests, readOnly = false }: Props) {
         <tbody>
           {requests.map((r) => (
             <tr key={r.id} className="border-b border-gray-100">
-              <td className="py-2 pr-4 text-gray-800">{r.email}</td>
-              <td className="py-2 pr-4 text-gray-700">{r.name ?? "—"}</td>
-              <td className="py-2 pr-4 text-gray-700">{ROLE_DISPLAY[r.role] ?? r.role}</td>
-              <td className="py-2 pr-4 text-gray-700">{r.church ?? "—"}</td>
-              <td className="py-2 pr-4 text-gray-600">{formatDate(r.createdAt)}</td>
+              <td className="py-2 pr-4 text-theme-text">{r.email}</td>
+              <td className="py-2 pr-4 text-theme-text">{r.name ?? "—"}</td>
+              <td className="py-2 pr-4 text-theme-text">{ROLE_DISPLAY[r.role] ?? r.role}</td>
+              <td className="py-2 pr-4 text-theme-text">{r.church ?? "—"}</td>
+              <td className="py-2 pr-4 text-theme-muted">{formatDate(r.createdAt)}</td>
               {!readOnly && (
-                <td className="py-2 pr-4 text-gray-600">{formatDate(r.reviewedAt ?? null)}</td>
+                <td className="py-2 pr-4 text-theme-muted">{formatDate(r.reviewedAt ?? null)}</td>
               )}
               <td className="py-2">
                 {readOnly ? (
-                  <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium ${STATUS_COLOR[r.status] ?? "text-gray-600 bg-gray-100"}`}>
+                  <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium ${STATUS_COLOR[r.status] ?? "text-theme-muted bg-theme-surface-2"}`}>
                     {STATUS_LABEL[r.status] ?? r.status}
                     {r.reviewNote ? ` — ${r.reviewNote}` : ""}
                   </span>
@@ -122,23 +122,23 @@ export function SignupRequestsTable({ requests, readOnly = false }: Props) {
                       type="button"
                       onClick={() => handleApprove(r.id)}
                       disabled={pendingId !== null}
-                      className="rounded-md bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+                      className="rounded-lg bg-theme-primary px-2.5 py-1.5 text-xs font-semibold text-black hover:brightness-110 disabled:opacity-50"
                     >
                       {pendingId === r.id ? "Approving…" : "Approve"}
                     </button>
-                    <span className="text-gray-400">|</span>
+                    <span className="text-theme-subtle">|</span>
                     <input
                       type="text"
                       placeholder="Reject note (optional)"
                       value={rejectNote[r.id] ?? ""}
                       onChange={(e) => setRejectNote((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                      className="w-40 rounded border border-gray-200 px-2 py-1 text-xs"
+                      className="w-40 rounded border border-theme-border px-2 py-1 text-xs"
                     />
                     <button
                       type="button"
                       onClick={() => handleReject(r.id)}
                       disabled={pendingId !== null}
-                      className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                      className="rounded-md border border-theme-border bg-theme-surface px-2.5 py-1.5 text-xs font-medium text-theme-text hover:bg-theme-surface-2 disabled:opacity-50"
                     >
                       {pendingId === r.id ? "Rejecting…" : "Reject"}
                     </button>

@@ -65,7 +65,7 @@ function MissionPostCard({ post }: { post: PostWithAuthor }) {
           {post.tags.map((tag) => (
             <span
               key={tag}
-              className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700"
+              className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-theme-accent-bg text-theme-primary"
             >
               #{tag}
             </span>

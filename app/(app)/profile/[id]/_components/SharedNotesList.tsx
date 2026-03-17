@@ -49,7 +49,7 @@ export function SharedNotesList({ notes, role, blocked }: Props) {
         {notes.map((note) => (
           <li key={note.id} className="border-b border-gray-100 pb-4 last:border-b-0">
             {note.title && (
-              <h3 className="text-[15px] font-medium text-gray-900">{note.title}</h3>
+              <h3 className="text-[15px] font-medium text-theme-text">{note.title}</h3>
             )}
             <p className="text-[15px] text-gray-800 leading-relaxed whitespace-pre-wrap font-sans mt-0.5">
               {note.content}

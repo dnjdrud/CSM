@@ -33,7 +33,7 @@ export default async function FollowersPage({
         >
           ← {user.name}
         </Link>
-        <h1 className="mt-3 text-[18px] font-semibold text-gray-900">
+        <h1 className="mt-3 text-[18px] font-semibold text-theme-text">
           Followers
           <span className="ml-2 text-[15px] font-normal text-gray-500">{followers.length}</span>
         </h1>
@@ -51,7 +51,7 @@ export default async function FollowersPage({
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/profile/${person.id}`}
-                  className="text-[14px] font-medium text-gray-900 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded"
+                  className="text-[14px] font-medium text-theme-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 rounded"
                 >
                   {person.name}
                 </Link>

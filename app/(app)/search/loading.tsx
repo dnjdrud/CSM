@@ -10,7 +10,7 @@ export default function SearchLoading() {
         <Skeleton className="h-10 w-24 rounded-md" />
         <Skeleton className="h-10 w-20 rounded-md" />
       </div>
-      <div className="mt-6 flex border-b border-gray-200 gap-4">
+      <div className="mt-6 flex border-b border-theme-border gap-4">
         <Skeleton className="h-10 w-16 rounded-t" />
         <Skeleton className="h-10 w-20 rounded-t" />
         <Skeleton className="h-10 w-14 rounded-t" />

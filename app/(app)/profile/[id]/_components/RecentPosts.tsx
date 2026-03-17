@@ -32,7 +32,7 @@ export function RecentPosts({
   return (
     <ul className="list-none p-0" role="list">
       {posts.slice(0, 5).map((post) => (
-        <li key={post.id} className="border-b border-gray-200 last:border-b-0">
+        <li key={post.id} className="border-b border-theme-border last:border-b-0">
           <PostCard post={post} currentUserId={currentUserId} />
         </li>
       ))}

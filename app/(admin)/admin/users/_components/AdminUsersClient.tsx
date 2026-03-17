@@ -45,11 +45,11 @@ export function AdminUsersClient({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by name, bio, affiliation"
-          className="rounded border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-700"
+          className="rounded border border-theme-border bg-theme-surface px-3 py-2 text-sm text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
         />
         <button
           type="submit"
-          className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-gray-50 hover:bg-gray-700"
+          className="rounded-lg bg-theme-primary px-4 py-2 text-sm font-semibold text-black hover:brightness-110"
         >
           Search
         </button>
@@ -69,23 +69,23 @@ export function AdminUsersClient({
           <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-2 pr-4 font-medium text-gray-700">Name</th>
-                <th className="text-left py-2 pr-4 font-medium text-gray-700">Role</th>
-                <th className="text-left py-2 pr-4 font-medium text-gray-700">Status</th>
-                <th className="text-left py-2 font-medium text-gray-700">Actions</th>
+              <tr className="border-b border-theme-border">
+                <th className="text-left py-2 pr-4 font-medium text-theme-text">Name</th>
+                <th className="text-left py-2 pr-4 font-medium text-theme-text">Role</th>
+                <th className="text-left py-2 pr-4 font-medium text-theme-text">Status</th>
+                <th className="text-left py-2 font-medium text-theme-text">Actions</th>
               </tr>
             </thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} className="border-b border-gray-100">
                   <td className="py-3 pr-4">
-                    <Link href={`/profile/${u.id}`} className="text-gray-800 font-medium hover:underline">
+                    <Link href={`/profile/${u.id}`} className="text-theme-text font-medium hover:underline">
                       {u.name}
                     </Link>
                   </td>
-                  <td className="py-3 pr-4 text-gray-600">{ROLE_DISPLAY[u.role]}</td>
-                  <td className="py-3 pr-4 text-gray-600">
+                  <td className="py-3 pr-4 text-theme-muted">{ROLE_DISPLAY[u.role]}</td>
+                  <td className="py-3 pr-4 text-theme-muted">
                     {u.blockedByAdmin && <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-800">Blocked</span>}
                     {u.mutedByAdmin && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">Muted</span>}
                     {!u.blockedByAdmin && !u.mutedByAdmin && "—"}
@@ -198,7 +198,7 @@ function UserRowActions({
           type="button"
           onClick={handleMute}
           disabled={pending}
-          className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          className="rounded border border-theme-border bg-theme-surface-2 px-2 py-1 text-xs font-medium text-theme-text hover:bg-theme-surface-2 disabled:opacity-50"
         >
           Mute
         </button>
@@ -226,7 +226,7 @@ function RoleChangeDropdown({
       <select
         value={selectedRole}
         onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800"
+        className="rounded border border-theme-border bg-theme-surface px-2 py-1 text-xs text-theme-text"
         disabled={disabled}
       >
         {ROLES.map((r) => (

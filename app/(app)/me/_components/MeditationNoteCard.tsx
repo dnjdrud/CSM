@@ -35,33 +35,33 @@ export function MeditationNoteCard({ note, onDeleted, onUpdated }: Props) {
 
   return (
     <>
-      <article className="px-4 py-4 hover:bg-gray-50/50 transition-colors">
-        <span className="inline-block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-2">
+      <article className="px-4 py-4 hover:bg-theme-surface-2/50 transition-colors">
+        <span className="inline-block text-[11px] font-medium text-theme-subtle uppercase tracking-wider mb-2">
           Meditation
         </span>
         {sections.length === 0 ? (
-          <p className="text-[15px] text-gray-600 font-sans italic">No sections.</p>
+          <p className="text-[15px] text-theme-muted font-sans italic">No sections.</p>
         ) : (
           <ul className="list-none p-0 space-y-1">
             {sections.map((section, i) => {
               const isOpen = expanded[i] ?? false;
               return (
-                <li key={i} className="border border-gray-100 rounded-md overflow-hidden">
+                <li key={i} className="border border-theme-border rounded-md overflow-hidden">
                   <button
                     type="button"
                     onClick={() => toggleSection(i)}
-                    className="w-full text-left px-3 py-2 flex items-center justify-between gap-2 hover:bg-gray-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-inset"
+                    className="w-full text-left px-3 py-2 flex items-center justify-between gap-2 hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-inset"
                   >
-                    <span className="text-[13px] font-medium text-gray-700">
+                    <span className="text-[13px] font-medium text-theme-text">
                       {section.title}
                     </span>
-                    <span className="text-gray-400 shrink-0" aria-hidden>
+                    <span className="text-theme-subtle shrink-0" aria-hidden>
                       {isOpen ? "−" : "+"}
                     </span>
                   </button>
                   {isOpen && (
                     <div className="px-3 pb-3 pt-0">
-                      <p className="text-[15px] text-gray-800 leading-relaxed whitespace-pre-wrap font-sans">
+                      <p className="text-[15px] text-theme-text leading-relaxed whitespace-pre-wrap font-sans">
                         {section.body}
                       </p>
                     </div>
@@ -72,7 +72,7 @@ export function MeditationNoteCard({ note, onDeleted, onUpdated }: Props) {
           </ul>
         )}
         <div className="mt-3 flex items-center justify-between">
-          <time dateTime={note.createdAt} className="text-[12px] text-gray-500">
+          <time dateTime={note.createdAt} className="text-[12px] text-theme-subtle">
             {formatDate(note.createdAt)}
           </time>
           <div className="flex flex-wrap items-center gap-2">
@@ -90,14 +90,14 @@ export function MeditationNoteCard({ note, onDeleted, onUpdated }: Props) {
                     toast.error();
                   }
                 }}
-                className="rounded border-gray-300 text-gray-800 focus:ring-gray-700"
+                className="rounded border-theme-border text-theme-text focus:ring-theme-primary"
               />
-              <span className="text-[13px] text-gray-600">Show on my profile</span>
+              <span className="text-[13px] text-theme-muted">Show on my profile</span>
             </label>
             <button
               type="button"
               onClick={() => setEditorOpen(true)}
-              className="text-[13px] text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
+              className="text-[13px] text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 rounded"
             >
               Edit
             </button>

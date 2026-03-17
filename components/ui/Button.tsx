@@ -21,15 +21,14 @@ type Size = "sm" | "md";
 
 const variantStyles: Record<Variant, string> = {
   primary: [
-    "bg-theme-primary text-white",
-    "hover:bg-theme-primary-2 active:bg-theme-primary-2 active:scale-[0.98]",
+    "bg-theme-primary text-black font-semibold",
+    "rounded-lg px-4 py-2 hover:brightness-110 active:scale-[0.98]",
     TRANSITION,
     DISABLED,
   ].join(" "),
   secondary: [
-    `border ${BORDER.default} bg-theme-surface text-theme-text`,
-    "hover:bg-theme-surface-2 hover:border-theme-border-2",
-    "active:bg-theme-surface-3 active:border-theme-border-2",
+    "border border-theme-border text-theme-text rounded-lg px-4 py-2",
+    "hover:bg-theme-surface-2",
     TRANSITION,
     DISABLED,
   ].join(" "),

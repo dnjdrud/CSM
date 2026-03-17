@@ -494,7 +494,7 @@ function ComposeForm({
               }`}
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
+                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-theme-text shadow transition-transform duration-200 ${
                   subscribersOnly ? "translate-x-4" : "translate-x-0"
                 }`}
               />

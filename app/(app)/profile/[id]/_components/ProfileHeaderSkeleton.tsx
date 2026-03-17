@@ -40,7 +40,7 @@ export function ProfileLoading() {
         <Skeleton className="h-4 w-28 rounded" />
       </div>
       <ProfileHeaderSkeleton />
-      <div className="mt-8 space-y-8 border-t border-gray-200 pt-6">
+      <div className="mt-8 space-y-8 border-t border-theme-border pt-6">
         <div>
           <Skeleton className="h-4 w-24 mb-3" />
           <div className="space-y-3">

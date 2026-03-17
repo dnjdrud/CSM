@@ -43,7 +43,7 @@ export default async function MissionPage() {
                     <li key={country.code}>
                       <Link
                         href={`/mission/${country.code}`}
-                        className="flex items-center gap-2.5 rounded-xl border border-theme-border bg-theme-surface px-3.5 py-3 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                        className="flex items-center gap-2.5 rounded-xl border border-theme-border bg-theme-surface px-3.5 py-3 hover:border-theme-border-2 hover:bg-theme-surface-2 transition-all group"
                       >
                         <span className="text-xl shrink-0" aria-hidden>
                           {country.flag}
@@ -67,7 +67,7 @@ export default async function MissionPage() {
 
         {/* Write CTA */}
         <div className="px-4 pt-2 border-t border-theme-border/40">
-          <div className="rounded-2xl border border-blue-200 bg-blue-50/60 px-5 py-4 space-y-2">
+          <div className="rounded-2xl border border-theme-border bg-theme-surface px-5 py-4 space-y-2">
             <p className="text-[14px] font-semibold text-blue-900">선교 소식 나누기</p>
             <p className="text-[13px] text-blue-700/80 leading-relaxed">
               현장의 기도 제목, 사역 업데이트, 감사 나눔을

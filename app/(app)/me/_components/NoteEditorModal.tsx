@@ -70,7 +70,7 @@ export function NoteEditorModal({ note, onClose, onSaved }: Props) {
         aria-hidden
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg rounded-lg border border-gray-200 bg-white shadow-lg">
+      <div className="relative w-full max-w-lg rounded-xl border border-theme-border bg-theme-surface">
         <h2 id="note-editor-title" className="sr-only">
           Edit note
         </h2>
@@ -80,7 +80,7 @@ export function NoteEditorModal({ note, onClose, onSaved }: Props) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title (optional)"
-            className="block w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+            className="block w-full rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
             disabled={pending}
           />
           <textarea
@@ -89,12 +89,12 @@ export function NoteEditorModal({ note, onClose, onSaved }: Props) {
             placeholder="Content"
             rows={5}
             maxLength={isGratitude ? GRATITUDE_MAX_LENGTH : undefined}
-            className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[15px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[15px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
             disabled={pending}
             required
           />
           {isGratitude && (
-            <p className="mt-1 text-[12px] text-gray-500">
+            <p className="mt-1 text-[12px] text-theme-subtle">
               {content.length}/{GRATITUDE_MAX_LENGTH}
             </p>
           )}
@@ -103,7 +103,7 @@ export function NoteEditorModal({ note, onClose, onSaved }: Props) {
             value={tagsInput}
             onChange={(e) => setTagsInput(e.target.value)}
             placeholder="Tags (comma-separated, max 5)"
-            className="mt-3 block w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400"
+            className="mt-3 block w-full rounded-md border border-theme-border bg-theme-surface px-3 py-1.5 text-[13px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
             disabled={pending}
           />
           <div className="mt-4 flex justify-end gap-2">
@@ -111,14 +111,14 @@ export function NoteEditorModal({ note, onClose, onSaved }: Props) {
               type="button"
               onClick={onClose}
               disabled={pending}
-              className="rounded-md border border-gray-200 px-4 py-2 text-[14px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+              className="rounded-lg border border-theme-border px-4 py-2 text-[14px] font-medium text-theme-text hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!content.trim() || pending || (isGratitude && content.length > GRATITUDE_MAX_LENGTH)}
-              className="rounded-md bg-gray-800 px-4 py-2 text-[14px] font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+              className="rounded-lg bg-theme-primary px-4 py-2 text-[14px] font-semibold text-black hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 disabled:opacity-40"
             >
               {pending ? "Saving…" : "Save"}
             </button>

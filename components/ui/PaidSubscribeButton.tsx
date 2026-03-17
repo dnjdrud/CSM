@@ -115,7 +115,7 @@ export function PaidSubscribeButton({
         type="button"
         onClick={handleSubscribe}
         disabled={pending}
-        className="flex items-center gap-2 px-5 py-2 rounded-full text-[14px] font-semibold bg-theme-primary text-white hover:opacity-90 disabled:opacity-60 transition-all"
+        className="flex items-center gap-2 px-5 py-2 rounded-full text-[14px] font-semibold bg-theme-primary text-black hover:brightness-110 disabled:opacity-60 transition-all"
       >
         <span aria-hidden>🕯️</span>
         {pending ? "…" : `${candlesPerMonth}캔들 / 월 구독`}

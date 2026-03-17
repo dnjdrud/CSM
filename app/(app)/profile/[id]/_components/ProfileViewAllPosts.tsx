@@ -62,7 +62,7 @@ export function ProfileViewAllPosts({
             type="button"
             onClick={handleLoadMore}
             disabled={isPending}
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+            className="rounded-lg border border-theme-border bg-theme-surface px-4 py-2.5 text-sm font-medium text-theme-text hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
           >
             {isPending ? "불러오는 중…" : "더 보기"}
           </button>

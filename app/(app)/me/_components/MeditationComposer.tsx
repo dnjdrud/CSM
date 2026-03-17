@@ -51,13 +51,13 @@ export function MeditationComposer({ disabled }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border-b border-gray-200 bg-white px-4 py-3">
+    <form onSubmit={handleSubmit} className="border-b border-theme-border bg-theme-surface px-4 py-3">
       <textarea
         value={scripture}
         onChange={(e) => setScripture(e.target.value)}
         placeholder="A passage you are reflecting on…"
         rows={2}
-        className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+        className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
         disabled={pending}
       />
       <textarea
@@ -65,7 +65,7 @@ export function MeditationComposer({ disabled }: Props) {
         onChange={(e) => setObservation(e.target.value)}
         placeholder="What stands out?"
         rows={2}
-        className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+        className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
         disabled={pending}
         required
       />
@@ -74,7 +74,7 @@ export function MeditationComposer({ disabled }: Props) {
         onChange={(e) => setReflection(e.target.value)}
         placeholder="What does this reveal or challenge?"
         rows={2}
-        className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+        className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
         disabled={pending}
         required
       />
@@ -83,7 +83,7 @@ export function MeditationComposer({ disabled }: Props) {
         onChange={(e) => setPrayer(e.target.value)}
         placeholder="A prayer in response…"
         rows={2}
-        className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+        className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
         disabled={pending}
         required
       />
@@ -91,7 +91,7 @@ export function MeditationComposer({ disabled }: Props) {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-md bg-gray-800 px-4 py-2 text-[14px] font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+          className="rounded-lg bg-theme-primary px-4 py-2 text-[14px] font-semibold text-black hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save reflection"}
         </button>

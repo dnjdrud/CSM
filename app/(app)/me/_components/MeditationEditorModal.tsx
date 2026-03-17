@@ -72,7 +72,7 @@ export function MeditationEditorModal({ note, onClose, onSaved }: Props) {
       aria-labelledby="meditation-editor-title"
     >
       <div className="absolute inset-0" aria-hidden onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-theme-border bg-theme-surface">
         <h2 id="meditation-editor-title" className="sr-only">
           Edit reflection
         </h2>
@@ -82,7 +82,7 @@ export function MeditationEditorModal({ note, onClose, onSaved }: Props) {
             onChange={(e) => setScripture(e.target.value)}
             placeholder="A passage you are reflecting on…"
             rows={2}
-            className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+            className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
             disabled={pending}
           />
           <textarea
@@ -90,7 +90,7 @@ export function MeditationEditorModal({ note, onClose, onSaved }: Props) {
             onChange={(e) => setObservation(e.target.value)}
             placeholder="What stands out?"
             rows={2}
-            className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+            className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
             disabled={pending}
             required
           />
@@ -99,7 +99,7 @@ export function MeditationEditorModal({ note, onClose, onSaved }: Props) {
             onChange={(e) => setReflection(e.target.value)}
             placeholder="What does this reveal or challenge?"
             rows={2}
-            className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+            className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
             disabled={pending}
             required
           />
@@ -108,7 +108,7 @@ export function MeditationEditorModal({ note, onClose, onSaved }: Props) {
             onChange={(e) => setPrayer(e.target.value)}
             placeholder="A prayer in response…"
             rows={2}
-            className="block w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-[14px] text-gray-900 placeholder:text-gray-500 focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 mb-3"
+            className="block w-full resize-none rounded-md border border-theme-border bg-theme-surface-2 px-3 py-2 text-[14px] text-theme-text placeholder:text-theme-subtle focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary mb-3"
             disabled={pending}
             required
           />
@@ -117,14 +117,14 @@ export function MeditationEditorModal({ note, onClose, onSaved }: Props) {
               type="button"
               onClick={onClose}
               disabled={pending}
-              className="rounded-md border border-gray-200 px-4 py-2 text-[14px] font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2"
+              className="rounded-lg border border-theme-border px-4 py-2 text-[14px] font-medium text-theme-text hover:bg-theme-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className="rounded-md bg-gray-800 px-4 py-2 text-[14px] font-medium text-white hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 disabled:opacity-40"
+              className="rounded-lg bg-theme-primary px-4 py-2 text-[14px] font-semibold text-black hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 disabled:opacity-40"
             >
               {pending ? "Saving…" : "Save"}
             </button>

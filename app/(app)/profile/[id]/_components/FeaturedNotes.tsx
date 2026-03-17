@@ -32,9 +32,9 @@ export function FeaturedNotes({ notes, profileId, blocked }: Props) {
     <ul className="list-none p-0 space-y-3" role="list">
       {notes.slice(0, 3).map((note) => (
         <li key={note.id}>
-          <article className="rounded-xl border border-gray-200 bg-gray-50/30 px-4 py-3">
+          <article className="rounded-xl border border-theme-border bg-theme-surface px-4 py-3 hover:bg-theme-surface-2">
             {note.title && (
-              <h3 className="text-[14px] font-medium text-gray-900">{note.title}</h3>
+              <h3 className="text-[14px] font-medium text-theme-text">{note.title}</h3>
             )}
             <p className="text-[15px] text-gray-800 leading-7 whitespace-pre-wrap font-sans mt-0.5 line-clamp-3">
               {note.content}

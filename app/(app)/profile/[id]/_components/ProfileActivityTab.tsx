@@ -28,7 +28,7 @@ export function ProfileActivityTab({ posts, currentUserId, blocked }: Props) {
   return (
     <ul className="mt-4 list-none p-0" role="list">
       {posts.map((post) => (
-        <li key={post.id} className="border-b border-gray-200 last:border-b-0">
+        <li key={post.id} className="border-b border-theme-border last:border-b-0">
           <PostCard post={post} currentUserId={currentUserId} />
         </li>
       ))}

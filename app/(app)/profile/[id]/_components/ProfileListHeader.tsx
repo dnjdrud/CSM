@@ -18,10 +18,10 @@ export function ProfileListHeader({ profileId, title, subtitle }: Props) {
           ← Back to profile
         </Link>
       </div>
-      <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+      <h1 className="text-xl font-semibold text-theme-text tracking-tight">
         {title}
       </h1>
-      <p className="mt-1 text-[15px] text-gray-600 leading-relaxed">
+      <p className="mt-1 text-[15px] text-theme-muted leading-relaxed">
         {subtitle}
       </p>
     </>

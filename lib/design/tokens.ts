@@ -139,11 +139,11 @@ export const DISABLED =
 
 /** Primary CTA button */
 export const BTN_PRIMARY =
-  `${RADIUS.button} bg-theme-primary ${PADDING.buttonLg} text-sm font-semibold text-white ${TRANSITION} hover:bg-theme-primary-2 ${FOCUS_RING_PRIMARY} ${DISABLED}` as const;
+  `rounded-lg bg-theme-primary px-4 py-2 text-black font-semibold ${TRANSITION} hover:brightness-110 ${FOCUS_RING_PRIMARY} ${DISABLED}` as const;
 
 /** Secondary outlined button */
 export const BTN_SECONDARY =
-  `${RADIUS.button} border ${BORDER.default} bg-theme-surface ${PADDING.buttonLg} text-sm font-medium text-theme-text ${TRANSITION} hover:bg-theme-surface-2 ${FOCUS_RING} ${DISABLED}` as const;
+  `rounded-lg border border-theme-border px-4 py-2 text-theme-text font-medium ${TRANSITION} hover:bg-theme-surface-2 ${FOCUS_RING} ${DISABLED}` as const;
 
 /** Ghost / icon button */
 export const BTN_GHOST =

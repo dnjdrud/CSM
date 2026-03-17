@@ -97,7 +97,7 @@ export function SubscribeButton({
         className={`flex items-center gap-2 px-5 py-2 rounded-full text-[14px] font-semibold transition-all disabled:opacity-60 ${
           subscribed
             ? "bg-theme-surface-2 border border-theme-border text-theme-muted hover:border-theme-danger/30 hover:text-theme-danger"
-            : "bg-theme-primary text-white hover:opacity-90"
+            : "bg-theme-primary text-black font-semibold hover:brightness-110"
         }`}
       >
         <span aria-hidden>🐦</span>

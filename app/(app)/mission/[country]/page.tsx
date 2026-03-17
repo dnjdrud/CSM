@@ -50,7 +50,7 @@ function OtherCountryChips({ currentCode }: { currentCode: string }) {
         <Link
           key={c.code}
           href={`/mission/${c.code}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-[12px] font-medium text-theme-text hover:border-blue-300 hover:bg-blue-50/50 transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-[12px] font-medium text-theme-text hover:border-theme-border-2 hover:bg-theme-surface-2 transition-all"
         >
           <span aria-hidden>{c.flag}</span>
           {c.name}
@@ -136,7 +136,7 @@ export default async function MissionCountryPage({
       </div>
 
       {/* 국가 헤더 */}
-      <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 mb-4">
+      <div className="rounded-2xl border border-theme-border bg-theme-surface p-4 mb-4">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-3">
             <span className="text-3xl" aria-hidden>{countryData.flag}</span>
@@ -149,7 +149,7 @@ export default async function MissionCountryPage({
           </div>
           <Link
             href={writeUrl}
-            className="shrink-0 text-[12px] font-semibold px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-100 text-blue-700 hover:opacity-80 transition-all"
+            className="shrink-0 text-[12px] font-semibold px-3 py-1.5 rounded-xl border border-theme-border bg-theme-surface-2 text-theme-primary hover:opacity-80 transition-all"
           >
             + 선교 소식
           </Link>
@@ -161,7 +161,7 @@ export default async function MissionCountryPage({
           {countryData.tags.map((tag) => (
             <span
               key={tag}
-              className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"
+              className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-theme-accent-bg text-theme-primary"
             >
               #{tag}
             </span>

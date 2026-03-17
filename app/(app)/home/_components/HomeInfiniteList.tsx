@@ -82,9 +82,9 @@ export function HomeInfiniteList({
 
   return (
     <div>
-      <ul className="list-none p-0 divide-y divide-theme-border/40" role="list">
+      <ul className="list-none p-0 space-y-6" role="list">
         {items.map((post) => (
-          <li key={post.id} className="py-1">
+          <li key={post.id}>
             <FeedPostCard
               post={post}
               currentUserId={currentUserId}

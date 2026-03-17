@@ -12,14 +12,14 @@ type RequestType = {
 };
 
 const REQUEST_TYPE_MAP: Record<string, RequestType> = {
-  촬영:  { label: "촬영 도움",    color: "text-blue-700 bg-blue-50 border-blue-200" },
-  편집:  { label: "편집 도움",    color: "text-purple-700 bg-purple-50 border-purple-200" },
-  기획:  { label: "기획 도움",    color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-  교육:  { label: "교육/질문",    color: "text-amber-700 bg-amber-50 border-amber-200" },
-  협업:  { label: "협업 제안",    color: "text-rose-700 bg-rose-50 border-rose-200" },
+  촬영:  { label: "촬영 도움",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  편집:  { label: "편집 도움",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  기획:  { label: "기획 도움",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  교육:  { label: "교육/질문",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  협업:  { label: "협업 제안",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
 };
 
-const FALLBACK_TYPE: RequestType = { label: "제작 요청", color: "text-gray-600 bg-gray-50 border-gray-200" };
+const FALLBACK_TYPE: RequestType = { label: "제작 요청", color: "text-theme-muted bg-theme-surface-2 border-theme-border" };
 
 function getRequestType(tags: string[]): RequestType {
   for (const tag of tags) {
