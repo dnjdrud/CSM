@@ -139,19 +139,19 @@ export const DISABLED =
 
 /** Primary CTA button */
 export const BTN_PRIMARY =
-  `rounded-lg bg-theme-primary px-4 py-2 text-black font-semibold ${TRANSITION} hover:brightness-110 ${FOCUS_RING_PRIMARY} ${DISABLED}` as const;
+  `rounded-lg bg-theme-primary px-4 py-2 text-black font-semibold shadow-xs ${TRANSITION} hover:brightness-110 hover:shadow-md ${FOCUS_RING_PRIMARY} ${DISABLED}` as const;
 
 /** Secondary outlined button */
 export const BTN_SECONDARY =
-  `rounded-lg border border-theme-border px-4 py-2 text-theme-text font-medium ${TRANSITION} hover:bg-theme-surface-2 ${FOCUS_RING} ${DISABLED}` as const;
+  `rounded-lg border border-theme-border px-4 py-2 text-theme-text font-medium shadow-xs ${TRANSITION} hover:bg-theme-surface-2 hover:shadow-md ${FOCUS_RING} ${DISABLED}` as const;
 
 /** Ghost / icon button */
 export const BTN_GHOST =
-  `${RADIUS.md} px-3 py-2 text-sm font-medium text-theme-muted ${TRANSITION} hover:bg-theme-surface-2 hover:text-theme-text ${FOCUS_RING} ${DISABLED}` as const;
+  `${RADIUS.md} px-3 py-2 text-sm font-medium text-theme-muted shadow-xs ${TRANSITION} hover:bg-theme-surface-2 hover:text-theme-text hover:shadow-md ${FOCUS_RING} ${DISABLED}` as const;
 
 /** Danger destructive button */
 export const BTN_DANGER =
-  `${RADIUS.button} bg-theme-danger ${PADDING.buttonLg} text-sm font-semibold text-white ${TRANSITION} hover:opacity-90 ${FOCUS_RING} ${DISABLED}` as const;
+  `${RADIUS.button} bg-theme-danger ${PADDING.buttonLg} text-sm font-semibold text-white shadow-xs ${TRANSITION} hover:opacity-90 hover:shadow-md ${FOCUS_RING} ${DISABLED}` as const;
 
 /** Text / link button */
 export const BTN_TEXT =
@@ -167,4 +167,4 @@ export const CARD =
 
 /** Inline action button (reactions, comment, share row) */
 export const BTN_ACTION =
-  `flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 ${RADIUS.md} border border-transparent px-2 py-2 text-meta text-theme-muted ${TRANSITION} hover:bg-theme-surface-2 hover:text-theme-text active:bg-theme-surface-3 ${FOCUS_RING}` as const;
+  `flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 ${RADIUS.md} border border-transparent px-2 py-2 text-meta text-theme-muted shadow-xs ${TRANSITION} hover:bg-theme-surface-2 hover:text-theme-text hover:shadow-md active:bg-theme-surface-3 ${FOCUS_RING}` as const;

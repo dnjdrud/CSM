@@ -191,26 +191,26 @@ export default async function TopicFeedPage({
       </section>
 
       {/* ── 다른 토픽 둘러보기 ──────────────────────────────────── */}
-      <div className="mt-8 pt-6 border-t border-theme-border/40">
-        <p className="text-[12px] font-semibold text-theme-muted uppercase tracking-wide mb-3 px-1">
+      <section aria-labelledby="other-topics-heading" className="mt-8 pt-6 border-t border-theme-border/40">
+        <h2
+          id="other-topics-heading"
+          className="text-[13px] font-semibold text-theme-text mb-3 px-1"
+        >
           다른 토픽 보기
-        </p>
+        </h2>
         <div className="flex flex-wrap gap-2">
-          {CELL_TOPICS.filter((t) => t.slug !== topic.slug).map((t) => {
-            const c = TOPIC_COLOR_CLASSES[t.color] ?? TOPIC_COLOR_CLASSES["blue"]!;
-            return (
-              <Link
-                key={t.slug}
-                href={`/cells/topics/${t.slug}`}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12px] font-medium transition-all hover:shadow-sm ${c.border} ${c.badge}`}
-              >
-                <span aria-hidden>{t.icon}</span>
-                {t.name}
-              </Link>
-            );
-          })}
+          {CELL_TOPICS.filter((t) => t.slug !== topic.slug).map((t) => (
+            <Link
+              key={t.slug}
+              href={`/cells/topics/${t.slug}`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-theme-border bg-theme-surface text-[12px] font-medium text-theme-text transition-all duration-200 hover:bg-theme-surface-2 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg"
+            >
+              <span aria-hidden>{t.icon}</span>
+              {t.name}
+            </Link>
+          ))}
         </div>
-      </div>
+      </section>
     </TimelineContainer>
   );
 }

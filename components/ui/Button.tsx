@@ -21,27 +21,27 @@ type Size = "sm" | "md";
 
 const variantStyles: Record<Variant, string> = {
   primary: [
-    "bg-theme-primary text-black font-semibold",
-    "rounded-lg px-4 py-2 hover:brightness-110 active:scale-[0.98]",
+    "bg-theme-primary text-black font-semibold shadow-xs",
+    "rounded-lg px-4 py-2 hover:brightness-110 hover:shadow-md active:scale-[0.98]",
     TRANSITION,
     DISABLED,
   ].join(" "),
   secondary: [
-    "border border-theme-border text-theme-text rounded-lg px-4 py-2",
-    "hover:bg-theme-surface-2",
+    "border border-theme-border text-theme-text rounded-lg px-4 py-2 shadow-xs",
+    "hover:bg-theme-surface-2 hover:shadow-md",
     TRANSITION,
     DISABLED,
   ].join(" "),
   ghost: [
-    "bg-transparent text-theme-muted border border-transparent",
-    "hover:bg-theme-surface-2 hover:text-theme-text",
+    "bg-transparent text-theme-muted border border-transparent shadow-xs",
+    "hover:bg-theme-surface-2 hover:text-theme-text hover:shadow-md",
     "active:bg-theme-surface-3",
     TRANSITION,
     DISABLED,
   ].join(" "),
   danger: [
-    "bg-theme-danger-bg text-theme-danger border border-theme-danger/30",
-    "hover:bg-theme-danger/10 active:bg-theme-danger/15",
+    "bg-theme-danger-bg text-theme-danger border border-theme-danger/30 shadow-xs",
+    "hover:bg-theme-danger/10 hover:shadow-md active:bg-theme-danger/15",
     TRANSITION,
     DISABLED,
   ].join(" "),
