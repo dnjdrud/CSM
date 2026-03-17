@@ -23,17 +23,17 @@
   --border:    #E5E7EB;
   --border-2:  #D1D5DB;
 
-  --primary:       #C9A227;
-  --primary-2:     #B8962E;
-  --accent:        #C9A227;
-  --accent-bg:     rgba(201, 162, 39, 0.12);
+  --primary:       #D4A84B;
+  --primary-2:     #C9A227;
+  --accent:        #D4A84B;
+  --accent-bg:     rgba(212, 168, 75, 0.12);
 
   --danger:        #DC2626;
   --danger-bg:     rgba(220, 38, 38, 0.08);
   --success:       #16A34A;
   --success-bg:    rgba(22, 163, 74, 0.08);
-  --warning:       #C9A227;
-  --warning-bg:    rgba(201, 162, 39, 0.12);
+  --warning:       #D4A84B;
+  --warning-bg:    rgba(212, 168, 75, 0.12);
 }
 
 /* ── Base ── */
