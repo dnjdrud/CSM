@@ -379,7 +379,7 @@ export function PostCard({
             <button
               type="button"
               onClick={handlePrayed}
-              className={`${actionBtnBase} -ml-1 ${justActivated === "prayed" ? "animate-reaction-on " : ""} ${responses.prayed ? "bg-theme-surface-2 text-theme-text" : ""}`}
+              className={`${actionBtnBase} -ml-1 mr-2 ${justActivated === "prayed" ? "animate-reaction-on " : ""} ${responses.prayed ? "bg-theme-surface-2 text-theme-text" : ""}`}
             >
               <span aria-hidden>🙏</span>
               <span>{t.reactions.prayed}</span>
