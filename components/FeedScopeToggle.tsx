@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BORDER, PADDING, TYPOGRAPHY, FOCUS_RING, TRANSITION } from "@/lib/design/tokens";
 
@@ -38,6 +39,7 @@ export function FeedScopeToggle({ initialScope = "all", context = "feed" }: Prop
   }
 
   const tabBase = `flex-1 text-center ${PADDING.tab} ${TYPOGRAPHY.tab} border-b-2 -mb-px rounded-t ${TRANSITION} ${FOCUS_RING} active:bg-theme-surface-2`;
+  const tabLinkBase = `flex-1 text-center ${PADDING.tab} ${TYPOGRAPHY.tab} border-b-2 -mb-px rounded-t border-transparent text-theme-muted hover:text-theme-text hover:bg-theme-surface-2/50 transition-[color,background-color] duration-200`;
 
   return (
     <div role="tablist" aria-label="Feed scope" className={`flex border-b ${BORDER.default}`}>
@@ -67,6 +69,16 @@ export function FeedScopeToggle({ initialScope = "all", context = "feed" }: Prop
       >
         Following
       </button>
+      {context === "home" && (
+        <Link
+          href="/topics"
+          role="tab"
+          aria-selected={false}
+          className={tabLinkBase}
+        >
+          Tags
+        </Link>
+      )}
     </div>
   );
 }
