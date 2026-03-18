@@ -4,22 +4,23 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import type { PostWithAuthor } from "@/lib/domain/types";
 
-/* ─── 요청 유형 매핑 ─────────────────────────────────────────── */
-
 type RequestType = {
   label: string;
-  color: string; // Tailwind text + bg combo classes
+  color: string;
 };
 
 const REQUEST_TYPE_MAP: Record<string, RequestType> = {
-  촬영:  { label: "촬영 도움",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
-  편집:  { label: "편집 도움",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
-  기획:  { label: "기획 도움",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
-  교육:  { label: "교육/질문",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
-  협업:  { label: "협업 제안",    color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  촬영: { label: "촬영 도움", color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  편집: { label: "편집 도움", color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  기획: { label: "기획 도움", color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  교육: { label: "교육/질문", color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
+  협업: { label: "협업 제안", color: "text-theme-muted bg-theme-surface-2 border-theme-border" },
 };
 
-const FALLBACK_TYPE: RequestType = { label: "제작 요청", color: "text-theme-muted bg-theme-surface-2 border-theme-border" };
+const FALLBACK_TYPE: RequestType = {
+  label: "협업 요청",
+  color: "text-theme-muted bg-theme-surface-2 border-theme-border",
+};
 
 function getRequestType(tags: string[]): RequestType {
   for (const tag of tags) {
@@ -28,8 +29,6 @@ function getRequestType(tags: string[]): RequestType {
   }
   return FALLBACK_TYPE;
 }
-
-/* ─── 시간 헬퍼 ───────────────────────────────────────────────── */
 
 function relativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -43,21 +42,10 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
 }
 
-/* ─── 메인 컴포넌트 ──────────────────────────────────────────── */
-
-type Props = {
-  post: PostWithAuthor;
-  currentUserId: string | null;
-};
-
-export function RequestCard({ post, currentUserId: _currentUserId }: Props) {
+export function CollabRequestCard({ post }: { post: PostWithAuthor }) {
   const tags = Array.isArray(post.tags) ? post.tags : [];
   const requestType = getRequestType(tags);
-
-  // 표시용 태그: 요청 유형 태그 제외
   const displayTags = tags.filter((t) => !REQUEST_TYPE_MAP[t]);
-
-  // 첫 줄을 제목처럼 취급, 나머지를 본문 요약으로
   const lines = post.content.split("\n").filter(Boolean);
   const title = lines[0] ?? "";
   const body = lines.slice(1).join(" ").trim();
@@ -65,40 +53,30 @@ export function RequestCard({ post, currentUserId: _currentUserId }: Props) {
   return (
     <article className="px-4 py-4 border-b border-theme-border/50 last:border-b-0">
       <div className="flex gap-3">
-        {/* 좌측 강조 바 — 요청 유형 색 반영 */}
         <div className={`w-0.5 rounded-full shrink-0 self-stretch ${requestType.color.split(" ")[1]}`} />
 
         <div className="min-w-0 flex-1 space-y-2">
-          {/* 상단 행: 요청 유형 배지 + 날짜 */}
           <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full border ${requestType.color}`}
-            >
+            <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full border ${requestType.color}`}>
               {requestType.label}
             </span>
-            <time
-              dateTime={post.createdAt}
-              className="text-[12px] text-theme-muted ml-auto"
-            >
+            <time dateTime={post.createdAt} className="text-[12px] text-theme-muted ml-auto">
               {relativeTime(post.createdAt)}
             </time>
           </div>
 
-          {/* 제목 */}
           <Link href={`/post/${post.id}`} className="block group">
             <p className="text-[15px] font-semibold text-theme-text leading-snug group-hover:text-theme-primary transition-colors">
               {title}
             </p>
           </Link>
 
-          {/* 요약 본문 */}
           {body && (
             <p className="text-[13px] text-theme-muted leading-relaxed line-clamp-2">
               {body}
             </p>
           )}
 
-          {/* 태그 */}
           {displayTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {displayTags.map((tag) => (
@@ -109,27 +87,15 @@ export function RequestCard({ post, currentUserId: _currentUserId }: Props) {
             </div>
           )}
 
-          {/* 하단 행: 작성자 + 협업하기 CTA */}
           <div className="flex items-center justify-between pt-1">
-            <Link
-              href={`/profile/${post.author.id}`}
-              className="flex items-center gap-1.5 group min-w-0"
-            >
-              <Avatar
-                name={post.author.name}
-                src={post.author.avatarUrl}
-                size="sm"
-                className="!h-6 !w-6 !text-[10px]"
-              />
+            <Link href={`/profile/${post.author.id}`} className="flex items-center gap-1.5 group min-w-0">
+              <Avatar name={post.author.name} src={post.author.avatarUrl} size="sm" className="!h-6 !w-6 !text-[10px]" />
               <span className="text-[12px] text-theme-muted group-hover:text-theme-text transition-colors truncate">
                 {post.author.name}
               </span>
             </Link>
 
-            <Link
-              href={`/post/${post.id}`}
-              className="shrink-0 text-[12px] font-medium text-theme-primary hover:opacity-70 transition-opacity ml-3"
-            >
+            <Link href={`/post/${post.id}`} className="shrink-0 text-[12px] font-medium text-theme-primary hover:opacity-70 transition-opacity ml-3">
               협업하기 →
             </Link>
           </div>
@@ -138,3 +104,4 @@ export function RequestCard({ post, currentUserId: _currentUserId }: Props) {
     </article>
   );
 }
+

@@ -6,6 +6,7 @@ import { toggleReactionAction, getReactorsAction } from "@/app/(app)/feed/action
 import { ReactorsModal } from "@/components/ReactorsModal";
 import type { PostWithAuthor, User } from "@/lib/domain/types";
 import type { ReactionType } from "@/lib/domain/types";
+import { IconHands, IconHeart } from "@/components/ui/Icon";
 
 type Props = {
   post: PostWithAuthor;
@@ -67,7 +68,7 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
         onClick={() => handleToggle("PRAYED")}
         className={`flex items-center gap-1.5 rounded px-2 py-2 -ml-2 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${responses.prayed ? "font-medium text-theme-text" : ""}`}
       >
-        <span aria-hidden>🙏</span>
+        <IconHands className="h-4 w-4" aria-hidden />
         Prayed
         {counts.prayed > 0 && (
           <button
@@ -85,7 +86,7 @@ export function PostDetailReactions({ post, currentUserId }: Props) {
         onClick={() => handleToggle("WITH_YOU")}
         className={`flex items-center gap-1.5 rounded px-2 py-2 -ml-2 transition-colors duration-200 hover:bg-theme-surface-2 hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 ${responses.withYou ? "font-medium text-theme-text" : ""}`}
       >
-        <span aria-hidden>🤍</span>
+        <IconHeart className="h-4 w-4" aria-hidden />
         With you
         {counts.withYou > 0 && (
           <button

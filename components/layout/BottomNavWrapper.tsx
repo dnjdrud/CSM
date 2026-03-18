@@ -3,5 +3,5 @@ import { BottomNav } from "./BottomNav";
 
 export async function BottomNavWrapper() {
   const userId = await getAuthUserId();
-  return <BottomNav profileHref={userId ? `/profile/${userId}` : "/me"} />;
+  return <BottomNav profileHref={userId ? `/profile/${userId}` : "/login"} />;
 }

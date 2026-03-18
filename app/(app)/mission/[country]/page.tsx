@@ -8,11 +8,7 @@ import {
   isMuted,
 } from "@/lib/data/repository";
 import { canViewPost } from "@/lib/domain/guards";
-import {
-  MISSION_COUNTRIES,
-  findCountryByCode,
-  type MissionCountry,
-} from "@/lib/mission/countries";
+import { findCountryByCode } from "@/lib/mission/countries";
 import { MissionFeedSection } from "./_components/MissionFeedSection";
 import { MissionContentSection } from "./_components/MissionContentSection";
 
@@ -41,23 +37,6 @@ function filterByCountryTags<T extends { tags: string[] }>(
       post.tags.some((pt) => pt.toLowerCase() === ct.toLowerCase())
     );
   });
-}
-
-function OtherCountryChips({ currentCode }: { currentCode: string }) {
-  return (
-    <>
-      {MISSION_COUNTRIES.filter((c) => c.code !== currentCode).map((c) => (
-        <Link
-          key={c.code}
-          href={`/mission/${c.code}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-theme-border bg-theme-surface text-[12px] font-medium text-theme-text hover:border-theme-border-2 hover:bg-theme-surface-2 transition-all"
-        >
-          <span aria-hidden>{c.flag}</span>
-          {c.name}
-        </Link>
-      ))}
-    </>
-  );
 }
 
 export default async function MissionCountryPage({
@@ -121,7 +100,7 @@ export default async function MissionCountryPage({
   });
   const contentItems = Array.from(contentItemsMap.values());
 
-  const writeUrl = `/write?category=MISSION&tag=${encodeURIComponent(countryData.tags[0] ?? "")}`;
+  const writeUrl = `/write?category=MISSION&country=${encodeURIComponent(countryData.code)}`;
 
   return (
     <TimelineContainer>
@@ -176,7 +155,8 @@ export default async function MissionCountryPage({
             id="mission-posts-heading"
             className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
           >
-            <span aria-hidden>🙏</span> 선교 소식
+            <MissionSectionIcon type="mission" />
+            선교 소식
           </h2>
           <Link
             href={writeUrl}
@@ -209,7 +189,8 @@ export default async function MissionCountryPage({
             id="mission-content-heading"
             className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
           >
-            <span aria-hidden>🎬</span> 관련 콘텐츠
+            <MissionSectionIcon type="content" />
+            관련 콘텐츠
           </h2>
           <Link
             href="/contents"
@@ -227,16 +208,29 @@ export default async function MissionCountryPage({
           <MissionContentSection items={contentItems} country={countryData} currentUserId={uid} />
         )}
       </section>
-
-      {/* 다른 나라 보기 */}
-      <div className="mt-8 pt-6 border-t border-theme-border/40">
-        <p className="text-[12px] font-semibold text-theme-muted uppercase tracking-wide mb-3 px-1">
-          다른 선교지 보기
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <OtherCountryChips currentCode={countryData.code} />
-        </div>
-      </div>
     </TimelineContainer>
+  );
+}
+
+function MissionSectionIcon({ type }: { type: "mission" | "content" }) {
+  if (type === "content") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M7 5v14" />
+        <path d="M17 5v14" />
+        <path d="M3 9h4" />
+        <path d="M17 9h4" />
+        <path d="M3 15h4" />
+        <path d="M17 15h4" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M7 20l-1-8 3-6 2 2-2 4" />
+      <path d="M17 20l1-8-3-6-2 2 2 4" />
+      <path d="M10 6l2-2 2 2" />
+    </svg>
   );
 }

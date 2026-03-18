@@ -66,7 +66,7 @@ const BASE_TABS: Tab[] = [
   { key: "cells",    href: "/cells",    Icon: CellsIcon },
   { key: "contents", href: "/contents", Icon: ContentsIcon },
   { key: "mission",  href: "/mission",  Icon: MissionIcon },
-  { key: "profile",  href: "/me",       Icon: ProfileIcon },
+  { key: "profile",  href: "/login",    Icon: ProfileIcon },
 ];
 
 function isActive(tab: Tab, pathname: string): boolean {
@@ -74,11 +74,11 @@ function isActive(tab: Tab, pathname: string): boolean {
   if (tab.key === "cells") return pathname.startsWith("/cells");
   if (tab.key === "mission") return pathname.startsWith("/mission") || pathname.startsWith("/missions") || pathname.startsWith("/missionary");
   if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology");
-  if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
+  if (tab.key === "profile") return pathname.startsWith("/profile/") || pathname.startsWith("/settings");
   return false;
 }
 
-export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
+export function BottomNav({ profileHref = "/login" }: { profileHref?: string }) {
   const pathname = usePathname() || "/";
   const t = useT();
 

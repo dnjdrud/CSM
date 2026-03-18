@@ -1,72 +1,101 @@
 import Link from "next/link";
 import { TimelineContainer } from "@/components/TimelineContainer";
 import { getCurrentUser } from "@/lib/data/repository";
-import {
-  MISSION_COUNTRIES,
-  MISSION_REGIONS,
-  groupByRegion,
-} from "@/lib/mission/countries";
+import { listFeedPostsPage, isBlocked, isMuted } from "@/lib/data/repository";
+import { canViewPost } from "@/lib/domain/guards";
+import { encodeCursor } from "@/lib/domain/pagination";
+import { findCountryByCode } from "@/lib/mission/countries";
+import { MissionCountryFilter } from "./_components/MissionCountryFilter";
+import { MissionHubInfiniteList } from "./_components/MissionHubInfiniteList";
 
 export const metadata = { title: "선교 – Cellah" };
 export const dynamic = "force-dynamic";
 
-export default async function MissionPage() {
+const PAGE_SIZE = 20;
+const MISSION_TAGS = ["mission", "선교"];
+
+function hasAnyTag(postTags: string[] | null | undefined, candidates: string[]): boolean {
+  if (!Array.isArray(postTags) || postTags.length === 0) return false;
+  const lower = postTags.map((t) => t.toLowerCase());
+  return candidates.some((c) => lower.includes(c.toLowerCase()));
+}
+
+export default async function MissionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ country?: string }>;
+}) {
   const currentUser = await getCurrentUser();
-  const byRegion = groupByRegion(MISSION_COUNTRIES);
+  const params = await searchParams;
+  const countryCode = params.country?.toUpperCase() ?? null;
+  const country = countryCode ? findCountryByCode(countryCode) : undefined;
+  const countryTags = country?.tags ?? null;
+
+  const firstPage = await listFeedPostsPage({
+    currentUserId: currentUser?.id ?? null,
+    scope: "ALL",
+    limit: PAGE_SIZE,
+    cursor: null,
+    includeCategories: ["MISSION", "CONTENT", "PHOTO"],
+  });
+
+  const visibleItems = currentUser
+    ? firstPage.items.filter((post) => {
+        if (isBlocked(currentUser.id, post.authorId)) return false;
+        if (isMuted(currentUser.id, post.authorId)) return false;
+        return canViewPost(post, currentUser, () => false);
+      })
+    : firstPage.items;
+
+  const missionItems = visibleItems.filter((post) => {
+    const tags = post.tags ?? [];
+    if (!hasAnyTag(tags, MISSION_TAGS) && post.category !== "MISSION") return false;
+    if (countryTags && countryTags.length > 0) return hasAnyTag(tags, countryTags);
+    return true;
+  });
 
   return (
     <TimelineContainer>
-      <div className="pt-2 pb-8 space-y-6">
-
-        {/* Header */}
-        <div className="px-4 pt-2">
-          <h1 className="text-[20px] font-bold text-theme-text">🌍 세계 선교</h1>
+      <div className="pt-2 pb-8">
+        <div className="px-4 pt-2 pb-3 border-b border-theme-border bg-theme-surface sticky top-0 z-10">
+          <h1 className="text-[18px] font-semibold text-theme-text">세계 선교</h1>
           <p className="text-[13px] text-theme-muted mt-0.5 leading-relaxed">
-            국가를 선택해 해당 나라의 선교 소식을 확인하세요
+            국가로 필터링하여 선교 소식을 확인하세요
           </p>
         </div>
 
-        {/* Region-organized country grid */}
-        <div className="px-4 space-y-6">
-          {MISSION_REGIONS.filter((r) => byRegion.has(r)).map((region) => {
-            const countries = byRegion.get(region)!;
-            return (
-              <section key={region} aria-labelledby={`region-${region}`}>
-                <h2
-                  id={`region-${region}`}
-                  className="text-[11px] font-semibold text-theme-muted uppercase tracking-wider mb-2.5"
-                >
-                  {region}
-                </h2>
-                <ul className="grid grid-cols-2 gap-2">
-                  {countries.map((country) => (
-                    <li key={country.code}>
-                      <Link
-                        href={`/mission/${country.code}`}
-                        className="flex items-center gap-2.5 rounded-xl border border-theme-border bg-theme-surface px-3.5 py-3 hover:border-theme-border-2 hover:bg-theme-surface-2 transition-all group"
-                      >
-                        <span className="text-xl shrink-0" aria-hidden>
-                          {country.flag}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-theme-text transition-colors truncate">
-                            {country.name}
-                          </p>
-                          <p className="text-[11px] text-theme-muted truncate">
-                            {country.nameEn}
-                          </p>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
+        <MissionCountryFilter />
+
+        <div className="px-4 py-3 flex items-center justify-between border-b border-theme-border/60">
+          <p className="text-[12px] text-theme-muted">
+            {country ? `${country.flag} ${country.name}` : "전체"} · 최신순
+          </p>
+          {country && (
+            <Link
+              href={`/mission/${country.code}`}
+              className="text-[12px] text-theme-primary hover:opacity-80"
+            >
+              국가 페이지 →
+            </Link>
+          )}
         </div>
 
+        {firstPage.error ? (
+          <div className="mx-4 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            선교 피드를 불러올 수 없습니다. {firstPage.error}
+          </div>
+        ) : (
+          <div className="px-4 pt-4">
+            <MissionHubInfiniteList
+              initialItems={missionItems}
+              initialNextCursorStr={firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null}
+              countryCode={countryCode}
+            />
+          </div>
+        )}
+
         {/* Write CTA */}
-        <div className="px-4 pt-2 border-t border-theme-border/40">
+        <div className="px-4 pt-6 border-t border-theme-border/40">
           <div className="rounded-2xl border border-theme-border bg-theme-surface px-5 py-4 space-y-2">
             <p className="text-[14px] font-semibold text-theme-text">선교 소식 나누기</p>
             <p className="text-[13px] text-theme-muted leading-relaxed">
@@ -75,7 +104,7 @@ export default async function MissionPage() {
               선교 탭에 올려보세요.
             </p>
             <Link
-              href="/write?category=MISSION"
+              href={country ? `/write?category=MISSION&country=${country.code}` : "/write?category=MISSION"}
               className="inline-block mt-1 text-[13px] font-semibold text-theme-primary hover:opacity-80"
             >
               + 선교 소식 올리기 →

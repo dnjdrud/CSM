@@ -92,7 +92,7 @@ export async function updateProfileAction(data: {
   const result = await updateUserProfile(session.userId, { ...data, name: name || undefined, role });
   if ("ok" in result && result.ok) {
     revalidatePath(`/profile/${session.userId}`);
-    revalidatePath(`/profile/${session.userId}/edit`);
+    revalidatePath("/settings/profile");
   }
   return result;
 }
@@ -151,7 +151,7 @@ export async function uploadAvatarAction(formData: FormData): Promise<{ ok: bool
   const result = await uploadAvatar(session.userId, buffer, file.type);
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath(`/profile/${session.userId}`);
-  revalidatePath(`/profile/${session.userId}/edit`);
+  revalidatePath("/settings/profile");
   revalidatePath("/feed");
   revalidatePath("/home");
   return { ok: true, url: result.url };

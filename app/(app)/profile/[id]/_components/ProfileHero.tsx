@@ -68,14 +68,6 @@ export function ProfileHero({
             />
           </>
         )}
-        {isOwnProfile && (
-          <Link
-            href="/me"
-            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-button px-3 py-2.5 text-[13px] font-medium text-theme-muted transition-colors duration-[120ms] hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 active:opacity-80"
-          >
-            Go to My Space
-          </Link>
-        )}
         {!isOwnProfile && user.supportUrl && (
           <a
             href={user.supportUrl}

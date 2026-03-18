@@ -1,21 +1,16 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { RequestCard } from "./RequestCard";
 import type { PostWithAuthor } from "@/lib/domain/types";
-import { loadMoreRequestFeedAction } from "../actions";
+import { loadMoreCollabRequestsAction } from "../actions";
+import { CollabRequestCard } from "./CollabRequestCard";
 
 type Props = {
   initialItems: PostWithAuthor[];
   initialNextCursorStr: string | null;
-  currentUserId: string | null;
 };
 
-export function RequestInfiniteList({
-  initialItems,
-  initialNextCursorStr,
-  currentUserId,
-}: Props) {
+export function CollabRequestsInfiniteList({ initialItems, initialNextCursorStr }: Props) {
   const [items, setItems] = useState<PostWithAuthor[]>(initialItems);
   const [nextCursorStr, setNextCursorStr] = useState<string | null>(initialNextCursorStr);
   const [loading, setLoading] = useState(false);
@@ -27,7 +22,7 @@ export function RequestInfiniteList({
       setItems(initialItems);
       setNextCursorStr(initialNextCursorStr);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialItems, initialNextCursorStr]);
 
   const loadMore = useCallback(async () => {
@@ -35,7 +30,7 @@ export function RequestInfiniteList({
     setLoading(true);
     setError(null);
     try {
-      const result = await loadMoreRequestFeedAction({ cursorStr: nextCursorStr });
+      const result = await loadMoreCollabRequestsAction({ cursorStr: nextCursorStr });
       setItems((prev) => [...prev, ...result.items]);
       setNextCursorStr(result.nextCursorStr);
     } catch (e) {
@@ -61,14 +56,11 @@ export function RequestInfiniteList({
   if (items.length === 0 && !loading) {
     return (
       <div className="px-4 py-16 text-center space-y-3">
-        <span className="text-4xl" aria-hidden>📬</span>
-        <p className="text-[15px] font-medium text-theme-text">
-          아직 등록된 요청이 없습니다
-        </p>
+        <p className="text-[15px] font-medium text-theme-text">아직 등록된 협업 요청이 없습니다</p>
         <p className="text-[14px] text-theme-muted leading-relaxed">
-          촬영, 편집, 기획 등 콘텐츠 제작 협업이 필요하신가요?
+          촬영, 편집, 기획 등 제작 도움이 필요하면 글을 올려주세요.
           <br />
-          요청을 올리면 크리에이터들이 협업할 수 있습니다.
+          댓글로 협업을 연결할 수 있습니다.
         </p>
       </div>
     );
@@ -79,7 +71,7 @@ export function RequestInfiniteList({
       <ul className="list-none p-0" role="list">
         {items.map((post) => (
           <li key={post.id}>
-            <RequestCard post={post} currentUserId={currentUserId} />
+            <CollabRequestCard post={post} />
           </li>
         ))}
       </ul>
@@ -87,11 +79,7 @@ export function RequestInfiniteList({
       <div ref={sentinelRef} aria-hidden className="min-h-[1px]" />
 
       {loading && (
-        <div
-          className="py-6 flex justify-center"
-          aria-label="요청 불러오는 중"
-          aria-busy="true"
-        >
+        <div className="py-6 flex justify-center" aria-label="협업 요청 불러오는 중" aria-busy="true">
           <div className="flex gap-1.5">
             {[0, 1, 2].map((i) => (
               <div
@@ -118,3 +106,4 @@ export function RequestInfiniteList({
     </div>
   );
 }
+

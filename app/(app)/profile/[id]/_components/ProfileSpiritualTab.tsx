@@ -62,16 +62,6 @@ export function ProfileSpiritualTab({
         >
           📔 삶 기록
         </Link>
-
-        {/* DM 기도요청 — 다음 단계 placeholder */}
-        <Link
-          href={`/profile/${profileId}?tab=spiritual&section=dm`}
-          className="flex-1 py-2.5 text-center text-[13px] font-medium border-b-2 -mb-px border-transparent text-theme-muted hover:text-theme-text transition-colors opacity-50 pointer-events-none"
-          aria-disabled="true"
-          tabIndex={-1}
-        >
-          💌 DM 기도
-        </Link>
       </nav>
 
       {/* Composer (create form) */}

@@ -62,11 +62,10 @@ async function loadFeedPage(
 /** Load next page of the home Feed tab (FOLLOWING scope, no PRAYER posts). */
 export async function loadMoreHomeFeedAction(input: {
   cursorStr: string | null;
-  scope: "ALL" | "FOLLOWING";
 }): Promise<{ items: PostWithAuthor[]; nextCursorStr: string | null }> {
   const session = await getSession();
   if (!session) return { items: [], nextCursorStr: null };
-  return loadFeedPage(session.userId, HOME_FEED_CATEGORIES, input.scope, input.cursorStr);
+  return loadFeedPage(session.userId, HOME_FEED_CATEGORIES, "FOLLOWING", input.cursorStr);
 }
 
 /* ──────────────────────────────────── Prayer Tab ── */

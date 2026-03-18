@@ -8,8 +8,8 @@ import type { PostWithAuthor } from "@/lib/domain/types";
 
 const PAGE_LIMIT = 20;
 
-/** Fetch a page of content posts (CONTENT + PHOTO categories, ALL scope). */
-export async function loadMoreContentFeedAction(input: {
+/** Fetch a page of collaboration request posts (REQUEST category, ALL scope). */
+export async function loadMoreCollabRequestsAction(input: {
   cursorStr: string | null;
 }): Promise<{ items: PostWithAuthor[]; nextCursorStr: string | null }> {
   const session = await getSession();
@@ -21,7 +21,7 @@ export async function loadMoreContentFeedAction(input: {
     scope: "ALL",
     limit: PAGE_LIMIT,
     cursor,
-    includeCategories: ["CONTENT", "PHOTO"],
+    includeCategories: ["REQUEST"],
   });
 
   const currentUser = await getCurrentUser();
@@ -38,3 +38,4 @@ export async function loadMoreContentFeedAction(input: {
     nextCursorStr: result.nextCursor ? encodeCursor(result.nextCursor) : null,
   };
 }
+

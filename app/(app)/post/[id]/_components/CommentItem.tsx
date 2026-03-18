@@ -11,6 +11,7 @@ import { ReportMenu } from "@/components/ReportMenu";
 import { useToast } from "@/components/ui/Toast";
 import { MentionText } from "@/components/MentionText";
 import { deleteCommentAction as deleteCommentActionDefault, updateCommentAction as updateCommentActionDefault, toggleCommentLikeAction } from "../actions";
+import { IconHeart } from "@/components/ui/Icon";
 
 type CommentWithAuthor = Comment & { author: User };
 type DeleteCommentAction = (commentId: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
@@ -42,6 +43,7 @@ export function CommentItem({
   onReplyClick,
   deleteCommentAction: deleteCommentActionProp,
   updateCommentAction: updateCommentActionProp,
+  contentClampLines,
 }: {
   comment: CommentWithAuthor;
   postId: string;
@@ -54,9 +56,12 @@ export function CommentItem({
   onReplyClick?: (parentId: string) => void;
   deleteCommentAction?: DeleteCommentAction;
   updateCommentAction?: UpdateCommentAction;
+  /** Clamp comment body lines for preview UIs (e.g. feed cards). */
+  contentClampLines?: 1;
 }) {
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(comment.content);
+  const [expanded, setExpanded] = useState(false);
   const [pending, setPending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
@@ -129,6 +134,12 @@ export function CommentItem({
     ? "ml-6 pl-3 border-l-2 border-theme-border py-2"
     : "py-3";
 
+  const clampOneLine = contentClampLines === 1;
+  const isPreviewClamped = clampOneLine && !expanded;
+  const mayOverflow =
+    clampOneLine &&
+    (comment.content.length > 80 || comment.content.includes("\n"));
+
   return (
     <div className={`flex gap-3 ${wrapperClass}`}>
       <Avatar name={comment.author.name} src={comment.author.avatarUrl} size="sm" className="shrink-0 mt-0.5" />
@@ -181,9 +192,24 @@ export function CommentItem({
             </div>
           </div>
         ) : (
-          <p className="mt-0.5 text-[15px] leading-7 text-theme-text whitespace-pre-wrap">
+          <p
+            className={[
+              "mt-0.5 text-[15px] leading-7 text-theme-text whitespace-pre-wrap",
+              isPreviewClamped ? "line-clamp-1" : "",
+            ].join(" ")}
+          >
             <MentionText text={comment.content} />
           </p>
+        )}
+
+        {mayOverflow && !expanded && !editing && (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="mt-1 text-xs text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded transition-colors"
+          >
+            더보기
+          </button>
         )}
 
         {/* Footer: Like + Reply + … menu */}
@@ -199,7 +225,7 @@ export function CommentItem({
                 likedByMe ? "text-theme-danger font-medium" : "text-theme-muted hover:text-theme-text"
               } disabled:opacity-40`}
             >
-              <span aria-hidden>{likedByMe ? "❤️" : "🤍"}</span>
+              <IconHeart className="h-3.5 w-3.5" aria-hidden />
               {likeCount > 0 && <span className="tabular-nums">{likeCount}</span>}
             </button>
             {currentUserId && !isReply && onReplyClick && (

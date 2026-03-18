@@ -28,7 +28,7 @@ function getRedirectPath(category: PostCategory, postId: string, cellTopic?: str
     case "CONTENT":   return "/contents";
     case "CELL":      return cellTopic ? `/cells/topics/${cellTopic}` : "/cells";
     case "MISSION":   return "/mission";
-    case "REQUEST":   return "/contents?tab=request";
+    case "REQUEST":   return "/cells/collab-requests";
     default:          return `/post/${postId}`;
   }
 }
@@ -46,6 +46,8 @@ export default function WritePageClient({
   const searchParams = useSearchParams();
   const [selected, setSelected] = useState<PostType | null>(null);
   const [initialTag, setInitialTag] = useState("");
+  const [initialMissionCountry, setInitialMissionCountry] = useState<string>("");
+  const [lockMissionCountry, setLockMissionCountry] = useState(false);
 
   const POST_TYPES: PostType[] = [
     { category: "GENERAL", label: t.write.postTypes.general.label, icon: "✏️", description: t.write.postTypes.general.description, placeholder: t.write.postTypes.general.placeholder, showImageUpload: true },
@@ -67,10 +69,18 @@ export default function WritePageClient({
   useEffect(() => {
     const categoryParam = searchParams.get("category") as PostCategory | null;
     const tagParam = searchParams.get("tag") ?? "";
+    const countryParam = (searchParams.get("country") ?? "").toUpperCase();
     if (categoryParam) {
       const match = POST_TYPES.find((tp) => tp.category === categoryParam);
       if (match) {
         setInitialTag(tagParam);
+        if (categoryParam === "MISSION" && countryParam) {
+          setInitialMissionCountry(countryParam);
+          setLockMissionCountry(true);
+        } else {
+          setInitialMissionCountry("");
+          setLockMissionCountry(false);
+        }
         setSelected(match);
       }
     }
@@ -82,6 +92,8 @@ export default function WritePageClient({
       <ComposeForm
         postType={selected}
         initialTag={initialTag}
+        initialMissionCountry={initialMissionCountry}
+        lockMissionCountry={lockMissionCountry}
         requestTypeOptions={REQUEST_TYPE_OPTIONS}
         stripeAccountEnabled={stripeAccountEnabled}
         onBack={() => { setSelected(null); setInitialTag(""); }}
@@ -278,12 +290,16 @@ function ImageUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
 function ComposeForm({
   postType,
   initialTag = "",
+  initialMissionCountry = "",
+  lockMissionCountry = false,
   requestTypeOptions,
   stripeAccountEnabled = false,
   onBack,
 }: {
   postType: PostType;
   initialTag?: string;
+  initialMissionCountry?: string;
+  lockMissionCountry?: boolean;
   requestTypeOptions: readonly { value: string; label: string }[];
   stripeAccountEnabled?: boolean;
   onBack: () => void;
@@ -295,7 +311,7 @@ function ComposeForm({
   const [youtubeWarning, setYoutubeWarning] = useState(false);
   const [tags, setTags] = useState(initialTag);
   const [requestType, setRequestType] = useState<string>("");
-  const [missionCountry, setMissionCountry] = useState<string>("");
+  const [missionCountry, setMissionCountry] = useState<string>(initialMissionCountry);
   const [cellTopicSlug, setCellTopicSlug] = useState<string>(() => {
     if (postType.showCellTopic && initialTag) {
       const match = CELL_TOPICS.find((tp) => tp.tags.includes(initialTag));
@@ -330,6 +346,7 @@ function ComposeForm({
     setError(null);
 
     const extraTags: string[] = [];
+    if (postType.category === "MISSION") extraTags.push("mission");
     if (requestType) extraTags.push(requestType);
     if (missionCountry) {
       const country = MISSION_COUNTRIES.find((c) => c.code === missionCountry);
@@ -402,16 +419,25 @@ function ComposeForm({
             <label className="block text-[12px] font-medium text-theme-muted mb-1">
               {t.write.missionCountryLabel} <span className="font-normal text-theme-danger">*</span>
             </label>
-            <select
-              value={missionCountry}
-              onChange={(e) => setMissionCountry(e.target.value)}
-              className="w-full text-[14px] border border-theme-border rounded-lg px-3 py-2 bg-theme-surface text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/40"
-            >
-              <option value="">{t.write.missionCountryDefault}</option>
-              {MISSION_COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
-              ))}
-            </select>
+            {lockMissionCountry ? (
+              <div className="w-full text-[14px] border border-theme-border rounded-lg px-3 py-2 bg-theme-surface-2 text-theme-text">
+                {(() => {
+                  const c = MISSION_COUNTRIES.find((x) => x.code === missionCountry);
+                  return c ? `${c.flag} ${c.name}` : missionCountry;
+                })()}
+              </div>
+            ) : (
+              <select
+                value={missionCountry}
+                onChange={(e) => setMissionCountry(e.target.value)}
+                className="w-full text-[14px] border border-theme-border rounded-lg px-3 py-2 bg-theme-surface text-theme-text focus:outline-none focus:ring-2 focus:ring-theme-primary/40"
+              >
+                <option value="">{t.write.missionCountryDefault}</option>
+                {MISSION_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 

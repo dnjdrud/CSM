@@ -92,15 +92,15 @@ export default async function ExplorePage() {
           <p className="text-[13px] text-theme-muted mt-0.5">신앙 콘텐츠를 발견하세요</p>
         </div>
 
-        {/* Search shortcut */}
+        {/* Search entry has moved to Contents tab */}
         <Link
-          href="/search"
+          href="/contents"
           className="flex items-center gap-2 w-full rounded-xl border border-theme-border bg-theme-surface-2/50 px-4 py-3 text-[14px] text-theme-muted hover:border-theme-primary/40 transition-colors"
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
-          사람, 주제, 게시글 검색…
+          콘텐츠에서 검색하기…
         </Link>
 
         {/* Quick links */}

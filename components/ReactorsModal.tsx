@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { User } from "@/lib/domain/types";
 import { Avatar } from "@/components/ui/Avatar";
 import { ROLE_DISPLAY } from "@/lib/domain/types";
+import { IconHands, IconHeart } from "@/components/ui/Icon";
 
 type Props = {
   type: "PRAYED" | "WITH_YOU";
@@ -14,8 +15,8 @@ type Props = {
 };
 
 const LABELS: Record<Props["type"], string> = {
-  PRAYED: "🙏 Prayed",
-  WITH_YOU: "🤍 With you",
+  PRAYED: "Prayed",
+  WITH_YOU: "With you",
 };
 
 export function ReactorsModal({ type, users, loading, onClose }: Props) {
@@ -40,7 +41,14 @@ export function ReactorsModal({ type, users, loading, onClose }: Props) {
     >
       <div className="w-full max-w-sm rounded-2xl bg-theme-surface shadow-xl border border-theme-border">
         <div className="flex items-center justify-between border-b border-theme-border px-5 py-4">
-          <h2 className="text-[15px] font-semibold text-theme-text">{LABELS[type]}</h2>
+          <h2 className="text-[15px] font-semibold text-theme-text inline-flex items-center gap-2">
+            {type === "PRAYED" ? (
+              <IconHands className="h-4 w-4 text-theme-muted" aria-hidden />
+            ) : (
+              <IconHeart className="h-4 w-4 text-theme-muted" aria-hidden />
+            )}
+            {LABELS[type]}
+          </h2>
           <button
             type="button"
             onClick={onClose}

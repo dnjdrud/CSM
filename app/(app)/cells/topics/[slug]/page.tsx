@@ -133,7 +133,12 @@ export default async function TopicFeedPage({
             id="cell-posts-heading"
             className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
           >
-            <span aria-hidden>💬</span> 셀 나눔
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+              <path d="M7 8h10" />
+              <path d="M7 12h7" />
+            </svg>
+            셀 나눔
           </h2>
           <Link
             href={writeUrl}
@@ -171,7 +176,16 @@ export default async function TopicFeedPage({
             id="related-content-heading"
             className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
           >
-            <span aria-hidden>🎬</span> 관련 콘텐츠
+            <svg viewBox="0 0 24 24" className="h-4 w-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <path d="M7 5v14" />
+              <path d="M17 5v14" />
+              <path d="M3 9h4" />
+              <path d="M17 9h4" />
+              <path d="M3 15h4" />
+              <path d="M17 15h4" />
+            </svg>
+            관련 콘텐츠
           </h2>
           <Link
             href="/contents"

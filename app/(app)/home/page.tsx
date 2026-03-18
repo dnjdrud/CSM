@@ -13,10 +13,8 @@ import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { HOME_FEED_CATEGORIES } from "@/lib/domain/types";
 import { TimelineContainer } from "@/components/TimelineContainer";
-import { FeedScopeToggle } from "@/components/FeedScopeToggle";
 import { FeedComposer } from "@/app/(app)/feed/_components/FeedComposer";
 import { SuggestedPeople } from "@/app/(app)/feed/_components/SuggestedPeople";
-import { HomeTabs } from "./_components/HomeTabs";
 import { HomeInfiniteList } from "./_components/HomeInfiniteList";
 import { getRoleUX } from "@/lib/config/roleUX";
 import { getServerT, getServerLocale } from "@/lib/i18n/server";
@@ -92,7 +90,7 @@ function DailyPrayerBannerSkeleton() {
 /* ── Page ───────────────────────────────────────────────────────────────────
    최적화 핵심:
    - getCurrentUser()를 await하지 않고 Promise로 전달한다.
-   - 페이지 함수 자체가 즉시 반환되어 TimelineContainer + HomeTabs 셸이
+  - 페이지 함수 자체가 즉시 반환되어 TimelineContainer 셸이
      데이터 완료를 기다리지 않고 즉시 스트리밍된다.
    - 탭 컨텐츠는 각자의 Suspense 경계 안에서 데이터를 기다린다.
 ──────────────────────────────────────────────────────────────────────────── */
@@ -100,11 +98,10 @@ function DailyPrayerBannerSkeleton() {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; scope?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
-  const rawScope = params.scope === "following" ? "FOLLOWING" : "ALL";
-  const uiScope: "all" | "following" = rawScope === "FOLLOWING" ? "following" : "all";
+  // Home feed is a single stream: following only.
+  const scope: "FOLLOWING" = "FOLLOWING";
 
   // await 없이 Promise 생성 — 탭 컴포넌트 안에서 Suspense 경계 내부에 resolve됨.
   // 이렇게 하면 페이지 셸(탭바 포함)이 DB 조회 전에 먼저 스트리밍된다.
@@ -114,12 +111,8 @@ export default async function HomePage({
     <TimelineContainer>
       <h1 className="sr-only">홈</h1>
 
-      <Suspense fallback={<div className="h-12 border-b border-theme-border" />}>
-        <HomeTabs />
-      </Suspense>
-
       <Suspense fallback={<FeedSkeleton />}>
-        <FeedTabContent currentUserPromise={currentUserPromise} scope={rawScope} uiScope={uiScope} />
+        <FeedTabContent currentUserPromise={currentUserPromise} scope={scope} />
       </Suspense>
     </TimelineContainer>
   );
@@ -139,11 +132,9 @@ export default async function HomePage({
 async function FeedTabContent({
   currentUserPromise,
   scope,
-  uiScope,
 }: {
   currentUserPromise: ReturnType<typeof getCurrentUser>;
-  scope: "ALL" | "FOLLOWING";
-  uiScope: "all" | "following";
+  scope: "FOLLOWING";
 }) {
   // DailyPrayerBanner 데이터 fetch를 가장 먼저 시작.
   // 이 Promise는 아래 await들과 병렬로 실행된다.
@@ -192,7 +183,6 @@ async function FeedTabContent({
 
   return (
     <div>
-      <FeedScopeToggle initialScope={uiScope} context="home" />
       {/*
         DailyPrayerBanner를 별도 Suspense 경계로 분리.
         dailyPrayerPromise는 이미 위에서 시작됐으므로 피드 쿼리와 병렬 실행 중이다.
@@ -236,7 +226,6 @@ async function FeedTabContent({
           currentUserId={currentUser?.id ?? null}
           followingIds={followingIds}
           bookmarkedPostIds={bookmarkedPostIds}
-          scope={scope}
         />
       )}
     </div>

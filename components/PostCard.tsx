@@ -19,6 +19,7 @@ import { FollowButton } from "@/components/FollowButton";
 import { useClientSession } from "@/lib/auth/useClientSession";
 import { ReactorsModal } from "@/components/ReactorsModal";
 import { useT } from "@/lib/i18n";
+import { IconHands, IconHeart, IconLock, IconMessageCircle, IconUsers, IconFeather } from "@/components/ui/Icon";
 
 function relativeTime(iso: string, locale: string): string {
   const d = new Date(iso);
@@ -228,7 +229,7 @@ export function PostCard({
     <Card
       role="article"
       data-post-id={post.id}
-      className={`transition-all duration-200 hover:scale-[1.005] ${isDailyPrayer && !isTestimony ? "border-theme-accent/30 bg-theme-surface-2/30" : ""}`}
+      className={`transition-all duration-200 hover:bg-theme-surface ${isDailyPrayer && !isTestimony ? "border-theme-accent/30 bg-theme-surface-2/30" : ""}`}
     >
       <CardContent className="p-5 sm:p-6">
       {isTestimony && (
@@ -266,10 +267,14 @@ export function PostCard({
           <div className="mt-1 flex items-center gap-2 text-xs text-theme-muted">
             <time dateTime={post.createdAt}>{relativeTime(post.createdAt, locale)}</time>
             {post.visibility === "PRIVATE" && (
-              <span title="나만 보기" aria-label="비공개">🔒</span>
+              <span title="나만 보기" aria-label="비공개" className="inline-flex items-center">
+                <IconLock className="h-3.5 w-3.5" />
+              </span>
             )}
             {post.visibility === "FOLLOWERS" && (
-              <span title="팔로워 공개" aria-label="팔로워 공개">👥</span>
+              <span title="팔로워 공개" aria-label="팔로워 공개" className="inline-flex items-center">
+                <IconUsers className="h-3.5 w-3.5" />
+              </span>
             )}
           </div>
         </div>
@@ -298,7 +303,7 @@ export function PostCard({
               {post.content.slice(0, 120)}
             </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-theme-surface/90 backdrop-blur-sm px-5 py-5 text-center">
-              <span className="text-2xl" aria-hidden>🔒</span>
+              <IconLock className="h-7 w-7 text-theme-muted" aria-hidden />
               <p className="text-sm font-medium text-theme-text">구독 후 열람 가능</p>
               {post.authorSubscriptionPriceKrw && (
                 <p className="text-meta text-theme-muted">
@@ -309,7 +314,8 @@ export function PostCard({
                 href={`/profile/${post.authorId}?tab=crow`}
                 className="mt-1 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-theme-primary text-black text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2"
               >
-                <span aria-hidden>🐦</span> 구독하기
+                <IconFeather className="h-4 w-4" aria-hidden />
+                구독하기
               </Link>
             </div>
           </div>
@@ -381,7 +387,7 @@ export function PostCard({
               onClick={handlePrayed}
               className={`${actionBtnBase} -ml-1 mr-2 ${justActivated === "prayed" ? "animate-reaction-on " : ""} ${responses.prayed ? "bg-theme-surface-2 text-theme-text" : ""}`}
             >
-              <span aria-hidden>🙏</span>
+              <IconHands className="h-3.5 w-3.5" aria-hidden />
               <span>{t.reactions.prayed}</span>
               {counts.prayed > 0 && (
                 getReactorsAction ? (
@@ -403,7 +409,7 @@ export function PostCard({
               onClick={handleWithYou}
               className={`${actionBtnBase} -ml-1 ${justActivated === "withYou" ? "animate-reaction-on " : ""} ${responses.withYou ? "bg-theme-surface-2 text-theme-text" : ""}`}
             >
-              <span aria-hidden>🤍</span>
+              <IconHeart className="h-3.5 w-3.5" aria-hidden />
               <span>{t.reactions.withYou}</span>
               {counts.withYou > 0 && (
                 getReactorsAction ? (
@@ -430,7 +436,7 @@ export function PostCard({
             aria-controls={`comments-${post.id}`}
             className={`${actionBtnBase} -ml-1 ${commentsOpen ? "bg-theme-surface-2 text-theme-text" : ""}`}
           >
-            <span aria-hidden>💬</span>
+            <IconMessageCircle className="h-3.5 w-3.5" aria-hidden />
             <span>{t.postCard.comment}</span>
             {commentCount > 0 && (
               <span className="ml-0.5 tabular-nums opacity-80">{commentCount}</span>
@@ -438,7 +444,7 @@ export function PostCard({
           </button>
         ) : (
           <Link href={`/post/${post.id}`} className={`${actionBtnBase} -ml-1`}>
-            <span aria-hidden>💬</span>
+            <IconMessageCircle className="h-3.5 w-3.5" aria-hidden />
             <span>{t.postCard.comment}</span>
             {commentCount > 0 && (
               <span className="ml-0.5 tabular-nums opacity-80">{commentCount}</span>
@@ -472,7 +478,7 @@ export function PostCard({
                 <CommentForm postId={post.id} onSuccess={handleCommentSuccess} addCommentAction={addCommentActionProp} />
               )}
               <div className="mt-4">
-                <CommentList comments={[]} postId={post.id} currentUserId={effectiveUserId} loading onCommentDeleted={() => loadComments()} onCommentUpdated={() => loadComments()} deleteCommentAction={deleteCommentActionProp} updateCommentAction={updateCommentActionProp} addCommentAction={addCommentActionProp} />
+                <CommentList comments={[]} postId={post.id} currentUserId={effectiveUserId} loading contentClampLines={1} onCommentDeleted={() => loadComments()} onCommentUpdated={() => loadComments()} deleteCommentAction={deleteCommentActionProp} updateCommentAction={updateCommentActionProp} addCommentAction={addCommentActionProp} />
               </div>
             </>
           ) : (
@@ -488,7 +494,7 @@ export function PostCard({
                 </p>
               )}
               <div className="mt-4">
-                <CommentList comments={comments ?? []} postId={post.id} currentUserId={effectiveUserId} onCommentDeleted={() => loadComments()} onCommentUpdated={() => loadComments()} deleteCommentAction={deleteCommentActionProp} updateCommentAction={updateCommentActionProp} addCommentAction={addCommentActionProp} />
+                <CommentList comments={comments ?? []} postId={post.id} currentUserId={effectiveUserId} contentClampLines={1} onCommentDeleted={() => loadComments()} onCommentUpdated={() => loadComments()} deleteCommentAction={deleteCommentActionProp} updateCommentAction={updateCommentActionProp} addCommentAction={addCommentActionProp} />
               </div>
             </>
           )}

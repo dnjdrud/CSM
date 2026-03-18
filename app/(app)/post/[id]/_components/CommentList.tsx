@@ -16,6 +16,7 @@ export function CommentList({
   postId,
   currentUserId,
   likeData,
+  contentClampLines,
   loading,
   onCommentDeleted,
   onCommentUpdated,
@@ -27,6 +28,8 @@ export function CommentList({
   postId: string;
   currentUserId: string | null;
   likeData?: Record<string, { count: number; likedByMe: boolean }>;
+  /** Clamp comment body lines for preview UIs (e.g. feed cards). */
+  contentClampLines?: 1;
   loading?: boolean;
   onCommentDeleted?: (commentId: string) => void;
   onCommentUpdated?: (commentId: string, content: string) => void;
@@ -89,6 +92,7 @@ export function CommentList({
             onReplyClick={currentUserId ? (id) => setReplyingTo(replyingTo === id ? null : id) : undefined}
             deleteCommentAction={deleteCommentActionProp}
             updateCommentAction={updateCommentActionProp}
+            contentClampLines={contentClampLines}
           />
           {replyingTo === root.id && currentUserId && (
             <div className="ml-6 pl-3 border-l-2 border-theme-border mt-1 mb-3">
@@ -114,6 +118,7 @@ export function CommentList({
               onUpdated={handleUpdated}
               deleteCommentAction={deleteCommentActionProp}
               updateCommentAction={updateCommentActionProp}
+              contentClampLines={contentClampLines}
             />
           ))}
         </li>

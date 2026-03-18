@@ -1,42 +1,29 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { FeedPostCard } from "@/app/(app)/feed/_components/FeedPostCard";
-import { FeedSkeletonRow } from "@/app/(app)/feed/_components/FeedSkeletonRow";
-import { EmptyState } from "@/components/ui/EmptyState";
 import type { PostWithAuthor } from "@/lib/domain/types";
-import { loadMoreHomeFeedAction } from "../actions";
+import { loadMoreMissionHubAction } from "../actions";
+import { PostCard } from "@/components/PostCard";
 
 type Props = {
   initialItems: PostWithAuthor[];
   initialNextCursorStr: string | null;
-  currentUserId: string | null;
-  followingIds: string[];
-  bookmarkedPostIds?: string[];
+  countryCode?: string | null;
 };
 
-export function HomeInfiniteList({
-  initialItems,
-  initialNextCursorStr,
-  currentUserId,
-  followingIds,
-  bookmarkedPostIds = [],
-}: Props) {
+export function MissionHubInfiniteList({ initialItems, initialNextCursorStr, countryCode }: Props) {
   const [items, setItems] = useState<PostWithAuthor[]>(initialItems);
   const [nextCursorStr, setNextCursorStr] = useState<string | null>(initialNextCursorStr);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Sync when server re-renders with fresh data (e.g. after post creation)
   useEffect(() => {
-    const serverHeadId = initialItems[0]?.id;
-    const localHeadId = items[0]?.id;
-    if (serverHeadId !== localHeadId) {
+    if (initialItems[0]?.id !== items[0]?.id) {
       setItems(initialItems);
       setNextCursorStr(initialNextCursorStr);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialItems, initialNextCursorStr]);
 
   const loadMore = useCallback(async () => {
@@ -44,7 +31,7 @@ export function HomeInfiniteList({
     setLoading(true);
     setError(null);
     try {
-      const result = await loadMoreHomeFeedAction({ cursorStr: nextCursorStr });
+      const result = await loadMoreMissionHubAction({ cursorStr: nextCursorStr, countryCode: countryCode ?? null });
       setItems((prev) => [...prev, ...result.items]);
       setNextCursorStr(result.nextCursorStr);
     } catch (e) {
@@ -52,9 +39,8 @@ export function HomeInfiniteList({
     } finally {
       setLoading(false);
     }
-  }, [nextCursorStr, loading]);
+  }, [nextCursorStr, loading, countryCode]);
 
-  // Intersection observer for infinite scroll
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -70,11 +56,12 @@ export function HomeInfiniteList({
 
   if (items.length === 0 && !loading) {
     return (
-      <EmptyState
-        title="피드가 비어있습니다"
-        description="팔로우한 사람들의 글이 여기 표시됩니다. 아직 기도 제목을 제외한 나눔 글이 없습니다."
-        action={{ label: "사람 찾기", href: "/explore" }}
-      />
+      <div className="px-4 py-16 text-center space-y-2">
+        <p className="text-[15px] font-medium text-theme-text">아직 선교 소식이 없습니다</p>
+        <p className="text-[13px] text-theme-muted leading-relaxed">
+          선교 업데이트 게시글에 <strong>#mission</strong> (또는 선교 카테고리) 태그가 포함되면 여기에 표시됩니다.
+        </p>
+      </div>
     );
   }
 
@@ -83,26 +70,25 @@ export function HomeInfiniteList({
       <ul className="list-none p-0 space-y-4" role="list">
         {items.map((post) => (
           <li key={post.id}>
-            <FeedPostCard
-              post={post}
-              currentUserId={currentUserId}
-              initialFollowing={followingIds.includes(post.authorId)}
-              initialBookmarked={bookmarkedPostIds.includes(post.id)}
-              compact
-            />
+            <PostCard post={post} compact />
           </li>
         ))}
       </ul>
 
-      {/* Sentinel for infinite scroll */}
       <div ref={sentinelRef} aria-hidden className="min-h-[1px]" />
 
       {loading && (
-        <ul className="list-none p-0" role="list" aria-busy="true" aria-label="추가 로딩 중">
-          {[1, 2, 3].map((i) => (
-            <li key={i}><FeedSkeletonRow /></li>
-          ))}
-        </ul>
+        <div className="py-6 flex justify-center" aria-label="선교 피드 불러오는 중" aria-busy="true">
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-theme-muted animate-bounce"
+                style={{ animationDelay: `${i * 120}ms` }}
+              />
+            ))}
+          </div>
+        </div>
       )}
 
       {error && (
@@ -119,3 +105,4 @@ export function HomeInfiniteList({
     </div>
   );
 }
+

@@ -42,10 +42,10 @@ export default async function TopicsPage() {
       )}
       <p className="mt-8 text-center">
         <Link
-          href="/search"
+          href="/contents"
           className="text-sm text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded"
         >
-          게시글과 사람 검색하기 →
+          콘텐츠에서 검색하기 →
         </Link>
       </p>
     </div>
