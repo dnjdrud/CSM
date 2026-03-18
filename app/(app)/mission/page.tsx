@@ -58,10 +58,20 @@ export default async function MissionPage({
     <TimelineContainer>
       <div className="pt-2 pb-8">
         <div className="px-4 pt-2 pb-3 border-b border-theme-border bg-theme-surface sticky top-0 z-10">
-          <h1 className="text-[18px] font-semibold text-theme-text">세계 선교</h1>
-          <p className="text-[13px] text-theme-muted mt-0.5 leading-relaxed">
-            국가로 필터링하여 선교 소식을 확인하세요
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h1 className="text-[18px] font-semibold text-theme-text">세계 선교</h1>
+              <p className="text-[13px] text-theme-muted mt-0.5 leading-relaxed">
+                국가로 필터링하여 선교 소식을 확인하세요
+              </p>
+            </div>
+            <Link
+              href={country ? `/write?category=MISSION&country=${country.code}` : "/write?category=MISSION"}
+              className="shrink-0 rounded-xl border border-theme-border bg-theme-surface px-3 py-2 text-[13px] font-medium text-theme-text hover:border-theme-primary/50 hover:bg-theme-surface-2/50 transition-colors"
+            >
+              글쓰기
+            </Link>
+          </div>
         </div>
 
         <MissionCountryFilter />
@@ -93,24 +103,6 @@ export default async function MissionPage({
             />
           </div>
         )}
-
-        {/* Write CTA */}
-        <div className="px-4 pt-6 border-t border-theme-border/40">
-          <div className="rounded-2xl border border-theme-border bg-theme-surface px-5 py-4 space-y-2">
-            <p className="text-[14px] font-semibold text-theme-text">선교 소식 나누기</p>
-            <p className="text-[13px] text-theme-muted leading-relaxed">
-              현장의 기도 제목, 사역 업데이트, 감사 나눔을
-              <br />
-              선교 탭에 올려보세요.
-            </p>
-            <Link
-              href={country ? `/write?category=MISSION&country=${country.code}` : "/write?category=MISSION"}
-              className="inline-block mt-1 text-[13px] font-semibold text-theme-primary hover:opacity-80"
-            >
-              + 선교 소식 올리기 →
-            </Link>
-          </div>
-        </div>
 
         {/* Missionary dashboard link */}
         {currentUser?.role === "MISSIONARY" && (

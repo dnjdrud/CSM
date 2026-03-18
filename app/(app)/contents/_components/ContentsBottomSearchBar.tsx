@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function ContentsBottomSearchBar({ initialQ = "" }: { initialQ?: string }) {
+type Position = "top" | "bottom";
+
+export function ContentsBottomSearchBar({
+  initialQ = "",
+  position = "bottom",
+}: { initialQ?: string; position?: Position }) {
   const router = useRouter();
   const [q, setQ] = useState(initialQ);
 
@@ -19,8 +24,13 @@ export function ContentsBottomSearchBar({ initialQ = "" }: { initialQ?: string }
     router.push(`/search?${qs.toString()}`);
   }
 
+  const wrapperClass =
+    position === "top"
+      ? "border-b border-theme-border/60 bg-theme-surface px-4 py-3"
+      : "sticky bottom-0 z-10 border-t border-theme-border/60 bg-theme-surface/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]";
+
   return (
-    <div className="sticky bottom-0 z-10 border-t border-theme-border/60 bg-theme-surface/95 backdrop-blur-sm px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div className={wrapperClass}>
       <form
         onSubmit={(e) => {
           e.preventDefault();

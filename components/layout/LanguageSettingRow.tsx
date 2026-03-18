@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n";
+import { IconGlobe } from "@/components/ui/Icon";
 
 export function LanguageSettingRow() {
   const { locale, setLocale, t } = useLanguage();
@@ -8,7 +9,7 @@ export function LanguageSettingRow() {
   return (
     <li>
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <span className="text-xl shrink-0" aria-hidden>🌐</span>
+        <IconGlobe className="h-5 w-5 text-theme-muted shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-medium text-theme-text">{t.settings.language}</p>
           <p className="text-[12px] text-theme-muted">{t.settings.languageDesc}</p>
