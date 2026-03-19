@@ -549,6 +549,8 @@ export type ListFeedPostsPageParams = {
   excludeCategories?: string[];
   /** Include ONLY posts with these categories (e.g. ["PRAYER"] for Prayer tab). */
   includeCategories?: string[];
+  /** When true, only return posts that have a youtube_url set. */
+  requireYoutubeUrl?: boolean;
 };
 
 export type ListFeedPostsPageResult = {

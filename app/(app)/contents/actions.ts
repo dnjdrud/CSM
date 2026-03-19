@@ -21,7 +21,7 @@ export async function loadMoreContentFeedAction(input: {
     scope: "ALL",
     limit: PAGE_LIMIT,
     cursor,
-    includeCategories: ["CONTENT", "PHOTO"],
+    requireYoutubeUrl: true,
   });
 
   const currentUser = await getCurrentUser();

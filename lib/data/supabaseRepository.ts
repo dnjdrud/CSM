@@ -557,6 +557,8 @@ export type ListFeedPostsPageParams = {
   excludeCategories?: string[];
   /** Include ONLY posts with these categories (e.g. ["PRAYER"] for Prayer tab). */
   includeCategories?: string[];
+  /** When true, only return posts that have a youtube_url set. */
+  requireYoutubeUrl?: boolean;
 };
 
 export type ListFeedPostsPageResult = {
@@ -599,6 +601,9 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
     }
     if (params.includeCategories && params.includeCategories.length > 0) {
       q = q.in("category", params.includeCategories);
+    }
+    if (params.requireYoutubeUrl) {
+      q = q.not("youtube_url", "is", null);
     }
     if (params.cursor?.createdAt && params.cursor?.id) {
       const c = params.cursor;
@@ -953,25 +958,29 @@ export async function listFollowerIds(userId: string): Promise<string[]> {
 }
 
 export async function listFollowers(userId: string): Promise<User[]> {
-  const supabase = await supabaseServer();
-  const { data: followRows } = await supabase
+  // Use admin client to bypass RLS — follows are public social data
+  const admin = getSupabaseAdmin() ?? await supabaseServer();
+  const { data: followRows } = await admin
     .from("follows")
     .select("follower_id")
     .eq("following_id", userId);
   if (!followRows?.length) return [];
-  const ids = followRows.map((r) => r.follower_id);
+  const ids = followRows.map((r: { follower_id: string }) => r.follower_id);
+  const supabase = await supabaseServer();
   const authorMap = await getAuthorMap(supabase, ids);
   return ids.map((id) => authorMap.get(id)).filter((u): u is User => u != null);
 }
 
 export async function listFollowing(userId: string): Promise<User[]> {
-  const supabase = await supabaseServer();
-  const { data: followRows } = await supabase
+  // Use admin client to bypass RLS — follows are public social data
+  const admin = getSupabaseAdmin() ?? await supabaseServer();
+  const { data: followRows } = await admin
     .from("follows")
     .select("following_id")
     .eq("follower_id", userId);
   if (!followRows?.length) return [];
-  const ids = followRows.map((r) => r.following_id);
+  const ids = followRows.map((r: { following_id: string }) => r.following_id);
+  const supabase = await supabaseServer();
   const authorMap = await getAuthorMap(supabase, ids);
   return ids.map((id) => authorMap.get(id)).filter((u): u is User => u != null);
 }

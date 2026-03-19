@@ -17,7 +17,6 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "컨텐츠 – Cellah" };
 
 const PAGE_SIZE = 20;
-const CONTENT_CATEGORIES = ["CONTENT", "PHOTO", "MISSION"] as const;
 
 export default async function ContentsPage({
   searchParams,
@@ -67,7 +66,7 @@ async function ContentTabContent({
       scope: "ALL",
       limit: PAGE_SIZE,
       cursor: null,
-      includeCategories: [...CONTENT_CATEGORIES],
+      requireYoutubeUrl: true,
     }),
     currentUser ? listMySubscriptions(currentUser.id) : Promise.resolve([]),
   ]);
