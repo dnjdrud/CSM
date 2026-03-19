@@ -91,21 +91,45 @@ export async function generateYouTubeContentAction(
 
   // Try transcript first
   const transcriptResult = await fetchYouTubeTranscript(videoId);
+  logInfo("SERVER_ACTION", "generateYouTubeContentAction transcript", {
+    videoId,
+    ok: transcriptResult.ok,
+    error: transcriptResult.ok ? undefined : transcriptResult.error,
+  });
+
   if (transcriptResult.ok) {
     const aiResult = await generateContent({
       source: "transcript",
       context: transcriptResult.transcriptText,
+    });
+    logInfo("SERVER_ACTION", "generateYouTubeContentAction claude(transcript)", {
+      ok: aiResult.ok,
+      error: aiResult.ok ? undefined : aiResult.error,
     });
     if (aiResult.ok) return aiResult;
   }
 
   // Fall back to metadata
   const metaResult = await fetchYouTubeMetadata(videoId);
-  if (!metaResult.ok) return { ok: false, error: "자막과 메타데이터를 모두 가져올 수 없습니다." };
+  logInfo("SERVER_ACTION", "generateYouTubeContentAction metadata", {
+    videoId,
+    ok: metaResult.ok,
+    error: metaResult.ok ? undefined : metaResult.error,
+  });
+
+  if (!metaResult.ok) {
+    const transcriptErr = transcriptResult.ok ? "" : ` (자막: ${transcriptResult.error})`;
+    return { ok: false, error: `메타데이터 오류: ${metaResult.error}${transcriptErr}` };
+  }
 
   const { title, description, channelTitle } = metaResult.data;
   const context = [title, description, channelTitle].filter(Boolean).join("\n");
-  return generateContent({ source: "metadata", context, videoTitle: title });
+  const aiResult = await generateContent({ source: "metadata", context, videoTitle: title });
+  logInfo("SERVER_ACTION", "generateYouTubeContentAction claude(metadata)", {
+    ok: aiResult.ok,
+    error: aiResult.ok ? undefined : aiResult.error,
+  });
+  return aiResult;
 }
 
 /** Compose post (no redirect). Revalidates feed. Used by write page. */
