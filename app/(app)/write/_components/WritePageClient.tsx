@@ -334,10 +334,8 @@ function ComposeForm({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFields, setAiFields] = useState<{ summary: string; description: string; tags: string[] } | null>(null);
   // 통합 폼 내부 카테고리 (isUnified일 때만 사용)
-  const [unifiedCategory, setUnifiedCategory] = useState<"GENERAL" | "CELL" | "TESTIMONY">(() => {
-    if (postType.isUnified) {
-      if (initialTag) return "CELL"; // 태그 미리 지정된 경우 셀 나눔으로
-    }
+  const [unifiedCategory, setUnifiedCategory] = useState<"GENERAL" | "CELL">(() => {
+    if (postType.isUnified && initialTag) return "CELL";
     return "GENERAL";
   });
   const actualCategory = postType.isUnified ? unifiedCategory : postType.category;
@@ -447,8 +445,8 @@ function ComposeForm({
       <form onSubmit={handleSubmit} className="space-y-4">
         {postType.isUnified && (
           <div className="flex gap-1.5 p-1 bg-theme-surface-2 rounded-xl">
-            {(["GENERAL", "CELL", "TESTIMONY"] as const).map((cat) => {
-              const labels = { GENERAL: "일반", CELL: "셀 나눔", TESTIMONY: "간증" };
+            {(["GENERAL", "CELL"] as const).map((cat) => {
+              const labels = { GENERAL: "일반", CELL: "셀 나눔" };
               return (
                 <button
                   key={cat}
