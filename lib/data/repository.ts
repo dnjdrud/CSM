@@ -399,6 +399,9 @@ export async function createPost(input: {
   youtubeUrl?: string | null;
   mediaUrls?: string[];
   subscribersOnly?: boolean;
+  aiSummary?: string | null;
+  aiDescription?: string | null;
+  aiTags?: string[];
 }): Promise<DomainPost> {
   if (DATA_MODE === "supabase") return supabaseRepo.createPost(input);
   const id = `p${Date.now()}`;
@@ -1417,6 +1420,6 @@ export async function toggleTheologyAnswerVote(answerId: string, userId: string)
   return "added";
 }
 
-export async function acceptTheologyAnswer(answerId: string, questionId: string, questionOwnerId: string): Promise<void> {
-  if (DATA_MODE === "supabase") return supabaseRepo.acceptTheologyAnswer(answerId, questionId, questionOwnerId);
+export async function acceptTheologyAnswer(answerId: string, questionId: string): Promise<void> {
+  if (DATA_MODE === "supabase") return supabaseRepo.acceptTheologyAnswer(answerId, questionId);
 }

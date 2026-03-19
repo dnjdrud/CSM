@@ -7,6 +7,11 @@ import { createPost } from "@/lib/data/repository";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
 import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
+import { fetchYouTubeMetadata, type YouTubeMetadata } from "@/lib/services/youtubeMetadata";
+import { fetchYouTubeTranscript, type TranscriptFetchResult } from "@/lib/services/youtubeTranscript";
+import { generateContent } from "@/lib/services/aiContentGenerator";
+import type { GeneratedContent } from "@/lib/services/aiContentGenerator";
+import { parseYouTubeUrl } from "@/lib/utils/youtube";
 
 /** Publish post and redirect to feed (e.g. from /write page). */
 export async function publishPostAction(
@@ -62,6 +67,47 @@ export async function publishPostAction(
   redirect("/feed");
 }
 
+/**
+ * Generate AI summary, description, and tags for a YouTube video.
+ * Tries transcript first; falls back to metadata if unavailable.
+ */
+export async function generateYouTubeContentAction(
+  youtubeUrlOrId: string
+): Promise<{ ok: true; data: GeneratedContent } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Not logged in" };
+
+  const trimmed = youtubeUrlOrId.trim();
+  if (!trimmed) return { ok: false, error: "No URL provided" };
+
+  let videoId: string;
+  if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) {
+    videoId = trimmed;
+  } else {
+    const parsed = parseYouTubeUrl(trimmed);
+    if (!parsed.isValid) return { ok: false, error: parsed.error };
+    videoId = parsed.videoId;
+  }
+
+  // Try transcript first
+  const transcriptResult = await fetchYouTubeTranscript(videoId);
+  if (transcriptResult.ok) {
+    const aiResult = await generateContent({
+      source: "transcript",
+      context: transcriptResult.transcriptText,
+    });
+    if (aiResult.ok) return aiResult;
+  }
+
+  // Fall back to metadata
+  const metaResult = await fetchYouTubeMetadata(videoId);
+  if (!metaResult.ok) return { ok: false, error: "자막과 메타데이터를 모두 가져올 수 없습니다." };
+
+  const { title, description, channelTitle } = metaResult.data;
+  const context = [title, description, channelTitle].filter(Boolean).join("\n");
+  return generateContent({ source: "metadata", context, videoTitle: title });
+}
+
 /** Compose post (no redirect). Revalidates feed. Used by write page. */
 export async function composePostAction(params: {
   title?: string;
@@ -72,6 +118,9 @@ export async function composePostAction(params: {
   youtubeUrl?: string;
   mediaUrls?: string[];
   subscribersOnly?: boolean;
+  aiSummary?: string | null;
+  aiDescription?: string | null;
+  aiTags?: string[];
 }): Promise<{ ok: true; postId: string } | { ok: false; error: string }> {
   logInfo("SERVER_ACTION", "composePostAction(write) start", {
     hasContent: params.content.trim().length > 0,
@@ -111,6 +160,9 @@ export async function composePostAction(params: {
       youtubeUrl: params.youtubeUrl || null,
       mediaUrls: params.mediaUrls ?? [],
       subscribersOnly: params.subscribersOnly ?? false,
+      aiSummary: params.aiSummary ?? null,
+      aiDescription: params.aiDescription ?? null,
+      aiTags: params.aiTags,
     });
     logInfo("SERVER_ACTION", "composePostAction(write) success", {
       userId: session.userId,
@@ -129,4 +181,57 @@ export async function composePostAction(params: {
     });
     return { ok: false, error: display };
   }
+}
+
+/**
+ * Fetch YouTube video metadata from a YouTube URL or video ID.
+ * Requires YOUTUBE_API_KEY env var. Safe to call without it (returns ok:false).
+ * Called before AI generation to get title/description as context.
+ */
+export async function fetchYouTubeMetadataAction(
+  youtubeUrlOrId: string
+): Promise<{ ok: true; data: YouTubeMetadata } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Not logged in" };
+
+  const trimmed = youtubeUrlOrId.trim();
+  if (!trimmed) return { ok: false, error: "No URL provided" };
+
+  // Accept either a full URL or a bare 11-char video ID
+  let videoId: string;
+  if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) {
+    videoId = trimmed;
+  } else {
+    const parsed = parseYouTubeUrl(trimmed);
+    if (!parsed.isValid) return { ok: false, error: parsed.error };
+    videoId = parsed.videoId;
+  }
+
+  return fetchYouTubeMetadata(videoId);
+}
+
+/**
+ * Fetch transcript for a YouTube URL or bare video ID.
+ * Returns ok:false gracefully if captions are unavailable.
+ * Caller should fall back to fetchYouTubeMetadataAction for AI context.
+ */
+export async function fetchYouTubeTranscriptAction(
+  youtubeUrlOrId: string
+): Promise<TranscriptFetchResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Not logged in" };
+
+  const trimmed = youtubeUrlOrId.trim();
+  if (!trimmed) return { ok: false, error: "No URL provided" };
+
+  let videoId: string;
+  if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) {
+    videoId = trimmed;
+  } else {
+    const parsed = parseYouTubeUrl(trimmed);
+    if (!parsed.isValid) return { ok: false, error: parsed.error };
+    videoId = parsed.videoId;
+  }
+
+  return fetchYouTubeTranscript(videoId);
 }

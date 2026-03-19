@@ -30,7 +30,6 @@ import type {
   CellMessage,
   Ministry,
   SupportIntent,
-  SupportTransaction,
   SupportPurpose,
   DirectMessage,
   ConversationPreview,
@@ -43,6 +42,10 @@ import type {
   TheologyQuestion,
   TheologyCategory,
   TheologyAnswer,
+  PostClipRecommendation,
+  UserInteraction,
+  UserInteractionType,
+  UserInterestTag,
 } from "@/lib/domain/types";
 // DEFAULT_NOTIFICATION_PREFS used as value (not just type)
 import { DEFAULT_NOTIFICATION_PREFS } from "@/lib/domain/types";
@@ -53,7 +56,7 @@ import { tokenize, sortByScore } from "@/lib/search";
 const SEARCH_MAX = 30;
 
 /** Feed select: only columns that exist in current DB. */
-const POSTS_FEED_SELECT = "id, author_id, category, content, visibility, tags, created_at, youtube_url, media_urls" as const;
+const POSTS_FEED_SELECT = "id, author_id, category, content, visibility, tags, created_at, youtube_url, media_urls, youtube_id, ai_summary, ai_description, ai_tags, has_ai_generated" as const;
 
 function isColumnOrSchemaError(message: string): boolean {
   const m = String(message).toLowerCase();
@@ -98,6 +101,11 @@ function rowToPost(r: {
   created_at: string | null;
   youtube_url?: string | null;
   media_urls?: string[] | null;
+  youtube_id?: string | null;
+  ai_summary?: string | null;
+  ai_description?: string | null;
+  ai_tags?: string[] | null;
+  has_ai_generated?: boolean | null;
 }): DomainPost {
   return {
     id: r.id,
@@ -110,6 +118,11 @@ function rowToPost(r: {
     createdAt: r.created_at ?? new Date().toISOString(),
     youtubeUrl: r.youtube_url ?? undefined,
     mediaUrls: r.media_urls ?? [],
+    youtubeId: r.youtube_id ?? undefined,
+    aiSummary: r.ai_summary ?? undefined,
+    aiDescription: r.ai_description ?? undefined,
+    aiTags: r.ai_tags ?? undefined,
+    hasAiGenerated: r.has_ai_generated ?? false,
   };
 }
 
@@ -661,7 +674,7 @@ export async function getPostById(id: string): Promise<PostWithAuthor | null> {
   } as PostWithAuthor;
 }
 
-const POSTS_INSERT_SELECT = "id, author_id, category, content, visibility, tags, created_at, youtube_url, media_urls" as const;
+const POSTS_INSERT_SELECT = "id, author_id, category, content, visibility, tags, created_at, youtube_url, media_urls, youtube_id, ai_summary, ai_description, ai_tags, has_ai_generated" as const;
 
 export async function createPost(input: {
   authorId: string;
@@ -672,6 +685,9 @@ export async function createPost(input: {
   youtubeUrl?: string | null;
   mediaUrls?: string[];
   subscribersOnly?: boolean;
+  aiSummary?: string | null;
+  aiDescription?: string | null;
+  aiTags?: string[];
 }): Promise<DomainPost> {
   const supabase = await supabaseServer();
   const tags = [...new Set((input.tags ?? []).map(normalizeTag).filter(Boolean))].slice(0, 5);
@@ -685,6 +701,9 @@ export async function createPost(input: {
   };
   if (input.youtubeUrl) payload.youtube_url = input.youtubeUrl;
   if (input.mediaUrls && input.mediaUrls.length > 0) payload.media_urls = input.mediaUrls;
+  if (input.aiSummary) { payload.ai_summary = input.aiSummary; payload.has_ai_generated = true; }
+  if (input.aiDescription) payload.ai_description = input.aiDescription;
+  if (input.aiTags && input.aiTags.length > 0) payload.ai_tags = input.aiTags;
   const result = await supabase.from("posts").insert(payload).select(POSTS_INSERT_SELECT).single();
   if (result.error) {
     console.error("[createPost] insert error", result.error.message, payload);
@@ -2542,9 +2561,169 @@ export async function toggleTheologyAnswerVote(answerId: string, userId: string)
   return "added";
 }
 
-export async function acceptTheologyAnswer(answerId: string, questionId: string, questionOwnerId: string): Promise<void> {
+export async function acceptTheologyAnswer(answerId: string, questionId: string): Promise<void> {
   const supabase = await supabaseServer();
-  // Unaccept all other answers first
   await supabase.from("theology_answers").update({ is_accepted: false }).eq("question_id", questionId);
   await supabase.from("theology_answers").update({ is_accepted: true }).eq("id", answerId);
+}
+
+// ── AI / Recommendation ───────────────────────────────────────────────────────
+
+/** Write AI-generated fields back to a post (called by AI worker after enrichment). */
+export async function updatePostAiFields(
+  postId: string,
+  fields: {
+    youtubeId?: string;
+    aiSummary?: string;
+    aiDescription?: string;
+    aiTags?: string[];
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase
+    .from("posts")
+    .update({
+      youtube_id:      fields.youtubeId ?? null,
+      ai_summary:      fields.aiSummary ?? null,
+      ai_description:  fields.aiDescription ?? null,
+      ai_tags:         fields.aiTags ?? [],
+      has_ai_generated: true,
+    })
+    .eq("id", postId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Fetch all clip recommendations for a post, ordered by sort_order. */
+export async function getClipRecommendations(postId: string): Promise<PostClipRecommendation[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("post_clip_recommendations")
+    .select("id, post_id, start_time_seconds, end_time_seconds, summary, sort_order, created_at")
+    .eq("post_id", postId)
+    .order("sort_order", { ascending: true });
+  if (error || !data) return [];
+  return data.map((r) => ({
+    id: r.id,
+    postId: r.post_id,
+    startTimeSeconds: r.start_time_seconds,
+    endTimeSeconds: r.end_time_seconds,
+    summary: r.summary ?? undefined,
+    sortOrder: r.sort_order,
+    createdAt: r.created_at,
+  }));
+}
+
+/** Replace all clip recommendations for a post (called by AI worker). */
+export async function upsertClipRecommendations(
+  postId: string,
+  clips: Array<{ startTimeSeconds: number; endTimeSeconds: number; summary?: string; sortOrder: number }>
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await supabaseServer();
+  // Delete existing then insert fresh batch
+  await supabase.from("post_clip_recommendations").delete().eq("post_id", postId);
+  if (clips.length === 0) return { ok: true };
+  const { error } = await supabase.from("post_clip_recommendations").insert(
+    clips.map((c) => ({
+      post_id: postId,
+      start_time_seconds: c.startTimeSeconds,
+      end_time_seconds: c.endTimeSeconds,
+      summary: c.summary ?? null,
+      sort_order: c.sortOrder,
+    }))
+  );
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Record a user interaction event (view, like, bookmark, subscribe). */
+export async function recordUserInteraction(
+  userId: string,
+  postId: string,
+  interactionType: UserInteractionType,
+  watchTimeSeconds?: number
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("user_interactions").insert({
+    user_id: userId,
+    post_id: postId,
+    interaction_type: interactionType,
+    watch_time_seconds: watchTimeSeconds ?? null,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Fetch recent interaction history for a user (for recommendation input). */
+export async function getUserInteractions(
+  userId: string,
+  limit = 100
+): Promise<UserInteraction[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("user_interactions")
+    .select("id, user_id, post_id, interaction_type, watch_time_seconds, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data.map((r) => ({
+    id: r.id,
+    userId: r.user_id,
+    postId: r.post_id,
+    interactionType: r.interaction_type as UserInteractionType,
+    watchTimeSeconds: r.watch_time_seconds ?? undefined,
+    createdAt: r.created_at,
+  }));
+}
+
+/** Fetch a user's interest tag weights, descending by weight. */
+export async function getUserInterestTags(userId: string): Promise<UserInterestTag[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("user_interest_tags")
+    .select("user_id, tag, weight, updated_at")
+    .eq("user_id", userId)
+    .order("weight", { ascending: false });
+  if (error || !data) return [];
+  return data.map((r) => ({
+    userId: r.user_id,
+    tag: r.tag,
+    weight: Number(r.weight),
+    updatedAt: r.updated_at,
+  }));
+}
+
+/**
+ * Increment (or create) a tag's weight for a user.
+ * Typically called after a view/like on a tagged post.
+ * delta > 0 increases interest; use negative delta to decay.
+ */
+export async function adjustUserInterestTag(
+  userId: string,
+  tag: string,
+  delta: number
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await supabaseServer();
+  // Upsert: if row exists, add delta; else insert with delta as initial weight
+  const { error } = await supabase.rpc("adjust_user_interest_tag", {
+    p_user_id: userId,
+    p_tag: tag,
+    p_delta: delta,
+  });
+  if (error) {
+    // Fallback: manual upsert if RPC not yet deployed
+    const { data: existing } = await supabase
+      .from("user_interest_tags")
+      .select("weight")
+      .eq("user_id", userId)
+      .eq("tag", tag)
+      .single();
+    const newWeight = Math.max(0, (existing ? Number(existing.weight) : 0) + delta);
+    const { error: upsertError } = await supabase
+      .from("user_interest_tags")
+      .upsert({ user_id: userId, tag, weight: newWeight, updated_at: new Date().toISOString() });
+    if (upsertError) return { ok: false, error: upsertError.message };
+  }
+  return { ok: true };
 }

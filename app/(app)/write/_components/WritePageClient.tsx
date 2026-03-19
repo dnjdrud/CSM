@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { composePostAction } from "../actions";
+import { composePostAction, generateYouTubeContentAction } from "../actions";
 import { uploadPostImageAction } from "../uploadImageAction";
 import type { PostCategory } from "@/lib/domain/types";
 import { MISSION_COUNTRIES } from "@/lib/mission/countries";
 import { CELL_TOPICS } from "@/lib/cells/topics";
 import { useT } from "@/lib/i18n";
+import { parseYouTubeUrl } from "@/lib/utils/youtube";
 
 type PostType = {
   category: PostCategory;
@@ -16,6 +17,7 @@ type PostType = {
   icon: string;
   description: string;
   placeholder: string;
+  isUnified?: boolean; // 일반+셀나눔+간증 통합 폼
   showYoutubeUrl?: boolean;
   showRequestType?: boolean;
   showMissionCountry?: boolean;
@@ -23,10 +25,8 @@ type PostType = {
   showImageUpload?: boolean;
 };
 
-function getRedirectPath(category: PostCategory, postId: string, cellTopic?: string): string {
+function getRedirectPath(category: PostCategory, postId: string): string {
   switch (category) {
-    case "CONTENT":   return "/contents";
-    case "CELL":      return cellTopic ? `/cells/topics/${cellTopic}` : "/cells";
     case "MISSION":   return "/mission";
     case "REQUEST":   return "/cells/collab-requests";
     default:          return `/post/${postId}`;
@@ -50,11 +50,18 @@ export default function WritePageClient({
   const [lockMissionCountry, setLockMissionCountry] = useState(false);
 
   const POST_TYPES: PostType[] = [
-    { category: "GENERAL", label: t.write.postTypes.general.label, icon: "✏️", description: t.write.postTypes.general.description, placeholder: t.write.postTypes.general.placeholder, showImageUpload: true },
-    { category: "CELL", label: t.write.postTypes.cell.label, icon: "💬", description: t.write.postTypes.cell.description, placeholder: t.write.postTypes.cell.placeholder, showCellTopic: true, showImageUpload: true },
-    { category: "CONTENT", label: t.write.postTypes.content.label, icon: "🎬", description: t.write.postTypes.content.description, placeholder: t.write.postTypes.content.placeholder, showYoutubeUrl: true, showImageUpload: true },
+    {
+      category: "CELL",
+      label: "글쓰기",
+      icon: "✏️",
+      description: "일반, 셀 나눔, 간증을 자유롭게 나눠요",
+      placeholder: "오늘 나누고 싶은 이야기를 써주세요.",
+      isUnified: true,
+      showCellTopic: true,
+      showYoutubeUrl: true,
+      showImageUpload: true,
+    },
     { category: "MISSION", label: t.write.postTypes.mission.label, icon: "🌍", description: t.write.postTypes.mission.description, placeholder: t.write.postTypes.mission.placeholder, showMissionCountry: true, showYoutubeUrl: true, showImageUpload: true },
-    { category: "TESTIMONY", label: t.write.postTypes.testimony.label, icon: "✨", description: t.write.postTypes.testimony.description, placeholder: t.write.postTypes.testimony.placeholder },
     { category: "REQUEST", label: t.write.postTypes.request.label, icon: "📬", description: t.write.postTypes.request.description, placeholder: t.write.postTypes.request.placeholder, showRequestType: true },
   ];
 
@@ -324,12 +331,54 @@ function ComposeForm({
   const [subscribersOnly, setSubscribersOnly] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiFields, setAiFields] = useState<{ summary: string; description: string; tags: string[] } | null>(null);
+  // 통합 폼 내부 카테고리 (isUnified일 때만 사용)
+  const [unifiedCategory, setUnifiedCategory] = useState<"GENERAL" | "CELL" | "TESTIMONY">(() => {
+    if (postType.isUnified) {
+      if (initialTag) return "CELL"; // 태그 미리 지정된 경우 셀 나눔으로
+    }
+    return "GENERAL";
+  });
+  const actualCategory = postType.isUnified ? unifiedCategory : postType.category;
+
+  // 선교 국가 선택 시 자동으로 태그 필드에 반영
+  useEffect(() => {
+    if (!postType.showMissionCountry) return;
+    const allCountryTags = new Set(MISSION_COUNTRIES.flatMap((c) => c.tags));
+    const countryTag = missionCountry
+      ? MISSION_COUNTRIES.find((c) => c.code === missionCountry)?.tags[0]
+      : undefined;
+    setTags((prev) => {
+      const parts = prev.split(",").map((t) => t.trim()).filter((t) => t && !allCountryTags.has(t));
+      return countryTag ? [...parts, countryTag].join(", ") : parts.join(", ");
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [missionCountry, postType.showMissionCountry]);
 
   useEffect(() => {
     if (!postType.showYoutubeUrl) return;
-    const isYouTube = /youtube\.com|youtu\.be/i.test(youtubeUrl);
-    setYoutubeWarning(youtubeUrl.trim().length > 0 && !isYouTube);
+    const trimmed = youtubeUrl.trim();
+    setYoutubeWarning(trimmed.length > 0 && !parseYouTubeUrl(trimmed).isValid);
+    // Reset AI fields when URL changes
+    setAiFields(null);
   }, [youtubeUrl, postType.showYoutubeUrl]);
+
+  async function handleAiFill() {
+    if (!youtubeUrl.trim() || youtubeWarning) return;
+    setAiLoading(true);
+    setError(null);
+    const result = await generateYouTubeContentAction(youtubeUrl.trim());
+    setAiLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    const { summary, description, tags: aiTagList } = result.data;
+    setAiFields({ summary, description, tags: aiTagList });
+    if (!content.trim()) setContent(description);
+    if (!tags.trim()) setTags(aiTagList.join(", "));
+  }
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -346,7 +395,7 @@ function ComposeForm({
     setError(null);
 
     const extraTags: string[] = [];
-    if (postType.category === "MISSION") extraTags.push("mission");
+    if (actualCategory === "MISSION") extraTags.push("mission");
     if (requestType) extraTags.push(requestType);
     if (missionCountry) {
       const country = MISSION_COUNTRIES.find((c) => c.code === missionCountry);
@@ -361,17 +410,23 @@ function ComposeForm({
 
     const result = await composePostAction({
       content,
-      category: postType.category,
+      category: actualCategory,
       visibility: "MEMBERS",
       tags: allTags,
-      youtubeUrl: youtubeUrl.trim() || undefined,
+      youtubeUrl: (() => {
+        const parsed = parseYouTubeUrl(youtubeUrl);
+        return parsed.isValid ? parsed.normalizedUrl : (youtubeUrl.trim() || undefined);
+      })(),
       mediaUrls: imageUrl ? [imageUrl] : [],
       subscribersOnly,
+      aiSummary: aiFields?.summary ?? null,
+      aiDescription: aiFields?.description ?? null,
+      aiTags: aiFields?.tags,
     });
 
     setSubmitting(false);
     if (result.ok) {
-      router.push(getRedirectPath(postType.category, result.postId, cellTopicSlug || undefined));
+      router.push(getRedirectPath(postType.category, result.postId));
     } else {
       setError(result.error ?? t.common.error);
     }
@@ -390,6 +445,28 @@ function ComposeForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {postType.isUnified && (
+          <div className="flex gap-1.5 p-1 bg-theme-surface-2 rounded-xl">
+            {(["GENERAL", "CELL", "TESTIMONY"] as const).map((cat) => {
+              const labels = { GENERAL: "일반", CELL: "셀 나눔", TESTIMONY: "간증" };
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setUnifiedCategory(cat)}
+                  className={`flex-1 text-[13px] font-medium py-1.5 rounded-lg transition-all ${
+                    unifiedCategory === cat
+                      ? "bg-theme-surface text-theme-text shadow-sm"
+                      : "text-theme-muted hover:text-theme-text"
+                  }`}
+                >
+                  {labels[cat]}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {postType.showRequestType && (
           <div>
             <label className="block text-[12px] font-medium text-theme-muted mb-2">
@@ -441,7 +518,7 @@ function ComposeForm({
           </div>
         )}
 
-        {postType.showCellTopic && (
+        {postType.showCellTopic && (!postType.isUnified || unifiedCategory === "CELL") && (
           <div>
             <label className="block text-[12px] font-medium text-theme-muted mb-1">
               {t.write.cellTopicLabel}
@@ -479,6 +556,21 @@ function ComposeForm({
             />
             {youtubeWarning && (
               <p className="mt-1 text-[12px] text-theme-warning">{t.write.youtubeLinkWarning}</p>
+            )}
+            {youtubeUrl.trim() && !youtubeWarning && (
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAiFill}
+                  disabled={aiLoading}
+                  className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 disabled:opacity-50 transition-colors"
+                >
+                  {aiLoading ? "AI 분석 중…" : "✨ AI로 채우기"}
+                </button>
+                {aiFields && (
+                  <span className="text-[11px] text-theme-success">AI 내용이 적용되었어요</span>
+                )}
+              </div>
             )}
           </div>
         )}

@@ -229,7 +229,7 @@ export function PostCard({
     <Card
       role="article"
       data-post-id={post.id}
-      className={`transition-all duration-200 hover:bg-theme-surface ${isDailyPrayer && !isTestimony ? "border-theme-accent/30 bg-theme-surface-2/30" : ""}`}
+      className={`${isDailyPrayer && !isTestimony ? "border-theme-accent/30 bg-theme-surface-2/30" : ""}`}
     >
       <CardContent className="p-5 sm:p-6">
       {isTestimony && (

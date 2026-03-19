@@ -6,12 +6,29 @@ import Link from "next/link";
 export const metadata = { title: "셀 – Cellah" };
 export const dynamic = "force-dynamic";
 
+const COMMUNITY_BOARDS = [
+  {
+    href: "/cells/collab-requests",
+    icon: "🤝",
+    name: "협업 요청",
+    description: "촬영·편집·기획 등 제작 도움이 필요할 때 올리는 보드",
+    hashtags: ["#협업", "#제작"],
+  },
+  {
+    href: "/cells/counsel",
+    icon: "💡",
+    name: "고민상담",
+    description: "신학적 질문, 신앙 고민을 묻고 함께 답하는 게시판",
+    hashtags: ["#고민상담", "#신학"],
+  },
+];
+
 export default async function CellsPage() {
   return (
     <TimelineContainer>
       <h1 className="sr-only">셀</h1>
 
-      {/* ── 인트로 ─────────────────────────────────────────────── */}
+      {/* 인트로 */}
       <div className="px-1 pt-5 pb-4">
         <p className="text-[11px] font-semibold text-theme-muted uppercase tracking-widest mb-1">
           Cellah 셀
@@ -24,7 +41,7 @@ export default async function CellsPage() {
         </p>
       </div>
 
-      {/* ── 보드 ──────────────────────────────────────────────── */}
+      {/* 커뮤니티 보드 */}
       <section aria-labelledby="boards-heading" className="mb-8">
         <div className="flex items-center justify-between mb-3 px-1">
           <h3
@@ -35,25 +52,43 @@ export default async function CellsPage() {
           </h3>
         </div>
 
-        <div className="grid grid-cols-1 gap-2.5">
-          <Link
-            href="/cells/collab-requests"
-            className="flex items-center justify-between rounded-2xl border border-theme-border p-4 bg-theme-surface hover:bg-theme-surface-2 transition-all duration-200"
-          >
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-theme-text">협업 요청</p>
-              <p className="mt-1 text-[12px] text-theme-muted leading-snug">
-                촬영·편집·기획 등 제작 도움이 필요할 때 올리는 보드
+        <div className="grid grid-cols-2 gap-2.5">
+          {COMMUNITY_BOARDS.map((board) => (
+            <Link
+              key={board.href}
+              href={board.href}
+              className="flex flex-col gap-3 rounded-2xl border border-theme-border p-4 bg-theme-surface hover:bg-theme-surface-2 transition-all duration-200 group"
+            >
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="text-xl w-9 h-9 flex items-center justify-center rounded-xl bg-theme-surface-2 text-theme-text"
+                  aria-hidden
+                >
+                  {board.icon}
+                </span>
+                <span className="text-[15px] font-semibold text-theme-text transition-colors">
+                  {board.name}
+                </span>
+              </div>
+              <p className="text-[12px] text-theme-muted leading-snug">
+                {board.description}
               </p>
-            </div>
-            <span className="text-theme-muted shrink-0" aria-hidden>
-              ›
-            </span>
-          </Link>
+              <div className="flex flex-wrap gap-1">
+                {board.hashtags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-theme-surface-2 text-theme-muted border border-theme-border"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
-      {/* ── 토픽 게시판 ─────────────────────────────────────────── */}
+      {/* 토픽 게시판 */}
       <section aria-labelledby="topics-heading" className="mb-8">
         <div className="flex items-center justify-between mb-3 px-1">
           <h3

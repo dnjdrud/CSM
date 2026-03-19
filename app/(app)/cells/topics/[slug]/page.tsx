@@ -11,7 +11,6 @@ import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { findTopicBySlug, TOPIC_COLOR_CLASSES, CELL_TOPICS } from "@/lib/cells/topics";
 import { TopicFeedInfiniteList } from "./_components/TopicFeedInfiniteList";
-import { TopicContentSection } from "./_components/TopicContentSection";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +25,8 @@ export async function generateMetadata({
   return { title: `${topic.name} – Cellah 셀` };
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 30;
 
-/** Shared tag-filter: keeps posts that match at least one of the topic's tags. */
 function filterByTopicTags<T extends { tags: string[] }>(items: T[], topicTags: string[]): T[] {
   return items.filter((post) => {
     if (!Array.isArray(post.tags) || post.tags.length === 0) return false;
@@ -52,7 +50,7 @@ export default async function TopicFeedPage({
   const currentUser = await getCurrentUser();
   const uid = currentUser?.id ?? null;
 
-  // ── 두 피드를 동시에 fetch ──────────────────────────────────
+  // 셀 나눔 + 콘텐츠 통합 fetch
   const [cellPage, contentPage] = await Promise.all([
     listFeedPostsPage({
       currentUserId: uid,
@@ -64,7 +62,7 @@ export default async function TopicFeedPage({
     listFeedPostsPage({
       currentUserId: uid,
       scope: "ALL",
-      limit: 10, // 관련 콘텐츠는 최대 10개
+      limit: 20,
       cursor: null,
       includeCategories: ["CONTENT", "PHOTO"],
     }),
@@ -81,10 +79,12 @@ export default async function TopicFeedPage({
     return filterByTopicTags(moderated, topic.tags);
   }
 
-  const cellItems = filterVisible(cellPage.items);
-  const contentItems = filterVisible(contentPage.items);
+  // 두 피드 합산 후 최신순 정렬
+  const allItems = [
+    ...filterVisible(cellPage.items),
+    ...filterVisible(contentPage.items),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // write 버튼 URL — 셀 나눔 타입 + 이 토픽의 첫 번째 태그 미리 지정
   const writeUrl = `/write?category=CELL&tag=${encodeURIComponent(topic.tags[0] ?? "")}`;
 
   return (
@@ -99,7 +99,7 @@ export default async function TopicFeedPage({
         </Link>
       </div>
 
-      {/* ── 토픽 헤더 ──────────────────────────────────────────── */}
+      {/* 토픽 헤더 */}
       <div className={`rounded-2xl border p-4 mb-4 ${colors.border} ${colors.bg}`}>
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-3">
@@ -126,19 +126,14 @@ export default async function TopicFeedPage({
         </div>
       </div>
 
-      {/* ── Section A: 셀 나눔 ──────────────────────────────────── */}
-      <section aria-labelledby="cell-posts-heading">
+      {/* 통합 피드 */}
+      <section aria-labelledby="topic-feed-heading">
         <div className="flex items-center justify-between px-1 py-3 border-b border-theme-border/60 mb-0">
           <h2
-            id="cell-posts-heading"
-            className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
+            id="topic-feed-heading"
+            className="text-[13px] font-semibold text-theme-text"
           >
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-              <path d="M7 8h10" />
-              <path d="M7 12h7" />
-            </svg>
-            셀 나눔
+            나눔
           </h2>
           <Link
             href={writeUrl}
@@ -154,10 +149,9 @@ export default async function TopicFeedPage({
           </div>
         ) : (
           <TopicFeedInfiniteList
-            initialItems={cellItems}
+            initialItems={allItems}
             initialNextCursorStr={
-              // cursor pagination kicks in only when all fetched items passed the tag filter
-              cellItems.length < cellPage.items.length
+              allItems.length < cellPage.items.length + contentPage.items.length
                 ? null
                 : cellPage.nextCursor
                 ? encodeCursor(cellPage.nextCursor)
@@ -169,42 +163,7 @@ export default async function TopicFeedPage({
         )}
       </section>
 
-      {/* ── Section B: 관련 콘텐츠 ──────────────────────────────── */}
-      <section aria-labelledby="related-content-heading" className="mt-6 pt-6 border-t border-theme-border/40">
-        <div className="flex items-center justify-between px-1 mb-3">
-          <h2
-            id="related-content-heading"
-            className="text-[13px] font-semibold text-theme-text flex items-center gap-1.5"
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <path d="M7 5v14" />
-              <path d="M17 5v14" />
-              <path d="M3 9h4" />
-              <path d="M17 9h4" />
-              <path d="M3 15h4" />
-              <path d="M17 15h4" />
-            </svg>
-            관련 콘텐츠
-          </h2>
-          <Link
-            href="/contents"
-            className="text-[12px] text-theme-muted hover:text-theme-text transition-colors"
-          >
-            전체 보기 →
-          </Link>
-        </div>
-
-        {contentPage.error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            콘텐츠를 불러올 수 없습니다. {contentPage.error}
-          </div>
-        ) : (
-          <TopicContentSection items={contentItems} topic={topic} />
-        )}
-      </section>
-
-      {/* ── 다른 토픽 둘러보기 ──────────────────────────────────── */}
+      {/* 다른 토픽 */}
       <section aria-labelledby="other-topics-heading" className="mt-8 pt-6 border-t border-theme-border/40">
         <h2
           id="other-topics-heading"

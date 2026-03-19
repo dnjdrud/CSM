@@ -63,6 +63,6 @@ export async function acceptAnswerAction(formData: FormData): Promise<void> {
   const answerId = formData.get("answerId")?.toString();
   const questionId = formData.get("questionId")?.toString();
   if (!answerId || !questionId) return;
-  await acceptTheologyAnswer(answerId, questionId, user.id);
+  await acceptTheologyAnswer(answerId, questionId);
   revalidatePath(`/theology/${questionId}`);
 }

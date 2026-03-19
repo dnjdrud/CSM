@@ -175,7 +175,7 @@ const ko: Translations = {
   write: {
     typePickerTitle: "무엇을 나누실 건가요?", typePickerDesc: "게시글 종류를 선택하세요", recommended: "추천", back: "← 뒤로",
     requestTypeLabel: "요청 유형", requestTypeRequired: "요청 유형을 선택해주세요.",
-    missionCountryLabel: "선교 국가", missionCountryDefault: "국가 선택 (선택사항)",
+    missionCountryLabel: "선교 국가", missionCountryDefault: "국가 선택",
     cellTopicLabel: "토픽 연결",
     youtubeLinkLabel: "유튜브 링크", youtubeLinkWarning: "유튜브 링크가 아닐 수 있어요. 계속 진행하셔도 됩니다.",
     titlePlaceholder: "제목 (선택사항)",
@@ -300,7 +300,7 @@ const en: Translations = {
   write: {
     typePickerTitle: "What would you like to share?", typePickerDesc: "Select a post type", recommended: "Recommended", back: "← Back",
     requestTypeLabel: "Request type", requestTypeRequired: "Please select a request type.",
-    missionCountryLabel: "Mission country", missionCountryDefault: "Select country (optional)",
+    missionCountryLabel: "Mission country", missionCountryDefault: "Select country",
     cellTopicLabel: "Connect topic",
     youtubeLinkLabel: "YouTube link", youtubeLinkWarning: "This may not be a YouTube link. You can proceed.",
     titlePlaceholder: "Title (optional)",

@@ -80,6 +80,50 @@ export interface Post {
   mediaUrls?: string[];
   /** If true, only active paid subscribers can view the full content. */
   subscribersOnly?: boolean;
+  // ── AI-generated fields (all optional; populated async after publish) ──
+  /** Extracted YouTube video ID (from youtube_url). */
+  youtubeId?: string | null;
+  /** One-paragraph AI summary of the video/post. */
+  aiSummary?: string | null;
+  /** Longer AI-generated description for discovery/SEO. */
+  aiDescription?: string | null;
+  /** AI-suggested tags (merged with user tags at display time). */
+  aiTags?: string[];
+  /** True once any AI enrichment has been written to this post. */
+  hasAiGenerated?: boolean;
+}
+
+/** A recommended clip segment within a video post. */
+export interface PostClipRecommendation {
+  id: string;
+  postId: string;
+  startTimeSeconds: number;
+  endTimeSeconds: number;
+  summary?: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export type UserInteractionType = "view" | "like" | "bookmark" | "subscribe";
+
+/** Raw user interaction event (used for recommendation signal). */
+export interface UserInteraction {
+  id: string;
+  userId: string;
+  postId: string;
+  interactionType: UserInteractionType;
+  /** Seconds of video watched; null for non-video interactions. */
+  watchTimeSeconds?: number | null;
+  createdAt: string;
+}
+
+/** Per-user tag interest weight; decays and updates on interaction. */
+export interface UserInterestTag {
+  userId: string;
+  tag: string;
+  /** 0–∞ float; higher = stronger interest. */
+  weight: number;
+  updatedAt: string;
 }
 
 export interface Comment {
