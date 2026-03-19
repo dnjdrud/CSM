@@ -9,7 +9,6 @@ import { RADIUS, BORDER, SHADOW, PADDING, TRANSITION_ALL } from "@/lib/design/to
 const cardBase = [
   "rounded-xl border border-theme-border bg-theme-surface",
   TRANSITION_ALL,
-  "hover:bg-theme-surface-2",
   "focus-within:ring-2 focus-within:ring-theme-primary/10 focus-within:ring-offset-2 focus-within:border-theme-border-2",
 ].join(" ");
 

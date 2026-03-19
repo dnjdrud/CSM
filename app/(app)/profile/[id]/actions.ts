@@ -31,7 +31,6 @@ export async function loadMoreProfilePostsAction(
     offset,
   });
   const filtered = items
-    .filter((p) => p.category !== "TESTIMONY")
     .filter((p) => canViewPost(p, currentUser, isFollowing));
   return { items: filtered.slice(0, POSTS_PAGE_SIZE), hasMore: hasMore || filtered.length > POSTS_PAGE_SIZE };
 }

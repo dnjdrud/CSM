@@ -42,7 +42,6 @@ export default async function ProfilePostsPage({
   });
 
   const posts = allItems
-    .filter((p) => p.category !== "TESTIMONY")
     .filter((p) => !blocked && !muted)
     .filter((p) => canViewPost(p, currentUser, isFollowing))
     .slice(0, INITIAL_LIMIT);
