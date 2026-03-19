@@ -1,18 +1,32 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { HeaderWrapper } from "@/common";
 import { ToastProvider } from "@/components/ui/Toast";
 import { LanguageProvider } from "@/lib/i18n";
 import { LOCALE_COOKIE, type Locale } from "@/lib/i18n/translations";
-import Link from "next/link";
 import { BottomNavWrapper } from "@/components/layout/BottomNavWrapper";
 import { FooterLinks } from "@/components/layout/FooterLinks";
+import { PwaRegister } from "./_components/PwaRegister";
 
 export const metadata: Metadata = {
   title: "Cellah — Haven for Digital Exodus",
   description:
     "A minimal space for contemplation and connection. No noise, no algorithms. Selah's rest in the digital age.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Cellah",
+  },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#D4A84B",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default async function RootLayout({
@@ -45,6 +59,7 @@ export default async function RootLayout({
             <FooterLinks />
           </LanguageProvider>
         </ToastProvider>
+        <PwaRegister />
       </body>
     </html>
   );
