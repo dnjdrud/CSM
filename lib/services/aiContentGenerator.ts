@@ -1,11 +1,11 @@
 /**
- * Server-side AI content generator via Anthropic Claude API.
- * Requires: ANTHROPIC_API_KEY environment variable.
+ * Server-side AI content generator via OpenAI API.
+ * Requires: OPENAI_API_KEY environment variable.
  * Never import from client components.
  */
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-haiku-4-5-20251001";
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const MODEL = "gpt-4o-mini";
 
 export interface GeneratedContent {
   summary: string;
@@ -58,22 +58,21 @@ ${context.slice(0, 6000)}
 
 // ── Anthropic API call ─────────────────────────────────────────────────────
 
-interface AnthropicResponse {
-  content?: Array<{ type: string; text?: string }>;
+interface OpenAIResponse {
+  choices?: Array<{ message?: { content?: string } }>;
   error?: { message?: string };
 }
 
-async function callClaude(prompt: string): Promise<{ text: string } | { error: string }> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { error: "ANTHROPIC_API_KEY not configured" };
+async function callOpenAI(prompt: string): Promise<{ text: string } | { error: string }> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return { error: "OPENAI_API_KEY not configured" };
 
   let res: Response;
   try {
-    res = await fetch(ANTHROPIC_API_URL, {
+    res = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({
@@ -86,19 +85,19 @@ async function callClaude(prompt: string): Promise<{ text: string } | { error: s
     return { error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
   }
 
-  let body: AnthropicResponse;
+  let body: OpenAIResponse;
   try {
-    body = await res.json() as AnthropicResponse;
+    body = await res.json() as OpenAIResponse;
   } catch {
-    return { error: `Non-JSON response from Claude (status ${res.status})` };
+    return { error: `Non-JSON response from OpenAI (status ${res.status})` };
   }
 
   if (!res.ok) {
-    return { error: body.error?.message ?? `Claude API error ${res.status}` };
+    return { error: body.error?.message ?? `OpenAI API error ${res.status}` };
   }
 
-  const text = body.content?.find((c) => c.type === "text")?.text ?? "";
-  if (!text) return { error: "Empty response from Claude" };
+  const text = body.choices?.[0]?.message?.content ?? "";
+  if (!text) return { error: "Empty response from OpenAI" };
   return { text };
 }
 
@@ -146,7 +145,7 @@ export async function generateContent(
   input: ContentGeneratorInput
 ): Promise<GenerateContentResult> {
   const prompt = buildPrompt(input.source, input.context, input.videoTitle);
-  const result = await callClaude(prompt);
+  const result = await callOpenAI(prompt);
 
   if ("error" in result) return { ok: false, error: result.error };
 
