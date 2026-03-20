@@ -103,6 +103,28 @@ export async function getAvatarUploadUrlAction(
 }
 
 /**
+ * Generates a signed read URL for a video stored in post-videos bucket.
+ * Extracts the storage path from the public URL and creates a 1-hour signed URL.
+ * Use this when the bucket is private (no public read policy).
+ */
+export async function getVideoSignedReadUrlAction(
+  publicUrl: string,
+): Promise<string | null> {
+  // Extract path after /public/post-videos/
+  const marker = "/object/public/post-videos/";
+  const idx = publicUrl.indexOf(marker);
+  if (idx === -1) return null;
+  const path = publicUrl.slice(idx + marker.length).split("?")[0];
+
+  const { data, error } = await supabaseAdmin.storage
+    .from("post-videos")
+    .createSignedUrl(path, 3600);
+
+  if (error || !data) return null;
+  return data.signedUrl;
+}
+
+/**
  * Saves the uploaded avatar URL to the users table and revalidates profile pages.
  * Called after the client has finished the direct PUT upload.
  */

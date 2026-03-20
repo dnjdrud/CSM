@@ -20,6 +20,7 @@ import {
   getCreatorSubscriptionInfo,
 } from "@/lib/data/subscriptionRepository";
 import type { PostCategory } from "@/lib/domain/types";
+import { getVideoSignedReadUrlAction } from "@/app/(app)/write/getUploadUrlAction";
 
 export const dynamic = "force-dynamic";
 
@@ -134,8 +135,19 @@ export default async function ProfilePage({
   const muted = currentUserId ? isMuted(currentUserId, id) : false;
   const following = currentUserId ? viewerFollowingIds.includes(user.id) : false;
 
-  const shortsPosts = posts.filter((p) => p.category === "SHORTS");
   const normalPosts = posts.filter((p) => p.category !== "SHORTS");
+
+  const rawShortsPosts = posts.filter((p) => p.category === "SHORTS");
+  const shortsPosts = activeTab === "shorts"
+    ? await Promise.all(
+        rawShortsPosts.map(async (p) => {
+          const signedUrls = await Promise.all(
+            (p.mediaUrls ?? []).map((url) => getVideoSignedReadUrlAction(url)),
+          );
+          return { ...p, mediaUrls: signedUrls.map((s, i) => s ?? p.mediaUrls![i]) };
+        }),
+      )
+    : rawShortsPosts;
 
   return (
     <ProfileShell
