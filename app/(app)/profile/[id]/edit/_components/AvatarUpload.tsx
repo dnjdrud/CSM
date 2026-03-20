@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { uploadAvatarAction } from "../../actions";
+import { getAvatarUploadUrlAction, saveAvatarUrlAction } from "@/app/(app)/write/getUploadUrlAction";
 
 type Props = {
   currentAvatarUrl?: string | null;
@@ -34,21 +34,43 @@ export function AvatarUpload({ currentAvatarUrl, name }: Props) {
 
     const previewUrl = URL.createObjectURL(file);
     setPreview(previewUrl);
-
-    // Auto-upload immediately
     setPending(true);
-    const fd = new FormData();
-    fd.append("avatar", file);
-    const result = await uploadAvatarAction(fd);
+
+    // 1. Server issues signed URL — no file bytes sent to server
+    const urlResult = await getAvatarUploadUrlAction(file.type, file.size);
+    if ("error" in urlResult) {
+      setError(urlResult.error);
+      setPreview(null);
+      setPending(false);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
+    // 2. Browser PUTs file directly to Supabase Storage
+    const res = await fetch(urlResult.signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+
+    if (!res.ok) {
+      setError("업로드 실패. 다시 시도해주세요.");
+      setPreview(null);
+      setPending(false);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
+    // 3. Server saves URL to DB and revalidates
+    const saveResult = await saveAvatarUrlAction(urlResult.publicUrl);
     setPending(false);
 
-    if (result.ok) {
-      setSaved(true);
-    } else {
-      setError(result.error ?? "업로드 실패");
-      setPreview(null);
-      if (inputRef.current) inputRef.current.value = "";
+    if (!saveResult.ok) {
+      setError(saveResult.error ?? "저장 실패");
+      return;
     }
+
+    setSaved(true);
   }
 
   return (

@@ -65,7 +65,7 @@ export default function WritePageClient({
     },
     { category: "MISSION", label: t.write.postTypes.mission.label, icon: "🌍", description: t.write.postTypes.mission.description, placeholder: t.write.postTypes.mission.placeholder, showMissionCountry: true, showYoutubeUrl: true, showImageUpload: true },
     { category: "REQUEST", label: t.write.postTypes.request.label, icon: "📬", description: t.write.postTypes.request.description, placeholder: t.write.postTypes.request.placeholder, showRequestType: true },
-    { category: "SHORTS", label: "숏츠", icon: "🎬", description: "60초 이내의 짧은 영상을 직접 업로드해요", placeholder: "영상에 대한 간단한 설명을 적어주세요.", showVideoUpload: true },
+    { category: "SHORTS", label: "숏츠", icon: "🎬", description: "30초 이내의 짧은 영상을 직접 업로드해요", placeholder: "영상에 대한 간단한 설명을 적어주세요.", showVideoUpload: true },
   ];
 
   const REQUEST_TYPE_OPTIONS = [
@@ -331,13 +331,13 @@ function VideoUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
     const tooLong = await new Promise<boolean>((resolve) => {
       const v = document.createElement("video");
       v.preload = "metadata";
-      v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); resolve(v.duration > 60); };
+      v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); resolve(v.duration > 30); };
       v.onerror = () => resolve(false);
       v.src = previewUrl;
     });
     if (tooLong) {
       URL.revokeObjectURL(previewUrl);
-      setState({ status: "error", message: "영상은 60초 이하여야 합니다." });
+      setState({ status: "error", message: "영상은 30초 이하여야 합니다." });
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
@@ -393,7 +393,7 @@ function VideoUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
   return (
     <div>
       <label className="block text-[12px] font-medium text-theme-muted mb-1">
-        영상 첨부 <span className="font-normal">(MP4·MOV·WebM, 60초 이하, 200MB 이하)</span>
+        영상 첨부 <span className="font-normal">(MP4·MOV·WebM, 30초 이하, 200MB 이하)</span>
       </label>
 
       {state.status === "idle" && (

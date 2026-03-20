@@ -40,7 +40,7 @@ export function ShortsFeed({ posts }: Props) {
         <span className="text-4xl" aria-hidden>🎬</span>
         <p className="text-[15px] font-medium">숏츠가 없습니다</p>
         <p className="text-[13px] text-white/60 text-center px-8 leading-relaxed">
-          60초 이내의 짧은 영상을 업로드하면 여기에 나타납니다.
+          30초 이내의 짧은 영상을 업로드하면 여기에 나타납니다.
         </p>
         <a
           href="/write?category=SHORTS"
