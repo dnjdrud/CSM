@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/lib/auth/session";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
@@ -32,14 +32,13 @@ export async function getImageUploadUrlAction(
   const ext = filename.split(".").pop()?.toLowerCase() ?? "jpg";
   const path = `${session.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseAdmin.storage
     .from("post-images")
     .createSignedUploadUrl(path);
 
   if (error || !data) return { error: `업로드 URL 생성 실패: ${error?.message}` };
 
-  const { data: pub } = supabase.storage.from("post-images").getPublicUrl(path);
+  const { data: pub } = supabaseAdmin.storage.from("post-images").getPublicUrl(path);
   return { signedUrl: data.signedUrl, publicUrl: pub.publicUrl };
 }
 
@@ -63,13 +62,12 @@ export async function getVideoUploadUrlAction(
   const ext = filename.split(".").pop()?.toLowerCase() ?? "mp4";
   const path = `${session.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseAdmin.storage
     .from("post-videos")
     .createSignedUploadUrl(path);
 
   if (error || !data) return { error: `업로드 URL 생성 실패: ${error?.message}` };
 
-  const { data: pub } = supabase.storage.from("post-videos").getPublicUrl(path);
+  const { data: pub } = supabaseAdmin.storage.from("post-videos").getPublicUrl(path);
   return { signedUrl: data.signedUrl, publicUrl: pub.publicUrl };
 }
