@@ -4,8 +4,7 @@
  * Never import from client components.
  */
 
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-4o-mini";
+import { callOpenAI as _callOpenAI } from "@/lib/ai/openai";
 
 export interface GeneratedContent {
   summary: string;
@@ -58,47 +57,8 @@ ${context.slice(0, 6000)}
 
 // ── Anthropic API call ─────────────────────────────────────────────────────
 
-interface OpenAIResponse {
-  choices?: Array<{ message?: { content?: string } }>;
-  error?: { message?: string };
-}
-
 async function callOpenAI(prompt: string): Promise<{ text: string } | { error: string }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return { error: "OPENAI_API_KEY not configured" };
-
-  let res: Response;
-  try {
-    res = await fetch(OPENAI_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-  } catch (e) {
-    return { error: `Network error: ${e instanceof Error ? e.message : String(e)}` };
-  }
-
-  let body: OpenAIResponse;
-  try {
-    body = await res.json() as OpenAIResponse;
-  } catch {
-    return { error: `Non-JSON response from OpenAI (status ${res.status})` };
-  }
-
-  if (!res.ok) {
-    return { error: body.error?.message ?? `OpenAI API error ${res.status}` };
-  }
-
-  const text = body.choices?.[0]?.message?.content ?? "";
-  if (!text) return { error: "Empty response from OpenAI" };
-  return { text };
+  return _callOpenAI([{ role: "user", content: prompt }]);
 }
 
 // ── JSON parsing ───────────────────────────────────────────────────────────

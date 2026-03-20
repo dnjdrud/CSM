@@ -9,6 +9,8 @@ import {
 import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { listMySubscriptions } from "@/lib/data/subscriptionRepository";
+import { getUserInteractions, getUserInterestTags } from "@/lib/data/supabaseRepository";
+import { rankPosts, type UserSignals } from "@/lib/recommendation/scorer";
 import { ContentsInfiniteList } from "./_components/ContentsInfiniteList";
 import { ContentsBottomSearchBar } from "./_components/ContentsBottomSearchBar";
 import { IconFeather } from "@/components/ui/Icon";
@@ -60,15 +62,19 @@ async function ContentTabContent({
 }: {
   currentUser: Awaited<ReturnType<typeof getCurrentUser>>;
 }) {
-  const [firstPage, mySubscriptions] = await Promise.all([
+  const CANDIDATE_SIZE = PAGE_SIZE * 3; // fetch more to score before trimming
+
+  const [firstPage, mySubscriptions, interactions, interestTags] = await Promise.all([
     listFeedPostsPage({
       currentUserId: currentUser?.id ?? null,
       scope: "ALL",
-      limit: PAGE_SIZE,
+      limit: CANDIDATE_SIZE,
       cursor: null,
       requireYoutubeUrl: true,
     }),
     currentUser ? listMySubscriptions(currentUser.id) : Promise.resolve([]),
+    currentUser ? getUserInteractions(currentUser.id, 200) : Promise.resolve([]),
+    currentUser ? getUserInterestTags(currentUser.id) : Promise.resolve([]),
   ]);
 
   const subscribedCreatorIds = mySubscriptions.map((s) => s.creatorId);
@@ -80,6 +86,31 @@ async function ContentTabContent({
         return canViewPost(post, currentUser, () => false);
       })
     : firstPage.items;
+
+  // Build signals and rank — falls back to recency if no signal data
+  const signals: UserSignals = {
+    interestTags: new Map(interestTags.map((t) => [t.tag, t.weight])),
+    likedPostIds: new Set(
+      interactions.filter((i) => i.interactionType === "like").map((i) => i.postId)
+    ),
+    bookmarkedAuthorIds: new Set(
+      interactions
+        .filter((i) => i.interactionType === "bookmark")
+        .map((i) => visibleItems.find((p) => p.id === i.postId)?.authorId)
+        .filter((id): id is string => !!id)
+    ),
+    watchedAuthorIds: new Set(
+      interactions
+        .filter((i) => i.interactionType === "view" && (i.watchTimeSeconds ?? 0) > 60)
+        .map((i) => visibleItems.find((p) => p.id === i.postId)?.authorId)
+        .filter((id): id is string => !!id)
+    ),
+    subscribedCreatorIds: new Set(subscribedCreatorIds),
+  };
+
+  const rankedItems = currentUser
+    ? rankPosts(visibleItems, signals).slice(0, PAGE_SIZE)
+    : visibleItems.slice(0, PAGE_SIZE);
 
   if (firstPage.error) {
     return (
@@ -105,7 +136,7 @@ async function ContentTabContent({
       </div>
 
       <ContentsInfiniteList
-        initialItems={visibleItems}
+        initialItems={rankedItems}
         initialNextCursorStr={
           firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null
         }

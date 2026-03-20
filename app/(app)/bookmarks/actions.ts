@@ -7,6 +7,7 @@ import { toggleReaction } from "@/backend/features/posts";
 import { addComment, listCommentsByPostId } from "@/backend/features/comments";
 import { deletePost, updatePost } from "@/backend/features/posts";
 import type { ReactionType } from "@/lib/domain/types";
+import { recordUserInteraction } from "@/lib/data/supabaseRepository";
 
 export async function toggleBookmarkAction(postId: string): Promise<{ ok: boolean; bookmarked: boolean }> {
   const session = await getSession();
@@ -14,6 +15,7 @@ export async function toggleBookmarkAction(postId: string): Promise<{ ok: boolea
   try {
     const { bookmarked } = await toggleBookmark(session.userId, postId);
     revalidatePath("/bookmarks");
+    if (bookmarked) recordUserInteraction(session.userId, postId, "bookmark").catch(() => {});
     return { ok: true, bookmarked };
   } catch {
     return { ok: false, bookmarked: false };
@@ -26,6 +28,7 @@ export async function toggleReactionAction(postId: string, type: ReactionType): 
   try {
     const { reacted } = await toggleReaction(postId, session.userId, type);
     revalidatePath("/bookmarks");
+    if (reacted) recordUserInteraction(session.userId, postId, "like").catch(() => {});
     return { ok: true, reacted };
   } catch {
     return { ok: false };

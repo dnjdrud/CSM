@@ -9,6 +9,7 @@ import { listFollowingIds, isBlocked, isMuted, toggleFollow } from "@/backend/fe
 import { addComment, listCommentsByPostId } from "@/backend/features/comments";
 import { toggleBookmark } from "@/backend/features/bookmarks";
 import { getReactors } from "@/lib/data/repository";
+import { recordUserInteraction } from "@/lib/data/supabaseRepository";
 import type { ReactionType, PostWithAuthor, User } from "@/lib/domain/types";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
 import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
@@ -21,6 +22,7 @@ export async function toggleReactionAction(postId: string, type: ReactionType): 
     const { reacted } = await toggleReaction(postId, session.userId, type);
     revalidatePath("/feed");
     revalidatePath(`/post/${postId}`);
+    if (reacted) recordUserInteraction(session.userId, postId, "like").catch(() => {});
     return { ok: true, reacted };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Something went wrong" };
@@ -34,6 +36,7 @@ export async function toggleBookmarkAction(postId: string): Promise<{ ok: boolea
   try {
     const { bookmarked } = await toggleBookmark(session.userId, postId);
     revalidatePath("/bookmarks");
+    if (bookmarked) recordUserInteraction(session.userId, postId, "bookmark").catch(() => {});
     return { ok: true, bookmarked };
   } catch (e) {
     return { ok: false, bookmarked: false };

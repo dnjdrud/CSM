@@ -155,6 +155,38 @@ export async function getCommentByIdAction(commentId: string) {
   return getCommentById(commentId);
 }
 
+export async function getClipRecommendationsAction(postId: string) {
+  const { getClipRecommendations } = await import("@/lib/data/supabaseRepository");
+  return getClipRecommendations(postId);
+}
+
+/**
+ * Generate clip recommendations for a YouTube post.
+ * Fetches transcript internally — caller only needs postId.
+ */
+export async function generateClipsForPostAction(
+  postId: string
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "Not logged in" };
+
+  const { getPostById } = await import("@/lib/data/repository");
+  const post = await getPostById(postId);
+  if (!post) return { ok: false, error: "Post not found" };
+  if (!post.youtubeUrl) return { ok: false, error: "이 게시글에는 YouTube 영상이 없습니다" };
+
+  const { parseYouTubeUrl } = await import("@/lib/utils/youtube");
+  const parsed = parseYouTubeUrl(post.youtubeUrl);
+  if (!parsed.isValid) return { ok: false, error: "유효하지 않은 YouTube URL입니다" };
+
+  const { fetchYouTubeTranscript } = await import("@/lib/services/youtubeTranscript");
+  const transcriptResult = await fetchYouTubeTranscript(parsed.videoId);
+  if (!transcriptResult.ok) return { ok: false, error: `자막을 가져올 수 없습니다: ${transcriptResult.error}` };
+
+  const { generateClipRecommendationsAction } = await import("@/app/actions/generateClipRecommendations");
+  return generateClipRecommendationsAction(postId, transcriptResult.transcriptText);
+}
+
 export async function updatePostAction(
   postId: string,
   content: string,
