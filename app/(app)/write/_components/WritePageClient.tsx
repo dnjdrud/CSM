@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { composePostAction, generateYouTubeContentAction } from "../actions";
-import { uploadPostImageAction } from "../uploadImageAction";
-import { uploadPostVideoAction } from "../uploadVideoAction";
+import { getImageUploadUrlAction, getVideoUploadUrlAction } from "../getUploadUrlAction";
 import type { PostCategory } from "@/lib/domain/types";
 import { MISSION_COUNTRIES } from "@/lib/mission/countries";
 import { CELL_TOPICS } from "@/lib/cells/topics";
@@ -204,37 +203,42 @@ function ImageUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
     setState({ status: "uploading", previewUrl });
     onUrl(null);
     onUploading?.(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const result = await uploadPostImageAction(fd);
+    await uploadImageDirect(file, previewUrl);
     onUploading?.(false);
-    if ("error" in result) {
-      setState({ status: "error", previewUrl, message: result.error });
-      onUrl(null);
-    } else {
-      setState({ status: "done", previewUrl, url: result.url });
-      onUrl(result.url);
-    }
   }
 
   async function handleRetry() {
     if (state.status !== "error" || !("previewUrl" in state) || !state.previewUrl) return;
+    const file = inputRef.current?.files?.[0];
+    if (!file) return;
     const previewUrl = state.previewUrl;
     setState({ status: "uploading", previewUrl });
     onUploading?.(true);
-    const file = inputRef.current?.files?.[0];
-    if (!file) return;
-    const fd = new FormData();
-    fd.append("file", file);
-    const result = await uploadPostImageAction(fd);
+    await uploadImageDirect(file, previewUrl);
     onUploading?.(false);
-    if ("error" in result) {
-      setState({ status: "error", previewUrl, message: result.error });
+  }
+
+  async function uploadImageDirect(file: File, previewUrl: string) {
+    // 1. Server issues a signed URL — no file bytes sent to server
+    const urlResult = await getImageUploadUrlAction(file.name, file.type, file.size);
+    if ("error" in urlResult) {
+      setState({ status: "error", previewUrl, message: urlResult.error });
       onUrl(null);
-    } else {
-      setState({ status: "done", previewUrl, url: result.url });
-      onUrl(result.url);
+      return;
     }
+    // 2. Browser PUTs file directly to Supabase Storage
+    const res = await fetch(urlResult.signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+    if (!res.ok) {
+      setState({ status: "error", previewUrl, message: "업로드 실패. 다시 시도해주세요." });
+      onUrl(null);
+      return;
+    }
+    setState({ status: "done", previewUrl, url: urlResult.publicUrl });
+    onUrl(urlResult.publicUrl);
   }
 
   function handleRemove() {
@@ -301,12 +305,13 @@ function ImageUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
 type VideoUploadState =
   | { status: "idle" }
   | { status: "error"; message: string }
-  | { status: "uploading"; previewUrl: string }
+  | { status: "uploading"; previewUrl: string; progress: number }
   | { status: "done"; previewUrl: string; url: string };
 
 function VideoUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => void; onUploading?: (v: boolean) => void }) {
   const [state, setState] = useState<VideoUploadState>({ status: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
+  const xhrRef = useRef<XMLHttpRequest | null>(null);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -320,17 +325,15 @@ function VideoUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
       setState({ status: "error", message: "파일 크기는 200MB 이하여야 합니다." });
       return;
     }
-    // Client-side duration check via loadedmetadata
+
+    // Client-side duration check
     const previewUrl = URL.createObjectURL(file);
     const tooLong = await new Promise<boolean>((resolve) => {
-      const video = document.createElement("video");
-      video.preload = "metadata";
-      video.onloadedmetadata = () => {
-        URL.revokeObjectURL(video.src);
-        resolve(video.duration > 60);
-      };
-      video.onerror = () => { resolve(false); };
-      video.src = previewUrl;
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); resolve(v.duration > 60); };
+      v.onerror = () => resolve(false);
+      v.src = previewUrl;
     });
     if (tooLong) {
       URL.revokeObjectURL(previewUrl);
@@ -338,23 +341,49 @@ function VideoUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
-    setState({ status: "uploading", previewUrl });
+
+    setState({ status: "uploading", previewUrl, progress: 0 });
     onUrl(null);
     onUploading?.(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const result = await uploadPostVideoAction(fd);
-    onUploading?.(false);
-    if ("error" in result) {
-      setState({ status: "error", message: result.error });
+
+    // 1. Server issues signed URL only — no file bytes to server
+    const urlResult = await getVideoUploadUrlAction(file.name, file.type, file.size);
+    if ("error" in urlResult) {
+      setState({ status: "error", message: urlResult.error });
       onUrl(null);
-    } else {
-      setState({ status: "done", previewUrl, url: result.url });
-      onUrl(result.url);
+      onUploading?.(false);
+      return;
     }
+
+    // 2. XHR PUT directly to Supabase Storage for progress tracking
+    const ok = await new Promise<boolean>((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhrRef.current = xhr;
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) {
+          const pct = Math.round((ev.loaded / ev.total) * 100);
+          setState({ status: "uploading", previewUrl, progress: pct });
+        }
+      };
+      xhr.onload = () => resolve(xhr.status >= 200 && xhr.status < 300);
+      xhr.onerror = () => resolve(false);
+      xhr.open("PUT", urlResult.signedUrl);
+      xhr.setRequestHeader("Content-Type", file.type);
+      xhr.send(file);
+    });
+
+    onUploading?.(false);
+    if (!ok) {
+      setState({ status: "error", message: "업로드 실패. 다시 시도해주세요." });
+      onUrl(null);
+      return;
+    }
+    setState({ status: "done", previewUrl, url: urlResult.publicUrl });
+    onUrl(urlResult.publicUrl);
   }
 
   function handleRemove() {
+    xhrRef.current?.abort();
     if ("previewUrl" in state) URL.revokeObjectURL(state.previewUrl);
     setState({ status: "idle" });
     onUrl(null);
@@ -379,8 +408,14 @@ function VideoUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
         <div className="relative rounded-xl overflow-hidden border border-theme-border bg-black">
           <video src={state.previewUrl} className="w-full aspect-video object-contain" muted playsInline />
           {state.status === "uploading" && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <p className="text-white text-[13px] font-medium">업로드 중...</p>
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
+              <p className="text-white text-[13px] font-medium">업로드 중... {state.progress}%</p>
+              <div className="w-2/3 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-white rounded-full transition-all duration-200"
+                  style={{ width: `${state.progress}%` }}
+                />
+              </div>
             </div>
           )}
           {state.status === "done" && (
