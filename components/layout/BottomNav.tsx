@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useT } from "@/lib/i18n";
 
-type TabKey = "home" | "cells" | "mission" | "contents" | "profile";
+type TabKey = "home" | "cells" | "contents" | "shorts" | "profile";
 
 type Tab = {
   key: TabKey;
@@ -21,7 +21,6 @@ function HomeIcon({ className }: { className?: string }) {
   );
 }
 
-
 function ContentsIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -31,12 +30,11 @@ function ContentsIcon({ className }: { className?: string }) {
   );
 }
 
-function MissionIcon({ className }: { className?: string }) {
+function ShortsIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
+      <path d="M15.59 3.41A2 2 0 0 1 17 5v14a2 2 0 0 1-3.22 1.59L6 14.41A2 2 0 0 1 6 9.59z" />
+      <path d="M5 5v14" />
     </svg>
   );
 }
@@ -65,15 +63,15 @@ const BASE_TABS: Tab[] = [
   { key: "home",     href: "/home",     Icon: HomeIcon },
   { key: "cells",    href: "/cells",    Icon: CellsIcon },
   { key: "contents", href: "/contents", Icon: ContentsIcon },
-  { key: "mission",  href: "/mission",  Icon: MissionIcon },
+  { key: "shorts",   href: "/contents/clips",   Icon: ShortsIcon },
   { key: "profile",  href: "/me",       Icon: ProfileIcon },
 ];
 
 function isActive(tab: Tab, pathname: string): boolean {
   if (tab.key === "home") return pathname === "/home" || pathname === "/feed";
   if (tab.key === "cells") return pathname.startsWith("/cells");
-  if (tab.key === "mission") return pathname.startsWith("/mission") || pathname.startsWith("/missions") || pathname.startsWith("/missionary");
-  if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology");
+  if (tab.key === "shorts") return pathname.startsWith("/contents/clips") || pathname.startsWith("/shorts");
+  if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology") || pathname.startsWith("/mission");
   if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
   return false;
 }
@@ -90,7 +88,7 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
     home: t.nav.home,
     cells: t.nav.cells,
     contents: t.nav.contents,
-    mission: t.nav.mission,
+    shorts: t.nav.shorts,
     profile: t.nav.profile,
   };
 

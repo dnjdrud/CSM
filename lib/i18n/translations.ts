@@ -13,7 +13,7 @@ export interface Translations {
     settings: string; logout: string; login: string; search: string; langSwitch: string; profile: string; guide: string;
   };
   footer: { privacy: string; terms: string; contact: string };
-  nav: { home: string; cells: string; contents: string; mission: string; profile: string };
+  nav: { home: string; cells: string; contents: string; shorts: string; profile: string };
   comments: {
     title: string; prayerTitle: string; prayerNote: string; placeholder: string; post: string;
   };
@@ -120,7 +120,7 @@ const ko: Translations = {
     settings: "설정", logout: "로그아웃", login: "로그인", search: "검색", langSwitch: "EN", profile: "프로필", guide: "이용방법",
   },
   footer: { privacy: "개인정보처리방침", terms: "이용약관", contact: "문의" },
-  nav: { home: "홈", cells: "셀", contents: "컨텐츠", mission: "선교", profile: "프로필" },
+  nav: { home: "홈", cells: "셀", contents: "컨텐츠", shorts: "Shorts", profile: "프로필" },
   comments: {
     title: "댓글", prayerTitle: "기도 응원",
     prayerNote: "기도 게시글에는 댓글을 달 수 없습니다. 반응으로 함께 기도해주세요.",
@@ -245,7 +245,7 @@ const en: Translations = {
     settings: "Settings", logout: "Log out", login: "Log in", search: "Search", langSwitch: "한", profile: "Profile", guide: "How to Use",
   },
   footer: { privacy: "Privacy", terms: "Terms", contact: "Contact" },
-  nav: { home: "Home", cells: "Cells", contents: "Contents", mission: "Mission", profile: "Profile" },
+  nav: { home: "Home", cells: "Cells", contents: "Contents", shorts: "Shorts", profile: "Profile" },
   comments: {
     title: "Comments", prayerTitle: "Prayer Support",
     prayerNote: "Comments are disabled for prayer posts. React to pray together.",

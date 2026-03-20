@@ -41,14 +41,14 @@ export default async function CellsPage() {
         </p>
       </div>
 
-      {/* 커뮤니티 보드 */}
+      {/* 게시판 (커뮤니티 보드 + 토픽 통합) */}
       <section aria-labelledby="boards-heading" className="mb-8">
         <div className="flex items-center justify-between mb-3 px-1">
           <h3
             id="boards-heading"
             className="text-[12px] font-semibold text-theme-muted uppercase tracking-wide"
           >
-            커뮤니티 보드
+            게시판
           </h3>
         </div>
 
@@ -85,22 +85,7 @@ export default async function CellsPage() {
               </div>
             </Link>
           ))}
-        </div>
-      </section>
 
-      {/* 토픽 게시판 */}
-      <section aria-labelledby="topics-heading" className="mb-8">
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h3
-            id="topics-heading"
-            className="text-[12px] font-semibold text-theme-muted uppercase tracking-wide"
-          >
-            토픽 게시판
-          </h3>
-          <span className="text-[11px] text-theme-muted">{CELL_TOPICS.length}개</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
           {CELL_TOPICS.map((topic) => (
             <TopicCard key={topic.slug} topic={topic} />
           ))}

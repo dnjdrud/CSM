@@ -2645,6 +2645,42 @@ export async function upsertClipRecommendations(
   return { ok: true };
 }
 
+export interface ClipFeedItem {
+  id: string;
+  postId: string;
+  youtubeId: string;
+  startSeconds: number;
+  endSeconds: number;
+  summary: string | null;
+}
+
+/** Fetch all clip recommendations joined with their post's youtube_url. */
+export async function listAllClips(limit = 50): Promise<ClipFeedItem[]> {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("post_clip_recommendations")
+    .select("id, post_id, start_time_seconds, end_time_seconds, summary, posts!inner(youtube_url)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return (data as Array<{
+    id: string;
+    post_id: string;
+    start_time_seconds: number;
+    end_time_seconds: number;
+    summary: string | null;
+    posts: { youtube_url: string | null } | Array<{ youtube_url: string | null }>;
+  }>)
+    .map((r) => {
+      const post = Array.isArray(r.posts) ? r.posts[0] : r.posts;
+      const youtubeUrl = post?.youtube_url ?? "";
+      const match = youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+      const youtubeId = match?.[1] ?? "";
+      return { id: r.id, postId: r.post_id, youtubeId, startSeconds: r.start_time_seconds, endSeconds: r.end_time_seconds, summary: r.summary ?? null };
+    })
+    .filter((c) => !!c.youtubeId);
+}
+
 /** Record a user interaction event (view, like, bookmark, subscribe). */
 export async function recordUserInteraction(
   userId: string,
