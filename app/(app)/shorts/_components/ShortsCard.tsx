@@ -11,6 +11,8 @@ import {
   IconHeart,
   IconMessageCircle,
   IconBookmark,
+  IconVolumeX,
+  IconVolume2,
 } from "@/components/ui/Icon";
 import { ShortsCommentsSheet } from "./ShortsCommentsSheet";
 
@@ -35,6 +37,9 @@ export function ShortsCard({ post, isActive, currentUserId }: Props) {
     post.reactionCounts ?? { prayed: 0, withYou: 0 }
   );
 
+  // Mute state — start muted (required for autoplay), user can unmute
+  const [muted, setMuted] = useState(true);
+
   // Bookmark (optimistic, no initial server state)
   const [bookmarked, setBookmarked] = useState(false);
 
@@ -53,6 +58,13 @@ export function ShortsCard({ post, isActive, currentUserId }: Props) {
       setIsPaused(true);
     }
   }, [isActive]);
+
+  // React의 muted prop은 초기값만 반영하므로 DOM을 직접 제어
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = muted;
+  }, [muted]);
 
   function showFlash(state: "play" | "pause") {
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
@@ -119,6 +131,20 @@ export function ShortsCard({ post, isActive, currentUserId }: Props) {
           preload={isActive ? "auto" : "metadata"}
           className="absolute inset-0 w-full h-full object-contain pointer-events-none"
         />
+
+        {/* Mute toggle — top right */}
+        <button
+          type="button"
+          aria-label={muted ? "소리 켜기" : "소리 끄기"}
+          onClick={(e) => { e.stopPropagation(); setMuted((m) => !m); }}
+          className="absolute top-4 right-4 z-10 rounded-full bg-black/40 p-2 text-white transition-opacity hover:opacity-80"
+        >
+          {muted ? (
+            <IconVolumeX className="w-5 h-5" />
+          ) : (
+            <IconVolume2 className="w-5 h-5" />
+          )}
+        </button>
 
         {/* Tap flash overlay */}
         {flashState && (
