@@ -68,6 +68,10 @@ h1, h2, h3, h4 {
 ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
+/* ── Hidden scrollbar (for full-screen feeds) ── */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* ── Focus ring ── */
 *:focus-visible {
   outline: 2px solid var(--primary);

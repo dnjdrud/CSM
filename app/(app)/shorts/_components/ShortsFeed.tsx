@@ -36,7 +36,7 @@ export function ShortsFeed({ posts }: Props) {
 
   if (posts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-black text-white space-y-3">
+      <div className="flex flex-col items-center justify-center w-full h-dvh bg-black text-white space-y-3">
         <span className="text-4xl" aria-hidden>🎬</span>
         <p className="text-[15px] font-medium">숏츠가 없습니다</p>
         <p className="text-[13px] text-white/60 text-center px-8 leading-relaxed">
@@ -55,7 +55,7 @@ export function ShortsFeed({ posts }: Props) {
   return (
     <div
       ref={containerRef}
-      className="h-screen overflow-y-scroll"
+      className="w-full h-dvh overflow-y-scroll no-scrollbar"
       style={{ scrollSnapType: "y mandatory" }}
     >
       {posts.map((post, i) => (
