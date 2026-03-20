@@ -122,26 +122,17 @@ async function ContentTabContent({
 
   return (
     <div>
-      {/* 게시판 */}
-      <div className="px-4 py-3 border-b border-theme-border/60">
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[11px] font-semibold text-theme-muted uppercase tracking-wide">게시판</p>
-          <a href="/write" className="text-[12px] font-medium text-theme-primary hover:opacity-80">
-            + 콘텐츠 올리기
-          </a>
-        </div>
-        <div className="grid grid-cols-1 gap-2">
-          <a
-            href="/mission"
-            className="flex items-center gap-3 rounded-xl border border-theme-border px-3 py-2.5 bg-theme-surface hover:bg-theme-surface-2 transition-colors"
-          >
-            <span className="text-lg w-8 h-8 flex items-center justify-center rounded-lg bg-theme-surface-2 shrink-0" aria-hidden>🌍</span>
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-theme-text">선교</p>
-              <p className="text-[11px] text-theme-muted truncate">선교 현장 소식과 기도 요청</p>
-            </div>
-          </a>
-        </div>
+      {/* 헤더 설명 */}
+      <div className="px-4 py-3 border-b border-theme-border/60 bg-theme-surface-2/30 flex items-center justify-between">
+        <p className="text-[12px] text-theme-muted">
+          사역자와 크리에이터의 콘텐츠
+        </p>
+        <a
+          href="/write"
+          className="text-[12px] font-medium text-theme-primary hover:opacity-80"
+        >
+          + 콘텐츠 올리기
+        </a>
       </div>
 
       <ContentsInfiniteList

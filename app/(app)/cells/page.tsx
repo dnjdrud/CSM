@@ -21,6 +21,13 @@ const COMMUNITY_BOARDS = [
     description: "신학적 질문, 신앙 고민을 묻고 함께 답하는 게시판",
     hashtags: ["#고민상담", "#신학"],
   },
+  {
+    href: "/mission",
+    icon: "🌍",
+    name: "선교",
+    description: "선교 현장 소식과 기도 요청을 나누는 게시판",
+    hashtags: ["#선교", "#기도"],
+  },
 ];
 
 export default async function CellsPage() {
