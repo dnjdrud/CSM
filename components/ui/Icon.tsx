@@ -120,3 +120,22 @@ export function IconGlobe(props: IconProps) {
   );
 }
 
+export function IconBookmark(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </BaseIcon>
+  );
+}
+
+export function IconShare2(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="M8.6 13.5l6.8 3.9M15.4 6.6L8.6 10.5" />
+    </BaseIcon>
+  );
+}
+

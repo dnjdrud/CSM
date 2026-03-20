@@ -932,16 +932,16 @@ export async function isFollowing(followerId: string, followingId: string): Prom
 }
 
 export async function listFollowingIds(userId: string): Promise<string[]> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase.from("follows").select("following_id").eq("follower_id", userId);
+  const client = getSupabaseAdmin() ?? await supabaseServer();
+  const { data } = await client.from("follows").select("following_id").eq("follower_id", userId);
   return (data ?? []).map((r) => r.following_id);
 }
 
 export async function listFollowingWithNames(
   userId: string
 ): Promise<{ id: string; name: string }[]> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase
+  const client = getSupabaseAdmin() ?? await supabaseServer();
+  const { data } = await client
     .from("follows")
     .select("users!follows_following_id_fkey(id, name)")
     .eq("follower_id", userId);
@@ -951,8 +951,8 @@ export async function listFollowingWithNames(
 }
 
 export async function listFollowerIds(userId: string): Promise<string[]> {
-  const supabase = await supabaseServer();
-  const { data } = await supabase.from("follows").select("follower_id").eq("following_id", userId);
+  const client = getSupabaseAdmin() ?? await supabaseServer();
+  const { data } = await client.from("follows").select("follower_id").eq("following_id", userId);
   return (data ?? []).map((r) => r.follower_id);
 }
 

@@ -29,5 +29,5 @@ export default async function ShortsPage() {
     }),
   );
 
-  return <ShortsFeed posts={posts} />;
+  return <ShortsFeed posts={posts} currentUserId={currentUser?.id ?? null} />;
 }
