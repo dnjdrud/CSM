@@ -171,9 +171,12 @@ export async function composePostAction(params: {
     logWarn("SERVER_ACTION", "composePostAction(write) rate limit or error", { userId: session.userId, rawMessage: msg });
     return { ok: false, error: msg === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : msg || "Rate limit or server error" };
   }
-  const tags = params.tags
-    ? [...new Set(params.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5)
-    : [];
+  const rawTags = params.tags ?? [];
+  // SHORTS posts always carry the "shorts" tag server-side
+  if (params.category === "SHORTS" && !rawTags.includes("shorts")) {
+    rawTags.unshift("shorts");
+  }
+  const tags = [...new Set(rawTags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 5);
   try {
     const post = await createPost({
       authorId: session.userId,
@@ -195,6 +198,7 @@ export async function composePostAction(params: {
     });
     revalidatePath("/feed");
     revalidatePath("/home");
+    revalidatePath("/shorts");
     return { ok: true, postId: post.id };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

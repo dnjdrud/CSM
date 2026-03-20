@@ -20,10 +20,12 @@ export type PostCategory =
   | "CONTENT"    // 유튜브/컨텐츠
   | "REQUEST"    // 후원/제작 요청
   // --- 선교 탭 ---
-  | "MISSION";   // 선교 업데이트
+  | "MISSION"    // 선교 업데이트
+  // --- 숏츠 탭 ---
+  | "SHORTS";    // 짧은 영상 (≤60s 직접 업로드)
 
 /** Maps each post category to the bottom-nav tab where it appears. */
-export const CATEGORY_TAB: Record<PostCategory, "home" | "cells" | "contents" | "mission"> = {
+export const CATEGORY_TAB: Record<PostCategory, "home" | "cells" | "contents" | "mission" | "shorts"> = {
   GENERAL:   "home",
   DEVOTIONAL:"home",
   MINISTRY:  "home",
@@ -33,6 +35,7 @@ export const CATEGORY_TAB: Record<PostCategory, "home" | "cells" | "contents" | 
   CONTENT:   "contents",
   REQUEST:   "contents",
   MISSION:   "mission",
+  SHORTS:    "shorts",
 };
 
 /** Categories shown in the home feed tab (includes cell posts as well). */
@@ -91,17 +94,6 @@ export interface Post {
   aiTags?: string[];
   /** True once any AI enrichment has been written to this post. */
   hasAiGenerated?: boolean;
-}
-
-/** A recommended clip segment within a video post. */
-export interface PostClipRecommendation {
-  id: string;
-  postId: string;
-  startTimeSeconds: number;
-  endTimeSeconds: number;
-  summary?: string | null;
-  sortOrder: number;
-  createdAt: string;
 }
 
 export type UserInteractionType = "view" | "like" | "bookmark" | "subscribe";
@@ -264,6 +256,7 @@ export const CATEGORY_LABELS: Record<PostCategory, string> = {
   CONTENT:   "컨텐츠",
   REQUEST:   "후원/제작 요청",
   MISSION:   "선교 업데이트",
+  SHORTS:    "숏츠",
 };
 
 /** Notification types for in-app list (no push/email in MVP). */

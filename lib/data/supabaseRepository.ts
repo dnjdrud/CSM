@@ -42,7 +42,6 @@ import type {
   TheologyQuestion,
   TheologyCategory,
   TheologyAnswer,
-  PostClipRecommendation,
   UserInteraction,
   UserInteractionType,
   UserInterestTag,
@@ -2601,84 +2600,6 @@ export async function updatePostAiFields(
     .eq("id", postId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
-}
-
-/** Fetch all clip recommendations for a post, ordered by sort_order. */
-export async function getClipRecommendations(postId: string): Promise<PostClipRecommendation[]> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from("post_clip_recommendations")
-    .select("id, post_id, start_time_seconds, end_time_seconds, summary, sort_order, created_at")
-    .eq("post_id", postId)
-    .order("sort_order", { ascending: true });
-  if (error || !data) return [];
-  return data.map((r) => ({
-    id: r.id,
-    postId: r.post_id,
-    startTimeSeconds: r.start_time_seconds,
-    endTimeSeconds: r.end_time_seconds,
-    summary: r.summary ?? undefined,
-    sortOrder: r.sort_order,
-    createdAt: r.created_at,
-  }));
-}
-
-/** Replace all clip recommendations for a post (called by AI worker). */
-export async function upsertClipRecommendations(
-  postId: string,
-  clips: Array<{ startTimeSeconds: number; endTimeSeconds: number; summary?: string; sortOrder: number }>
-): Promise<{ ok: boolean; error?: string }> {
-  const supabase = await supabaseServer();
-  // Delete existing then insert fresh batch
-  await supabase.from("post_clip_recommendations").delete().eq("post_id", postId);
-  if (clips.length === 0) return { ok: true };
-  const { error } = await supabase.from("post_clip_recommendations").insert(
-    clips.map((c) => ({
-      post_id: postId,
-      start_time_seconds: c.startTimeSeconds,
-      end_time_seconds: c.endTimeSeconds,
-      summary: c.summary ?? null,
-      sort_order: c.sortOrder,
-    }))
-  );
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
-}
-
-export interface ClipFeedItem {
-  id: string;
-  postId: string;
-  youtubeId: string;
-  startSeconds: number;
-  endSeconds: number;
-  summary: string | null;
-}
-
-/** Fetch all clip recommendations joined with their post's youtube_url. */
-export async function listAllClips(limit = 50): Promise<ClipFeedItem[]> {
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase
-    .from("post_clip_recommendations")
-    .select("id, post_id, start_time_seconds, end_time_seconds, summary, posts!inner(youtube_url)")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error || !data) return [];
-  return (data as Array<{
-    id: string;
-    post_id: string;
-    start_time_seconds: number;
-    end_time_seconds: number;
-    summary: string | null;
-    posts: { youtube_url: string | null } | Array<{ youtube_url: string | null }>;
-  }>)
-    .map((r) => {
-      const post = Array.isArray(r.posts) ? r.posts[0] : r.posts;
-      const youtubeUrl = post?.youtube_url ?? "";
-      const match = youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-      const youtubeId = match?.[1] ?? "";
-      return { id: r.id, postId: r.post_id, youtubeId, startSeconds: r.start_time_seconds, endSeconds: r.end_time_seconds, summary: r.summary ?? null };
-    })
-    .filter((c) => !!c.youtubeId);
 }
 
 /** Record a user interaction event (view, like, bookmark, subscribe). */

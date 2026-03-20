@@ -33,7 +33,6 @@ export function ComposeBox({
   const router = useRouter();
   const [content, setContent] = useState("");
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [category, setCategory] = useState<PostCategory>("GENERAL");
   // MEMBERS 와 PUBLIC 은 guard 상 동일하게 취급되므로, UI 기본값은 PUBLIC 만 사용한다.
   const [visibility, setVisibility] = useState<Visibility>("PUBLIC");
   const [tagsInput, setTagsInput] = useState("");
@@ -44,13 +43,6 @@ export function ComposeBox({
   const toast = useToast();
 
   const isKo = t.common.save === "저장";
-
-  const CATEGORIES: { value: PostCategory; label: string }[] = [
-    { value: "GENERAL",   label: isKo ? "일상" : "Daily" },
-    { value: "DEVOTIONAL", label: isKo ? "묵상" : "Devotional" },
-    { value: "MINISTRY",  label: isKo ? "사역 나눔" : "Ministry" },
-    { value: "TESTIMONY", label: isKo ? "간증" : "Testimony" },
-  ];
 
   const VISIBILITY_OPTIONS: { value: Visibility; label: string }[] = [
     { value: "PUBLIC",    label: isKo ? "전체 공개" : "Public" },
@@ -91,7 +83,7 @@ export function ComposeBox({
     setPending(true);
     const result = await composePostAction({
       content: trimmed,
-      category,
+      category: "GENERAL",
       visibility,
       tags: tags.length ? tags : undefined,
     });
@@ -119,7 +111,7 @@ export function ComposeBox({
   const postLabel = isKo ? "나누기" : "Post";
   const postingLabel = isKo ? "게시 중…" : "Posting…";
   const postedLabel = isKo ? "게시됨" : "Posted";
-  const categoryLabel = isKo ? "카테고리" : "Category";
+
   const visibilityLabel = isKo ? "공개 범위" : "Visibility";
   const tagsLabel = isKo ? "태그 (선택, 최대 5개)" : "Tags (optional, max 5)";
   const tagsPlaceholder = isKo ? "예: 묵상, 일상" : "e.g. devotional, daily";
@@ -162,25 +154,6 @@ export function ComposeBox({
                       onChange={() => setVisibility(value)}
                       className="rounded-full border-theme-border text-theme-text focus:ring-theme-primary"
                       aria-label={`${visibilityLabel}: ${label}`}
-                    />
-                    <span className="text-theme-text">{label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className="text-xs font-medium text-theme-muted">{categoryLabel}</span>
-              <div className="mt-1 flex flex-wrap gap-3" role="group" aria-label={categoryLabel}>
-                {CATEGORIES.map(({ value, label }) => (
-                  <label key={value} className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="category"
-                      value={value}
-                      checked={category === value}
-                      onChange={() => setCategory(value)}
-                      className="rounded-full border-theme-border text-theme-text focus:ring-theme-primary"
-                      aria-label={`${categoryLabel}: ${label}`}
                     />
                     <span className="text-theme-text">{label}</span>
                   </label>

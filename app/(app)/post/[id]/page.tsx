@@ -7,8 +7,7 @@ import { PostDetailHeader } from "./_components/PostDetailHeader";
 import { PostDetailBody } from "./_components/PostDetailBody";
 import { PostDetailReactions } from "./_components/PostDetailReactions";
 import { CommentsSection } from "./_components/CommentsSection";
-import { ClipRecommendationsSection } from "./_components/ClipRecommendationsSection";
-import { getClipRecommendations, recordUserInteraction } from "@/lib/data/supabaseRepository";
+import { recordUserInteraction } from "@/lib/data/supabaseRepository";
 
 export default async function PostPage({
   params,
@@ -47,9 +46,8 @@ export default async function PostPage({
 
   const allowComments = true;
 
-  const [allComments, initialClips] = await Promise.all([
+  const [allComments] = await Promise.all([
     allowComments ? listCommentsByPostId(id) : Promise.resolve([]),
-    post.youtubeUrl ? getClipRecommendations(id) : Promise.resolve([]),
     currentUser ? recordUserInteraction(currentUser.id, id, "view").catch(() => {}) : Promise.resolve(),
   ]);
   const comments = allowComments && currentUser
@@ -58,8 +56,6 @@ export default async function PostPage({
           !isBlocked(currentUser.id, c.authorId) && !isMuted(currentUser.id, c.authorId)
       )
     : allComments;
-
-  const isAuthor = currentUser?.id === post.authorId;
 
   return (
     <TimelineContainer>
@@ -74,13 +70,6 @@ export default async function PostPage({
         <PostDetailHeader post={post} currentUser={currentUser} authorFollowing={authorFollowing} />
 
         <PostDetailBody post={post} />
-
-        {post.youtubeUrl && isAuthor && (
-          <ClipRecommendationsSection
-            postId={post.id}
-            initialClips={initialClips}
-          />
-        )}
 
         <PostDetailReactions post={post} currentUserId={currentUser?.id ?? null} />
 

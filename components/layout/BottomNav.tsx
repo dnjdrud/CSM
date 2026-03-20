@@ -63,14 +63,14 @@ const BASE_TABS: Tab[] = [
   { key: "home",     href: "/home",     Icon: HomeIcon },
   { key: "cells",    href: "/cells",    Icon: CellsIcon },
   { key: "contents", href: "/contents", Icon: ContentsIcon },
-  { key: "shorts",   href: "/contents/clips",   Icon: ShortsIcon },
+  { key: "shorts",   href: "/shorts",   Icon: ShortsIcon },
   { key: "profile",  href: "/me",       Icon: ProfileIcon },
 ];
 
 function isActive(tab: Tab, pathname: string): boolean {
   if (tab.key === "home") return pathname === "/home" || pathname === "/feed";
   if (tab.key === "cells") return pathname.startsWith("/cells");
-  if (tab.key === "shorts") return pathname.startsWith("/contents/clips") || pathname.startsWith("/shorts");
+  if (tab.key === "shorts") return pathname.startsWith("/shorts");
   if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology") || pathname.startsWith("/mission");
   if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
   return false;

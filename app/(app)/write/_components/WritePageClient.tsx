@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { composePostAction, generateYouTubeContentAction } from "../actions";
 import { uploadPostImageAction } from "../uploadImageAction";
+import { uploadPostVideoAction } from "../uploadVideoAction";
 import type { PostCategory } from "@/lib/domain/types";
 import { MISSION_COUNTRIES } from "@/lib/mission/countries";
 import { CELL_TOPICS } from "@/lib/cells/topics";
@@ -23,12 +24,14 @@ type PostType = {
   showMissionCountry?: boolean;
   showCellTopic?: boolean;
   showImageUpload?: boolean;
+  showVideoUpload?: boolean;
 };
 
 function getRedirectPath(category: PostCategory, postId: string): string {
   switch (category) {
     case "MISSION":   return "/mission";
     case "REQUEST":   return "/cells/collab-requests";
+    case "SHORTS":    return "/shorts";
     default:          return `/post/${postId}`;
   }
 }
@@ -63,6 +66,7 @@ export default function WritePageClient({
     },
     { category: "MISSION", label: t.write.postTypes.mission.label, icon: "🌍", description: t.write.postTypes.mission.description, placeholder: t.write.postTypes.mission.placeholder, showMissionCountry: true, showYoutubeUrl: true, showImageUpload: true },
     { category: "REQUEST", label: t.write.postTypes.request.label, icon: "📬", description: t.write.postTypes.request.description, placeholder: t.write.postTypes.request.placeholder, showRequestType: true },
+    { category: "SHORTS", label: "숏츠", icon: "🎬", description: "60초 이내의 짧은 영상을 직접 업로드해요", placeholder: "영상에 대한 간단한 설명을 적어주세요.", showVideoUpload: true },
   ];
 
   const REQUEST_TYPE_OPTIONS = [
@@ -294,6 +298,109 @@ function ImageUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => 
   );
 }
 
+type VideoUploadState =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | { status: "uploading"; previewUrl: string }
+  | { status: "done"; previewUrl: string; url: string };
+
+function VideoUploader({ onUrl, onUploading }: { onUrl: (url: string | null) => void; onUploading?: (v: boolean) => void }) {
+  const [state, setState] = useState<VideoUploadState>({ status: "idle" });
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowed = ["video/mp4", "video/quicktime", "video/webm"];
+    if (!allowed.includes(file.type)) {
+      setState({ status: "error", message: "MP4, MOV, WebM 파일만 업로드 가능합니다." });
+      return;
+    }
+    if (file.size > 200 * 1024 * 1024) {
+      setState({ status: "error", message: "파일 크기는 200MB 이하여야 합니다." });
+      return;
+    }
+    // Client-side duration check via loadedmetadata
+    const previewUrl = URL.createObjectURL(file);
+    const tooLong = await new Promise<boolean>((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(video.duration > 60);
+      };
+      video.onerror = () => { resolve(false); };
+      video.src = previewUrl;
+    });
+    if (tooLong) {
+      URL.revokeObjectURL(previewUrl);
+      setState({ status: "error", message: "영상은 60초 이하여야 합니다." });
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+    setState({ status: "uploading", previewUrl });
+    onUrl(null);
+    onUploading?.(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const result = await uploadPostVideoAction(fd);
+    onUploading?.(false);
+    if ("error" in result) {
+      setState({ status: "error", message: result.error });
+      onUrl(null);
+    } else {
+      setState({ status: "done", previewUrl, url: result.url });
+      onUrl(result.url);
+    }
+  }
+
+  function handleRemove() {
+    if ("previewUrl" in state) URL.revokeObjectURL(state.previewUrl);
+    setState({ status: "idle" });
+    onUrl(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  return (
+    <div>
+      <label className="block text-[12px] font-medium text-theme-muted mb-1">
+        영상 첨부 <span className="font-normal">(MP4·MOV·WebM, 60초 이하, 200MB 이하)</span>
+      </label>
+
+      {state.status === "idle" && (
+        <label className="flex items-center justify-center gap-2 w-full h-24 rounded-xl border-2 border-dashed border-theme-border bg-theme-surface cursor-pointer hover:border-theme-primary/40 hover:bg-theme-surface-2 transition-all text-[13px] text-theme-muted">
+          <span aria-hidden>🎬</span>
+          영상 선택
+          <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="sr-only" onChange={handleFileChange} />
+        </label>
+      )}
+
+      {(state.status === "uploading" || state.status === "done") && (
+        <div className="relative rounded-xl overflow-hidden border border-theme-border bg-black">
+          <video src={state.previewUrl} className="w-full aspect-video object-contain" muted playsInline />
+          {state.status === "uploading" && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <p className="text-white text-[13px] font-medium">업로드 중...</p>
+            </div>
+          )}
+          {state.status === "done" && (
+            <div className="absolute top-2 left-2 bg-theme-success/90 text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
+              업로드 완료
+            </div>
+          )}
+          <button type="button" onClick={handleRemove} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 text-[14px] leading-none" aria-label="영상 제거">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {state.status === "error" && (
+        <p className="mt-1 text-[12px] text-theme-danger">{state.message}</p>
+      )}
+    </div>
+  );
+}
+
 function ComposeForm({
   postType,
   initialTag = "",
@@ -328,6 +435,8 @@ function ComposeForm({
   });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
   const [subscribersOnly, setSubscribersOnly] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -394,6 +503,7 @@ function ComposeForm({
 
     const extraTags: string[] = [];
     if (actualCategory === "MISSION") extraTags.push("mission");
+    if (actualCategory === "SHORTS") extraTags.push("shorts");
     if (requestType) extraTags.push(requestType);
     if (missionCountry) {
       const country = MISSION_COUNTRIES.find((c) => c.code === missionCountry);
@@ -415,7 +525,7 @@ function ComposeForm({
         const parsed = parseYouTubeUrl(youtubeUrl);
         return parsed.isValid ? parsed.normalizedUrl : (youtubeUrl.trim() || undefined);
       })(),
-      mediaUrls: imageUrl ? [imageUrl] : [],
+      mediaUrls: videoUrl ? [videoUrl] : imageUrl ? [imageUrl] : [],
       subscribersOnly,
       aiSummary: aiFields?.summary ?? null,
       aiDescription: aiFields?.description ?? null,
@@ -585,6 +695,7 @@ function ComposeForm({
         </div>
 
         {postType.showImageUpload && <ImageUploader onUrl={setImageUrl} onUploading={setImageUploading} />}
+        {postType.showVideoUpload && <VideoUploader onUrl={setVideoUrl} onUploading={setVideoUploading} />}
 
         <div>
           <label className="block text-[12px] font-medium text-theme-muted mb-1">
@@ -632,7 +743,7 @@ function ComposeForm({
 
         <button
           type="submit"
-          disabled={submitting || imageUploading || !content.trim()}
+          disabled={submitting || imageUploading || videoUploading || !content.trim()}
           className="w-full py-3 rounded-xl text-[15px] font-semibold bg-theme-primary text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {submitting ? t.write.publishing : imageUploading ? "사진 업로드 중…" : t.write.publish}

@@ -1,6 +1,6 @@
 import { ProfileShell } from "./_components/ProfileShell";
 import { ProfilePostsTab } from "./_components/ProfilePostsTab";
-import { ProfileContentsTab } from "./_components/ProfileContentsTab";
+import { ProfileShortsTab } from "./_components/ProfileShortsTab";
 import { ProfileCrowTab } from "./_components/ProfileCrowTab";
 import { ProfileSpiritualTab } from "./_components/ProfileSpiritualTab";
 import {
@@ -38,7 +38,7 @@ export default async function ProfilePage({
   ]);
 
   const activeTab =
-    tab === "contents" || tab === "crow" || tab === "spiritual"
+    tab === "shorts" || tab === "crow" || tab === "spiritual"
       ? tab
       : "posts";
   const spiritualSection: "prayer" | "life" =
@@ -134,12 +134,8 @@ export default async function ProfilePage({
   const muted = currentUserId ? isMuted(currentUserId, id) : false;
   const following = currentUserId ? viewerFollowingIds.includes(user.id) : false;
 
-  const contentPosts = posts.filter((p) =>
-    CONTENT_CATEGORIES.includes(p.category as PostCategory)
-  );
-  const normalPosts = posts.filter(
-    (p) => !CONTENT_CATEGORIES.includes(p.category as PostCategory)
-  );
+  const shortsPosts = posts.filter((p) => p.category === "SHORTS");
+  const normalPosts = posts.filter((p) => p.category !== "SHORTS");
 
   return (
     <ProfileShell
@@ -162,9 +158,9 @@ export default async function ProfilePage({
           isOwnProfile={currentUserId === user.id}
         />
       )}
-      {activeTab === "contents" && (
-        <ProfileContentsTab
-          posts={contentPosts}
+      {activeTab === "shorts" && (
+        <ProfileShortsTab
+          posts={shortsPosts}
           currentUserId={currentUserId}
           blocked={blocked}
           isOwnProfile={currentUserId === user.id}
