@@ -110,10 +110,9 @@ export function BottomNav({ profileHref = "/me" }: { profileHref?: string }) {
                     : "text-theme-muted hover:text-theme-text"
                 }`}
               >
-                <span aria-hidden className="text-lg leading-none">
-                  <tab.Icon className="w-5 h-5" />
+                <span className="text-lg leading-none">
+                  <tab.Icon className="w-6 h-6" aria-label={labels[tab.key]} />
                 </span>
-                <span>{labels[tab.key]}</span>
               </Link>
             </li>
           );

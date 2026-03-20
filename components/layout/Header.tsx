@@ -155,14 +155,14 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
         <div className="flex items-center gap-1">
           {user && (
             <>
+              {/* 글쓰기 — 항상 표시 */}
+              <Link href="/write" className={iconBtn} aria-label={t.header.write}>
+                <PencilIcon className="w-5 h-5" />
+              </Link>
+
               {/* DM — 항상 표시 */}
               <Link href="/messages" className={iconBtn} aria-label="다이렉트 메시지">
                 <SendIcon className="w-5 h-5" />
-              </Link>
-
-              {/* 글쓰기 — 데스크톱에서만 표시 */}
-              <Link href="/write" className={`${iconBtn} hidden md:flex`} aria-label={t.header.write}>
-                <PencilIcon className="w-5 h-5" />
               </Link>
 
               {/* 알림 — 항상 표시 (배지 중요) */}
