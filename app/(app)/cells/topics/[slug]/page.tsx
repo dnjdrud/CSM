@@ -4,10 +4,7 @@ import { TimelineContainer } from "@/components/TimelineContainer";
 import {
   getCurrentUser,
   listFeedPostsPage,
-  isBlocked,
-  isMuted,
 } from "@/lib/data/repository";
-import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { findTopicBySlug, TOPIC_COLOR_CLASSES, CELL_TOPICS } from "@/lib/cells/topics";
 import { TopicFeedInfiniteList } from "./_components/TopicFeedInfiniteList";
@@ -68,15 +65,8 @@ export default async function TopicFeedPage({
     }),
   ]);
 
-  function filterVisible<T extends { tags: string[]; authorId: string }>(items: T[]): T[] {
-    const moderated = currentUser
-      ? items.filter((p) => {
-          if (isBlocked(currentUser.id, p.authorId)) return false;
-          if (isMuted(currentUser.id, p.authorId)) return false;
-          return canViewPost(p as unknown as Parameters<typeof canViewPost>[0], currentUser, () => false);
-        })
-      : items;
-    return filterByTopicTags(moderated, topic.tags);
+  function filterVisible<T extends { tags: string[] }>(items: T[]): T[] {
+    return filterByTopicTags(items, topic.tags);
   }
 
   // 두 피드 합산 후 최신순 정렬

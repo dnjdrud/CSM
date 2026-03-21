@@ -187,6 +187,82 @@ export async function getCreatorSubscriptionInfo(
   };
 }
 
+export type ViewerCrowContext = {
+  subscriberCount: number;
+  viewerIsSubscribed: boolean;
+  viewerIsActiveSubscriber: boolean;
+  candlesPerMonth: number | null;
+  viewerCandleBalance: number;
+};
+
+/**
+ * Fetches all crow-tab data for a profile in one call:
+ * subscriber count, viewer's subscription status, creator price, viewer's candle balance.
+ * Replaces 4–5 individual calls (getSubscriberCount, isSubscribed, isActiveSubscriber,
+ * getCreatorSubscriptionInfo, candle balance) with a single Promise.all internally.
+ */
+export async function getViewerCrowContext(
+  viewerId: string | null,
+  creatorId: string
+): Promise<ViewerCrowContext> {
+  const admin = getSupabaseAdmin();
+  const userClient = await supabaseServer();
+  const readClient = admin ?? userClient;
+
+  const [subscriberRes, subRow, creatorRow, candleRow] = await Promise.all([
+    // Subscriber count — needs admin to bypass RLS for non-subscriber viewers
+    readClient
+      .from("subscriptions")
+      .select("id", { count: "exact", head: true })
+      .eq("creator_id", creatorId)
+      .eq("status", "active"),
+    // Viewer's own subscription row
+    viewerId
+      ? userClient
+          .from("subscriptions")
+          .select("id, expires_at, plan")
+          .eq("subscriber_id", viewerId)
+          .eq("creator_id", creatorId)
+          .eq("status", "active")
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    // Creator's candle price — on users table, needs admin
+    admin
+      ? admin
+          .from("users")
+          .select("subscription_candles_per_month")
+          .eq("id", creatorId)
+          .single()
+      : Promise.resolve({ data: null }),
+    // Viewer's candle balance — needs admin
+    viewerId && admin
+      ? admin
+          .from("users")
+          .select("candle_balance")
+          .eq("id", viewerId)
+          .single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const sub = subRow.data;
+  let viewerIsActiveSubscriber = false;
+  if (sub) {
+    if (!sub.plan || sub.plan === "free") {
+      viewerIsActiveSubscriber = true;
+    } else {
+      viewerIsActiveSubscriber = !sub.expires_at || new Date(sub.expires_at) > new Date();
+    }
+  }
+
+  return {
+    subscriberCount: subscriberRes.count ?? 0,
+    viewerIsSubscribed: !!sub,
+    viewerIsActiveSubscriber,
+    candlesPerMonth: creatorRow?.data?.subscription_candles_per_month ?? null,
+    viewerCandleBalance: candleRow?.data?.candle_balance ?? 0,
+  };
+}
+
 /**
  * 구독 토글 — 구독 중이면 취소, 아니면 구독 (무료 구독용).
  * Returns: 'subscribed' | 'unsubscribed'

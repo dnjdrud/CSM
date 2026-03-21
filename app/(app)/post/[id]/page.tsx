@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getPostById, getCurrentUser, listCommentsByPostId, listFollowingIds, isBlocked, isMuted } from "@/lib/data/repository";
+import { getPostById, getCurrentUser, listCommentsByPostId, listFollowingIds } from "@/lib/data/repository";
 import { notFound } from "next/navigation";
 import { canViewPost } from "@/lib/domain/guards";
 import { TimelineContainer } from "@/components/TimelineContainer";
@@ -44,18 +44,10 @@ export default async function PostPage({
     );
   }
 
-  const allowComments = true;
-
-  const [allComments] = await Promise.all([
-    allowComments ? listCommentsByPostId(id) : Promise.resolve([]),
+  const [comments] = await Promise.all([
+    listCommentsByPostId(id),
     currentUser ? recordUserInteraction(currentUser.id, id, "view").catch(() => {}) : Promise.resolve(),
   ]);
-  const comments = allowComments && currentUser
-    ? allComments.filter(
-        (c) =>
-          !isBlocked(currentUser.id, c.authorId) && !isMuted(currentUser.id, c.authorId)
-      )
-    : allComments;
 
   return (
     <TimelineContainer>
@@ -77,7 +69,7 @@ export default async function PostPage({
           postId={post.id}
           currentUserId={currentUser?.id ?? null}
           comments={comments}
-          allowComments={allowComments}
+          allowComments={true}
         />
       </article>
     </TimelineContainer>

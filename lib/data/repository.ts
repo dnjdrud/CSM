@@ -725,6 +725,16 @@ export async function listFollowerIds(userId: string): Promise<string[]> {
   return follows.filter((f) => f.followingId === userId).map((f) => f.followerId);
 }
 
+export async function getFollowCounts(
+  userId: string
+): Promise<{ followers: number; following: number }> {
+  if (DATA_MODE === "supabase") return supabaseRepo.getFollowCounts(userId);
+  return {
+    followers: follows.filter((f) => f.followingId === userId).length,
+    following: follows.filter((f) => f.followerId === userId).length,
+  };
+}
+
 export async function listFollowers(userId: string): Promise<User[]> {
   if (DATA_MODE === "supabase") return supabaseRepo.listFollowers(userId);
   const ids = follows

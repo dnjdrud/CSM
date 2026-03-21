@@ -6,25 +6,19 @@ import { ProfileSpiritualTab } from "./_components/ProfileSpiritualTab";
 import {
   getProfileWithError,
   listPostsByAuthorId,
-  listFollowerIds,
   listFollowingIds,
+  getFollowCounts,
 } from "@/lib/data/repository";
 import { isBlocked, isMuted } from "@/lib/data/repository";
 import { getAuthUserId } from "@/lib/auth/session";
 import { listSpiritualNotes } from "@/lib/data/spiritualRepository";
 import {
   listMySubscriptions,
-  getSubscriberCount,
-  isSubscribed,
-  isActiveSubscriber,
-  getCreatorSubscriptionInfo,
+  getViewerCrowContext,
 } from "@/lib/data/subscriptionRepository";
-import type { PostCategory } from "@/lib/domain/types";
 import { getVideoSignedReadUrlAction } from "@/app/(app)/write/getUploadUrlAction";
 
 export const dynamic = "force-dynamic";
-
-const CONTENT_CATEGORIES: PostCategory[] = ["CONTENT", "PHOTO"];
 
 export default async function ProfilePage({
   params,
@@ -51,71 +45,44 @@ export default async function ProfilePage({
   const shouldFetchSpiritual =
     activeTab === "spiritual" && isOwnProfile && !!currentUserId;
   const shouldFetchCrowList = activeTab === "crow" && isOwnProfile && !!currentUserId;
-
-  // Fetch viewer's candle balance if logged in and viewing another profile
-  const shouldFetchCandleBalance = !isOwnProfile && !!currentUserId;
+  // Only fetch posts when the posts or shorts tab is active
+  const shouldFetchPosts = activeTab === "posts" || activeTab === "shorts";
 
   const [
     { user, errorMessage },
     posts,
-    followerIds,
-    followingIds,
+    followCounts,
     viewerFollowingIds,
     prayerNotes,
     lifeNotes,
     mySubscriptions,
-    crowSubscriberCount,
-    viewerIsSubscribed,
-    viewerIsActiveSub,
-    creatorSubInfo,
-    viewerCandleBalance,
+    crowContext,
   ] = await Promise.all([
     getProfileWithError(id),
-    listPostsByAuthorId(id),
-    listFollowerIds(id),
-    listFollowingIds(id),
+    // Skip post fetch entirely on crow/spiritual tabs — saves the most expensive query
+    shouldFetchPosts ? listPostsByAuthorId(id) : Promise.resolve([]),
+    // COUNT queries only — no more fetching full ID arrays just for .length
+    getFollowCounts(id),
     currentUserId ? listFollowingIds(currentUserId) : Promise.resolve([]),
-    // spiritual
     shouldFetchSpiritual
       ? listSpiritualNotes(currentUserId!, "prayer")
       : Promise.resolve([]),
     shouldFetchSpiritual
       ? listSpiritualNotes(currentUserId!, "life")
       : Promise.resolve([]),
-    // crow list: own profile crow tab only
     shouldFetchCrowList
       ? listMySubscriptions(currentUserId!)
       : Promise.resolve([]),
-    // subscriber count: always for non-own profiles (header + crow tab)
+    // All crow/subscription data in one combined call
     !isOwnProfile
-      ? getSubscriberCount(id)
-      : Promise.resolve(0),
-    // is current user subscribed: always for non-own + logged-in
-    !isOwnProfile && !!currentUserId
-      ? isSubscribed(currentUserId, id)
-      : Promise.resolve(false),
-    // is current user an active (paid or free) subscriber
-    !isOwnProfile && !!currentUserId
-      ? isActiveSubscriber(currentUserId, id)
-      : Promise.resolve(false),
-    // creator's candle subscription info
-    !isOwnProfile
-      ? getCreatorSubscriptionInfo(id)
-      : Promise.resolve(null),
-    // viewer's candle balance for subscription button
-    shouldFetchCandleBalance
-      ? (async () => {
-          const { getSupabaseAdmin } = await import("@/lib/supabase/admin");
-          const admin = getSupabaseAdmin();
-          if (!admin) return 0;
-          const { data } = await admin
-            .from("users")
-            .select("candle_balance")
-            .eq("id", currentUserId!)
-            .single();
-          return data?.candle_balance ?? 0;
-        })()
-      : Promise.resolve(0),
+      ? getViewerCrowContext(currentUserId, id)
+      : Promise.resolve({
+          subscriberCount: 0,
+          viewerIsSubscribed: false,
+          viewerIsActiveSubscriber: false,
+          candlesPerMonth: null,
+          viewerCandleBalance: 0,
+        }),
   ]);
 
   if (!user) {
@@ -138,16 +105,17 @@ export default async function ProfilePage({
   const normalPosts = posts.filter((p) => p.category !== "SHORTS");
 
   const rawShortsPosts = posts.filter((p) => p.category === "SHORTS");
-  const shortsPosts = activeTab === "shorts"
-    ? await Promise.all(
-        rawShortsPosts.map(async (p) => {
-          const signedUrls = await Promise.all(
-            (p.mediaUrls ?? []).map((url) => getVideoSignedReadUrlAction(url)),
-          );
-          return { ...p, mediaUrls: signedUrls.map((s, i) => s ?? p.mediaUrls![i]) };
-        }),
-      )
-    : rawShortsPosts;
+  const shortsPosts =
+    activeTab === "shorts"
+      ? await Promise.all(
+          rawShortsPosts.map(async (p) => {
+            const signedUrls = await Promise.all(
+              (p.mediaUrls ?? []).map((url) => getVideoSignedReadUrlAction(url)),
+            );
+            return { ...p, mediaUrls: signedUrls.map((s, i) => s ?? p.mediaUrls![i]) };
+          }),
+        )
+      : rawShortsPosts;
 
   return (
     <ProfileShell
@@ -157,10 +125,10 @@ export default async function ProfilePage({
       isMuted={muted}
       isBlocked={blocked}
       postsCount={normalPosts.length}
-      followerCount={followerIds.length}
-      followingCount={followingIds.length}
-      subscriberCount={crowSubscriberCount}
-      viewerIsActiveSubscriber={viewerIsActiveSub}
+      followerCount={followCounts.followers}
+      followingCount={followCounts.following}
+      subscriberCount={crowContext.subscriberCount}
+      viewerIsActiveSubscriber={crowContext.viewerIsActiveSubscriber}
     >
       {activeTab === "posts" && (
         <ProfilePostsTab
@@ -191,12 +159,12 @@ export default async function ProfilePage({
           isOwnProfile={false}
           creatorId={user.id}
           creatorName={user.name}
-          subscriberCount={crowSubscriberCount}
-          isSubscribed={viewerIsSubscribed}
-          isActiveSubscriber={viewerIsActiveSub}
+          subscriberCount={crowContext.subscriberCount}
+          isSubscribed={crowContext.viewerIsSubscribed}
+          isActiveSubscriber={crowContext.viewerIsActiveSubscriber}
           isLoggedIn={!!currentUserId}
-          candlesPerMonth={creatorSubInfo?.candlesPerMonth ?? null}
-          userCandleBalance={viewerCandleBalance}
+          candlesPerMonth={crowContext.candlesPerMonth}
+          userCandleBalance={crowContext.viewerCandleBalance}
         />
       )}
       {activeTab === "spiritual" && (

@@ -69,9 +69,9 @@ const BASE_TABS: Tab[] = [
 
 function isActive(tab: Tab, pathname: string): boolean {
   if (tab.key === "home") return pathname === "/home" || pathname === "/feed";
-  if (tab.key === "cells") return pathname.startsWith("/cells");
+  if (tab.key === "cells") return pathname.startsWith("/cells") || pathname.startsWith("/mission");
   if (tab.key === "shorts") return pathname.startsWith("/shorts");
-  if (tab.key === "contents") return pathname.startsWith("/contents") || pathname.startsWith("/theology") || pathname.startsWith("/mission");
+  if (tab.key === "contents") return pathname.startsWith("/contents");
   if (tab.key === "profile") return pathname === "/me" || pathname.startsWith("/profile/");
   return false;
 }

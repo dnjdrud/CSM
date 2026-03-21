@@ -1,12 +1,8 @@
-import { Suspense } from "react";
 import { TimelineContainer } from "@/components/TimelineContainer";
 import {
   getCurrentUser,
   listFeedPostsPage,
-  isBlocked,
-  isMuted,
 } from "@/lib/data/repository";
-import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { listMySubscriptions } from "@/lib/data/subscriptionRepository";
 import { getUserInteractions, getUserInterestTags } from "@/lib/data/supabaseRepository";
@@ -19,50 +15,10 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "컨텐츠 – Cellah" };
 
 const PAGE_SIZE = 20;
+const CANDIDATE_SIZE = PAGE_SIZE * 3;
 
-export default async function ContentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  await searchParams;
+export default async function ContentsPage() {
   const currentUser = await getCurrentUser();
-
-  return (
-    <TimelineContainer>
-      <h1 className="sr-only">컨텐츠</h1>
-
-      <header className="px-4 py-4 border-b border-theme-border bg-theme-surface sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-theme-muted uppercase tracking-widest">
-              Contents
-            </p>
-            <h2 className="text-[18px] font-semibold text-theme-text mt-0.5">컨텐츠</h2>
-          </div>
-          <ContentsHeaderIcon />
-        </div>
-      </header>
-
-      <ContentsBottomSearchBar position="top" />
-
-      <ContentTabContent currentUser={currentUser} />
-    </TimelineContainer>
-  );
-}
-
-function ContentsHeaderIcon() {
-  return <IconFeather className="h-6 w-6 text-theme-muted" aria-hidden />;
-}
-
-/* ─── 콘텐츠 탭 ─────────────────────────────────────────────── */
-
-async function ContentTabContent({
-  currentUser,
-}: {
-  currentUser: Awaited<ReturnType<typeof getCurrentUser>>;
-}) {
-  const CANDIDATE_SIZE = PAGE_SIZE * 3; // fetch more to score before trimming
 
   const [firstPage, mySubscriptions, interactions, interestTags] = await Promise.all([
     listFeedPostsPage({
@@ -78,16 +34,8 @@ async function ContentTabContent({
   ]);
 
   const subscribedCreatorIds = mySubscriptions.map((s) => s.creatorId);
+  const items = firstPage.items;
 
-  const visibleItems = currentUser
-    ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId)) return false;
-        if (isMuted(currentUser.id, post.authorId)) return false;
-        return canViewPost(post, currentUser, () => false);
-      })
-    : firstPage.items;
-
-  // Build signals and rank — falls back to recency if no signal data
   const signals: UserSignals = {
     interestTags: new Map(interestTags.map((t) => [t.tag, t.weight])),
     likedPostIds: new Set(
@@ -96,53 +44,68 @@ async function ContentTabContent({
     bookmarkedAuthorIds: new Set(
       interactions
         .filter((i) => i.interactionType === "bookmark")
-        .map((i) => visibleItems.find((p) => p.id === i.postId)?.authorId)
+        .map((i) => items.find((p) => p.id === i.postId)?.authorId)
         .filter((id): id is string => !!id)
     ),
     watchedAuthorIds: new Set(
       interactions
         .filter((i) => i.interactionType === "view" && (i.watchTimeSeconds ?? 0) > 60)
-        .map((i) => visibleItems.find((p) => p.id === i.postId)?.authorId)
+        .map((i) => items.find((p) => p.id === i.postId)?.authorId)
         .filter((id): id is string => !!id)
     ),
     subscribedCreatorIds: new Set(subscribedCreatorIds),
   };
 
   const rankedItems = currentUser
-    ? rankPosts(visibleItems, signals).slice(0, PAGE_SIZE)
-    : visibleItems.slice(0, PAGE_SIZE);
-
-  if (firstPage.error) {
-    return (
-      <div className="mx-4 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        콘텐츠를 불러올 수 없습니다. {firstPage.error}
-      </div>
-    );
-  }
+    ? rankPosts(items, signals).slice(0, PAGE_SIZE)
+    : items.slice(0, PAGE_SIZE);
 
   return (
-    <div>
-      {/* 헤더 설명 */}
-      <div className="px-4 py-3 border-b border-theme-border/60 bg-theme-surface-2/30 flex items-center justify-between">
-        <p className="text-[12px] text-theme-muted">
-          사역자와 크리에이터의 콘텐츠
-        </p>
-        <a
-          href="/write"
-          className="text-[12px] font-medium text-theme-primary hover:opacity-80"
-        >
-          + 콘텐츠 올리기
-        </a>
-      </div>
+    <TimelineContainer>
+      <h1 className="sr-only">컨텐츠</h1>
 
-      <ContentsInfiniteList
-        initialItems={rankedItems}
-        initialNextCursorStr={
-          firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null
-        }
-        currentUserId={currentUser?.id ?? null}
-        subscribedCreatorIds={subscribedCreatorIds}
-      />
-    </div>
+      <header className="px-4 py-4 border-b border-theme-border bg-theme-surface sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold text-theme-muted uppercase tracking-widest">
+              Contents
+            </p>
+            <h2 className="text-[18px] font-semibold text-theme-text mt-0.5">컨텐츠</h2>
+          </div>
+          <IconFeather className="h-6 w-6 text-theme-muted" aria-hidden />
+        </div>
+      </header>
+
+      <ContentsBottomSearchBar position="top" />
+
+      {firstPage.error ? (
+        <div className="mx-4 my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          콘텐츠를 불러올 수 없습니다. {firstPage.error}
+        </div>
+      ) : (
+        <div>
+          <div className="px-4 py-3 border-b border-theme-border/60 bg-theme-surface-2/30 flex items-center justify-between">
+            <p className="text-[12px] text-theme-muted">
+              사역자와 크리에이터의 콘텐츠
+            </p>
+            <a
+              href="/write"
+              className="text-[12px] font-medium text-theme-primary hover:opacity-80"
+            >
+              + 콘텐츠 올리기
+            </a>
+          </div>
+
+          <ContentsInfiniteList
+            initialItems={rankedItems}
+            initialNextCursorStr={
+              firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null
+            }
+            currentUserId={currentUser?.id ?? null}
+            subscribedCreatorIds={subscribedCreatorIds}
+          />
+        </div>
+      )}
+    </TimelineContainer>
   );
 }

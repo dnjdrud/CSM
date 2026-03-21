@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession, getCurrentUser, getAuthUserId } from "@/backend/connection";
-import { canViewPost, assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/backend/permissions";
+import { getSession, getAuthUserId } from "@/backend/connection";
+import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/backend/permissions";
 import { createPost, toggleReaction } from "@/backend/features/posts";
 import { listFeedPostsPage, decodeCursor, encodeCursor } from "@/backend/features/feed";
-import { listFollowingIds, isBlocked, isMuted, toggleFollow } from "@/backend/features/profile";
+import { toggleFollow } from "@/backend/features/profile";
 import { addComment, listCommentsByPostId } from "@/backend/features/comments";
 import { toggleBookmark } from "@/backend/features/bookmarks";
 import { getReactors } from "@/lib/data/repository";
@@ -56,7 +56,7 @@ export async function toggleFollowAction(profileId: string): Promise<boolean> {
 
 const DEFAULT_PAGE_LIMIT = 20;
 
-/** Load next page of feed. Returns items + nextCursorStr. Applies same canViewPost filtering as feed page. */
+/** Load next page of feed. Visibility filtering is handled at the DB layer. */
 export async function loadMoreFeedAction(input: {
   scope: "ALL" | "FOLLOWING";
   cursorStr: string | null;
@@ -70,17 +70,10 @@ export async function loadMoreFeedAction(input: {
     limit: DEFAULT_PAGE_LIMIT,
     cursor,
   });
-  const followingIds = await listFollowingIds(session.userId);
-  const isFollowing = (followerId: string, followingId: string) =>
-    followerId === session.userId && followingIds.includes(followingId);
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return { items: [], nextCursorStr: null };
-  const items = result.items.filter((post) => {
-    if (isBlocked(currentUser.id, post.authorId) || isMuted(currentUser.id, post.authorId)) return false;
-    return canViewPost(post, currentUser, isFollowing);
-  });
-  const nextCursorStr = result.nextCursor ? encodeCursor(result.nextCursor) : null;
-  return { items, nextCursorStr };
+  return {
+    items: result.items,
+    nextCursorStr: result.nextCursor ? encodeCursor(result.nextCursor) : null,
+  };
 }
 
 /** Fetch comments for a post (e.g. inline comment section on feed). */
@@ -173,12 +166,7 @@ export async function addCommentAction(
   parentId?: string
 ): Promise<{ ok: boolean; error?: string }> {
   const session = await getSession();
-  console.log("[addCommentAction] session", session);
-  if (!session) {
-    const authUserId = await getAuthUserId();
-    console.warn("[addCommentAction] session null. getAuthUserId:", authUserId ?? "null", "(if auth exists but session null, check users row / RLS)");
-    return { ok: false, error: "Not logged in" };
-  }
+  if (!session) return { ok: false, error: "Not logged in" };
   const trimmed = content.trim();
   if (!trimmed) return { ok: false, error: "Comment is required" };
   try {
@@ -188,14 +176,12 @@ export async function addCommentAction(
     return { ok: false, error: msg === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : msg || "Failed to add comment" };
   }
   try {
-    const payload = {
+    await addComment({
       postId,
       authorId: session.userId,
       content: trimmed,
       parentId: parentId || undefined,
-    };
-    console.log("[addCommentAction] insert payload", payload);
-    await addComment(payload);
+    });
     revalidatePath(`/post/${postId}`);
     revalidatePath("/feed");
     return { ok: true };

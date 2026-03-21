@@ -19,15 +19,8 @@ export async function addCommentAction(
   content: string,
   parentId?: string
 ): Promise<{ ok: boolean; error?: string }> {
-  console.log("[addCommentAction] hit");
   const session = await getSession();
-  console.log("[addCommentAction] session", session);
-  if (!session) {
-    const { getAuthUserId } = await import("@/lib/auth/session");
-    const authUserId = await getAuthUserId();
-    console.warn("[addCommentAction] session null. getAuthUserId:", authUserId ?? "null", "(if auth exists but session null, check users row / RLS)");
-    return { ok: false, error: "Not logged in" };
-  }
+  if (!session) return { ok: false, error: "Not logged in" };
   const trimmed = content.trim();
   if (!trimmed) return { ok: false, error: "Comment is required" };
   try {
@@ -36,14 +29,12 @@ export async function addCommentAction(
     return { ok: false, error: e instanceof Error && e.message === RATE_LIMIT_EXCEEDED ? RATE_LIMIT_MESSAGE : "Failed to add comment" };
   }
   try {
-    const payload = {
+    await addComment({
       postId,
       authorId: session.userId,
       content: trimmed,
       parentId: parentId || undefined,
-    };
-    console.log("[addCommentAction] insert payload", payload);
-    await addComment(payload);
+    });
     revalidatePath(`/post/${postId}`);
     revalidatePath("/feed");
 

@@ -4,12 +4,9 @@ import {
   getCurrentUser,
   listFeedPostsPage,
   listFollowingIds,
-  isBlocked,
-  isMuted,
   getBookmarkedPostIds,
   getTodaysDailyPrayer,
 } from "@/lib/data/repository";
-import { canViewPost } from "@/lib/domain/guards";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { HOME_FEED_CATEGORIES } from "@/lib/domain/types";
 import { TimelineContainer } from "@/components/TimelineContainer";
@@ -18,7 +15,6 @@ import { SuggestedPeople } from "@/app/(app)/feed/_components/SuggestedPeople";
 import { HomeInfiniteList } from "./_components/HomeInfiniteList";
 import { getRoleUX } from "@/lib/config/roleUX";
 import { getServerT, getServerLocale } from "@/lib/i18n/server";
-import type { Translations } from "@/lib/i18n/translations";
 
 // force-dynamic 유지 이유:
 //   홈 피드는 로그인 사용자별 완전 개인화 콘텐츠 (팔로우, 역할, 북마크 등) 이므로
@@ -53,22 +49,6 @@ function FeedSkeleton() {
           </div>
           <div className="h-3 w-full rounded bg-theme-surface-2" />
           <div className="h-3 w-3/4 rounded bg-theme-surface-2" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PrayerSkeleton() {
-  return (
-    <div className="animate-pulse divide-y divide-theme-border/60">
-      {Array.from({ length: 4 }, (_, i) => (
-        <div key={i} className="px-4 py-4 flex gap-3">
-          <div className="w-9 h-9 rounded-full bg-theme-surface-2 shrink-0" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-20 rounded bg-theme-surface-2" />
-            <div className="h-3 w-full rounded bg-theme-surface-2" />
-          </div>
         </div>
       ))}
     </div>
@@ -126,7 +106,7 @@ export default async function HomePage({
    3. listFeedPostsPage + listFollowingIds 병렬 실행 (기존과 동일).
    4. getBookmarkedPostIds는 firstPage post ID가 필요해 직렬 불가피.
       근본 해결은 listFeedPostsPage 내부에서 bookmarked 플래그를 포함시키는 것.
-   5. followingIds → Set 변환으로 isFollowingFn 조회를 O(n) → O(1)로 개선.
+   5. Visibility filtering moved to DB layer (listFeedPostsPage).
 ──────────────────────────────────────────────────────────────────────────── */
 
 async function FeedTabContent({
@@ -168,19 +148,6 @@ async function FeedTabContent({
       )
     : [];
 
-  // Array.includes() O(n) → Set.has() O(1)
-  const followingSet = new Set(followingIds);
-  const isFollowingFn = (followerId: string, followingId: string) =>
-    followerId === currentUser?.id && followingSet.has(followingId);
-
-  const visibleItems = currentUser
-    ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId)) return false;
-        if (isMuted(currentUser.id, post.authorId)) return false;
-        return canViewPost(post, currentUser, isFollowingFn);
-      })
-    : firstPage.items;
-
   return (
     <div>
       {/*
@@ -219,7 +186,7 @@ async function FeedTabContent({
         </div>
       ) : (
         <HomeInfiniteList
-          initialItems={visibleItems}
+          initialItems={firstPage.items}
           initialNextCursorStr={
             firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null
           }
@@ -242,24 +209,11 @@ async function DailyPrayerBannerServer({
 }: {
   dataPromise: ReturnType<typeof getTodaysDailyPrayer>;
 }) {
-  // 세 fetch를 병렬 대기 (cookies()는 Next.js 요청 내 메모이즈됨)
   const [dailyPrayer, t, locale] = await Promise.all([
     dataPromise,
     getServerT(),
     getServerLocale(),
   ]);
-  return <DailyPrayerBanner dailyPrayer={dailyPrayer} t={t} locale={locale} />;
-}
-
-function DailyPrayerBanner({
-  dailyPrayer,
-  t,
-  locale,
-}: {
-  dailyPrayer: { id: string; content: string } | null;
-  t: Translations;
-  locale: string;
-}) {
   return (
     <div className="border-b border-theme-border/60 bg-gradient-to-b from-theme-surface-2/40 to-transparent px-4 py-4">
       <p className="text-[11px] font-medium text-theme-muted uppercase tracking-wider mb-2">

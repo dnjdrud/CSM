@@ -595,6 +595,20 @@ export async function listFeedPostsPage(params: ListFeedPostsPageParams): Promis
       .limit(limit + 1);
     if (useHidden) q = q.is("hidden_at", null);
     if (authorIds) q = q.in("author_id", authorIds);
+    // Visibility filter — applied at DB level so pages don't need canViewPost filtering.
+    // FOLLOWING scope: authorIds already constrains to viewer + followed users, so FOLLOWERS
+    // posts from those authors are safe to show. Only PRIVATE posts by others are excluded.
+    // ALL scope: show only PUBLIC/MEMBERS posts plus the viewer's own posts (any visibility).
+    if (uid) {
+      if (params.scope === "FOLLOWING") {
+        // authorIds filter already applied above; just exclude others' PRIVATE posts
+        q = q.or(`visibility.in.(PUBLIC,MEMBERS,FOLLOWERS),author_id.eq.${uid}`);
+      } else {
+        q = q.or(`visibility.in.(PUBLIC,MEMBERS),author_id.eq.${uid}`);
+      }
+    } else {
+      q = q.eq("visibility", "PUBLIC");
+    }
     if (params.excludeCategories && params.excludeCategories.length > 0) {
       q = q.not("category", "in", `(${params.excludeCategories.join(",")})`);
     }
@@ -954,6 +968,30 @@ export async function listFollowerIds(userId: string): Promise<string[]> {
   const client = getSupabaseAdmin() ?? await supabaseServer();
   const { data } = await client.from("follows").select("follower_id").eq("following_id", userId);
   return (data ?? []).map((r) => r.follower_id);
+}
+
+/**
+ * Returns follower and following counts for a user using COUNT queries (HEAD).
+ * Much cheaper than listFollowerIds + listFollowingIds when only counts are needed.
+ */
+export async function getFollowCounts(
+  userId: string
+): Promise<{ followers: number; following: number }> {
+  const client = getSupabaseAdmin() ?? await supabaseServer();
+  const [followerRes, followingRes] = await Promise.all([
+    client
+      .from("follows")
+      .select("id", { count: "exact", head: true })
+      .eq("following_id", userId),
+    client
+      .from("follows")
+      .select("id", { count: "exact", head: true })
+      .eq("follower_id", userId),
+  ]);
+  return {
+    followers: followerRes.count ?? 0,
+    following: followingRes.count ?? 0,
+  };
 }
 
 export async function listFollowers(userId: string): Promise<User[]> {
