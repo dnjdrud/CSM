@@ -1,5 +1,5 @@
 /**
- * Backend feature: admin (users, audit, moderation, daily prayer).
+ * Backend feature: admin (users, audit, moderation).
  */
 export type { DashboardStats, AdminUserRow } from "@/lib/data/adminRepository";
 export {
@@ -14,7 +14,6 @@ export {
   hidePost,
   deleteComment,
   resolveModerationReport,
-  createDailyPrayer,
 } from "@/lib/data/adminRepository";
 export {
   listOpenReports,

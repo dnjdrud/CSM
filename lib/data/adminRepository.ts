@@ -228,60 +228,6 @@ function getTodayAsiaSeoul(): string {
   return `${y}-${m}-${d}`;
 }
 
-/** Create today's Daily Prayer post and log audit. Idempotent: if a post with same title by this admin exists today, return reused. */
-export async function createDailyPrayer(adminId: string, customContent?: string): Promise<{ postId: string; reused: boolean }> {
-  const { buildDailyPrayerPost } = await import("@/lib/domain/dailyPrayer");
-  const supabase = await supabaseServer();
-  const today = getTodayAsiaSeoul();
-  const payload = buildDailyPrayerPost({ date: new Date() });
-  if (customContent?.trim()) payload.content = customContent.trim();
-
-  const startOfToday = new Date(today + "T00:00:00.000Z").toISOString();
-  const { data: existing } = await supabase
-    .from("posts")
-    .select("id")
-    .eq("author_id", adminId)
-    .eq("category", "PRAYER")
-    .contains("tags", ["daily-prayer"])
-    .gte("created_at", startOfToday)
-    .limit(1)
-    .maybeSingle();
-
-  if (existing) {
-    await logAdminAction({
-      actorId: adminId,
-      action: ADMIN_ACTION.CREATE_DAILY_PRAYER,
-      targetType: AUDIT_TARGET_TYPE.POST,
-      targetId: existing.id,
-      metadata: { date: today, title: "Daily Prayer (reused)", reused: true },
-    });
-    return { postId: existing.id, reused: true };
-  }
-
-  const { data: row, error: insertError } = await supabase
-    .from("posts")
-    .insert({
-      author_id: adminId,
-      category: payload.category,
-      content: payload.content,
-      visibility: payload.visibility,
-      tags: payload.tags,
-    })
-    .select("id")
-    .single();
-
-  if (insertError || !row) throw new Error(insertError?.message ?? "Failed to create post");
-
-  await logAdminAction({
-    actorId: adminId,
-    action: ADMIN_ACTION.CREATE_DAILY_PRAYER,
-    targetType: AUDIT_TARGET_TYPE.POST,
-    targetId: row.id,
-    metadata: { date: today, title: payload.title, reused: false },
-  });
-
-  return { postId: row.id, reused: false };
-}
 
 export interface AdminPostRow {
   id: string;

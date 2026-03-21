@@ -1,7 +1,6 @@
 import { getDashboardStats } from "@/lib/data/adminRepository";
 import { getAdminSignals } from "@/lib/observability/adminSignals";
 import { Card, CardContent } from "@/components/ui/Card";
-import { CreateDailyPrayerButton } from "./_components/CreateDailyPrayerButton";
 
 export default async function AdminDashboardPage() {
   const [stats, signals] = await Promise.all([getDashboardStats(), getAdminSignals()]);
@@ -90,9 +89,6 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <div className="mt-8">
-        <CreateDailyPrayerButton />
-      </div>
     </div>
   );
 }

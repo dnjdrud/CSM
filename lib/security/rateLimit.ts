@@ -15,7 +15,6 @@ export type RateLimitAction =
   | "CREATE_COMMENT"
   | "REPORT"
   | "CREATE_INVITE"
-  | "CREATE_DAILY_PRAYER"
   | "SEND_DM";
 
 export interface AssertRateLimitParams {
