@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { PostWithAuthor } from "@/lib/domain/types";
 import { CATEGORY_LABELS } from "@/lib/domain/types";
@@ -83,104 +84,117 @@ export function PostActionsMenu({
     }
   }
 
-  if (editing) {
-    return (
-      <div className="mt-4 p-4 border border-theme-border rounded-xl bg-theme-surface-2/50">
-        <label className="block text-sm font-medium text-theme-text mb-1">Content</label>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={4}
-          className="block w-full rounded-md border border-theme-border bg-theme-surface px-3 py-2 text-[15px] text-theme-text focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary"
-          disabled={pending}
-        />
-        <div className="mt-3">
-          <span className="text-sm font-medium text-theme-text">Category</span>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {CATEGORIES.map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-1 text-sm text-theme-text cursor-pointer">
-                <input type="radio" checked={category === value} onChange={() => setCategory(value)} className="rounded-full border-theme-border" />
-                {label}
-              </label>
-            ))}
+  const editModal = editing
+    ? createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) { setEditing(false); setError(null); setContent(post.content); setCategory(post.category); setVisibility(post.visibility === "MEMBERS" ? "PUBLIC" : post.visibility); setTagsInput((post.tags ?? []).join(", ")); } }}
+        >
+          <div className="w-full max-w-lg rounded-t-2xl sm:rounded-2xl bg-theme-surface border border-theme-border shadow-xl px-5 py-5 space-y-4">
+            <h2 className="text-[15px] font-semibold text-theme-text">게시글 수정</h2>
+            <div>
+              <label className="block text-sm font-medium text-theme-text mb-1">내용</label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={5}
+                className="block w-full rounded-xl border border-theme-border bg-theme-surface-2 px-3 py-2 text-[15px] text-theme-text focus:border-theme-primary focus:outline-none focus:ring-1 focus:ring-theme-primary resize-none"
+                disabled={pending}
+                autoFocus
+              />
+            </div>
+            <div>
+              <span className="text-sm font-medium text-theme-text">카테고리</span>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {CATEGORIES.map(({ value, label }) => (
+                  <label key={value} className="flex items-center gap-1.5 text-sm text-theme-text cursor-pointer">
+                    <input type="radio" checked={category === value} onChange={() => setCategory(value)} className="rounded-full border-theme-border" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-theme-text">공개 범위</span>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {VISIBILITY_OPTIONS.map(({ value, label }) => (
+                  <label key={value} className="flex items-center gap-1.5 text-sm text-theme-text cursor-pointer">
+                    <input type="radio" checked={visibility === value} onChange={() => setVisibility(value)} className="rounded-full border-theme-border" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-theme-text">태그 (쉼표로 구분)</label>
+              <input
+                type="text"
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="예: prayer, work"
+                className="mt-1.5 block w-full rounded-xl border border-theme-border bg-theme-surface-2 px-3 py-2 text-sm text-theme-text focus:border-theme-primary focus:outline-none"
+              />
+            </div>
+            {error && <p className="text-sm text-theme-danger">{error}</p>}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={pending || !content.trim()}
+                className="flex-1 rounded-xl bg-theme-primary px-4 py-2.5 text-sm font-semibold text-white hover:brightness-110 transition-all disabled:opacity-50"
+              >
+                {pending ? "저장 중…" : "저장"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEditing(false); setError(null); setContent(post.content); setCategory(post.category); setVisibility(post.visibility === "MEMBERS" ? "PUBLIC" : post.visibility); setTagsInput((post.tags ?? []).join(", ")); }}
+                disabled={pending}
+                className="flex-1 rounded-xl border border-theme-border px-4 py-2.5 text-sm font-medium text-theme-muted hover:bg-theme-surface-2 transition-colors"
+              >
+                취소
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="mt-3">
-          <span className="text-sm font-medium text-theme-text">Visibility</span>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {VISIBILITY_OPTIONS.map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-1 text-sm text-theme-text cursor-pointer">
-                <input type="radio" checked={visibility === value} onChange={() => setVisibility(value)} className="rounded-full border-theme-border" />
-                {label}
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="mt-3">
-          <label className="text-sm font-medium text-theme-text">Tags (comma-separated)</label>
-          <input
-            type="text"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="e.g. prayer, work"
-            className="mt-1 block w-full rounded border border-theme-border bg-theme-surface-2 px-3 py-2 text-sm text-theme-text focus:border-theme-primary focus:outline-none"
-          />
-        </div>
-        {error && <p className="mt-2 text-sm text-theme-danger">{error}</p>}
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={pending || !content.trim()}
-            className="rounded-button bg-theme-primary px-4 py-2 text-sm font-medium text-white hover:bg-theme-primary-2 transition-colors disabled:opacity-50"
-          >
-            {pending ? "Saving…" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEditing(false); setError(null); setContent(post.content); setCategory(post.category); setVisibility(post.visibility); setTagsInput((post.tags ?? []).join(", ")); }}
-            disabled={pending}
-            className="rounded-button border border-theme-border px-4 py-2 text-sm font-medium text-theme-muted hover:bg-theme-surface-2 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
+        </div>,
+        document.body
+      )
+    : null;
 
   return (
-    <div className="relative inline-block">
-      <button
-        type="button"
-        onClick={() => setMenuOpen((o) => !o)}
-        className="p-1 rounded hover:bg-theme-surface-2 text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent transition-colors"
-        aria-label="Post actions"
-      >
-        {compact ? "⋯" : "⋮"}
-      </button>
-      {menuOpen && (
-        <>
-          <div className="fixed inset-0 z-10" aria-hidden onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 py-1 w-36 rounded-xl border border-theme-border bg-theme-surface shadow-md z-20">
-            <button
-              type="button"
-              onClick={() => { setMenuOpen(false); setEditing(true); }}
-              className="block w-full text-left px-3 py-2 text-sm text-theme-text hover:bg-theme-surface-2 transition-colors"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMenuOpen(false); handleDelete(); }}
-              disabled={pending}
-              className="block w-full text-left px-3 py-2 text-sm text-theme-danger hover:bg-theme-danger-bg transition-colors"
-            >
-              Delete
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+    <>
+      {editModal}
+      <div className="relative inline-block">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          className="p-1 rounded hover:bg-theme-surface-2 text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent transition-colors"
+          aria-label="Post actions"
+        >
+          {compact ? "⋯" : "⋮"}
+        </button>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" aria-hidden onClick={() => setMenuOpen(false)} />
+            <div className="absolute right-0 top-full mt-1 py-1 w-36 rounded-xl border border-theme-border bg-theme-surface shadow-md z-20">
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); setEditing(true); }}
+                className="block w-full text-left px-3 py-2 text-sm text-theme-text hover:bg-theme-surface-2 transition-colors"
+              >
+                수정
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); handleDelete(); }}
+                disabled={pending}
+                className="block w-full text-left px-3 py-2 text-sm text-theme-danger hover:bg-theme-danger-bg transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }
