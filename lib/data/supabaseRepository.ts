@@ -981,11 +981,11 @@ export async function getFollowCounts(
   const [followerRes, followingRes] = await Promise.all([
     client
       .from("follows")
-      .select("id", { count: "exact", head: true })
+      .select("follower_id", { count: "exact", head: true })
       .eq("following_id", userId),
     client
       .from("follows")
-      .select("id", { count: "exact", head: true })
+      .select("following_id", { count: "exact", head: true })
       .eq("follower_id", userId),
   ]);
   return {
