@@ -206,7 +206,7 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
                     <Link href="/settings" role="menuitem" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-theme-text hover:bg-theme-surface-2 transition-colors">
                       {t.header.settings}
                     </Link>
-                    <Link href="/guide" role="menuitem" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-theme-text hover:bg-theme-surface-2 transition-colors">
+                    <Link href="/guide" role="menuitem" target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-theme-text hover:bg-theme-surface-2 transition-colors">
                       {t.header.guide}
                     </Link>
                     {isAdmin && (

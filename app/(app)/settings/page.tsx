@@ -65,6 +65,8 @@ export default async function SettingsPage() {
             <li>
               <Link
                 href="/guide"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-3 px-4 py-3.5 hover:bg-theme-surface-2/50 transition-colors"
               >
                 <IconMessageCircle className="h-5 w-5 text-theme-muted shrink-0" aria-hidden />

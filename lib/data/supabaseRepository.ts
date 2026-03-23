@@ -448,57 +448,6 @@ async function hydratePostRows(
   })) as PostWithAuthor[];
 }
 
-export async function listFeedPosts(options: {
-  scope: "ALL" | "FOLLOWING";
-  currentUserId?: string | null;
-}): Promise<PostWithAuthor[]> {
-  const supabase = await supabaseServer();
-  const uid = options.currentUserId ?? null;
-  const useHidden = hasHiddenAtColumn !== false;
-
-  let authorIdsForFollowing: string[] | null = null;
-  if (options.scope === "FOLLOWING" && uid) {
-    const { data: followRows } = await supabase.from("follows").select("following_id").eq("follower_id", uid);
-    const followingIds = (followRows ?? []).map((r) => r.following_id);
-    authorIdsForFollowing = [...new Set([uid, ...followingIds])];
-  }
-
-  type FeedRow = { id: string; author_id: string; category: string; content: string; visibility: string; tags: string[] | null; created_at: string | null; youtube_url?: string | null; media_urls?: string[] | null };
-  let rows: FeedRow[] | null = null;
-  let error: { message: string } | null = null;
-
-  let query = supabase.from("posts").select(POSTS_FEED_SELECT).order("created_at", { ascending: false });
-  if (useHidden) query = query.is("hidden_at", null);
-  if (authorIdsForFollowing) query = query.in("author_id", authorIdsForFollowing);
-  const first = await query;
-  rows = first.data as FeedRow[] | null;
-  error = first.error;
-
-  if (error && isHiddenAtError(error.message)) {
-    hasHiddenAtColumn = false;
-    let q2 = supabase.from("posts").select(POSTS_FEED_SELECT).order("created_at", { ascending: false });
-    if (authorIdsForFollowing) q2 = q2.in("author_id", authorIdsForFollowing);
-    const next = await q2;
-    rows = next.data as FeedRow[] | null;
-    error = next.error;
-  }
-  if (error && isColumnOrSchemaError(error.message)) {
-    let q3 = supabase.from("posts").select(POSTS_FEED_SELECT).order("created_at", { ascending: false });
-    if (authorIdsForFollowing) q3 = q3.in("author_id", authorIdsForFollowing);
-    const next = await q3;
-    rows = next.data as FeedRow[] | null;
-    error = next.error;
-  }
-  if (!error && useHidden) hasHiddenAtColumn = true;
-  if (error) {
-    console.error("[FEED_QUERY_ERROR]", error.message);
-    return [];
-  }
-  if (!rows?.length) return [];
-  // hydratePostRows: resolves authors + reactions in parallel, O(m) reactionsByPost build.
-  return hydratePostRows(supabase, rows as FeedPostRow[], uid);
-}
-
 /** Fetch today's Daily Prayer post (has daily-prayer tag, most recent today KST). */
 export async function getTodaysDailyPrayer(): Promise<PostWithAuthor | null> {
   const supabase = await supabaseServer();
@@ -2146,16 +2095,6 @@ export async function markConversationRead(userId: string, partnerId: string): P
     .is("read_at", null);
 }
 
-export async function countUnreadDMs(userId: string): Promise<number> {
-  const supabase = await supabaseServer();
-  const { count } = await supabase
-    .from("direct_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("recipient_id", userId)
-    .is("read_at", null);
-  return count ?? 0;
-}
-
 // =============================================================
 // Notification preferences
 // =============================================================
@@ -2365,40 +2304,6 @@ export async function toggleMissionarySupport(projectId: string, userId: string)
   }
   await supabase.from("missionary_supporters").insert({ project_id: projectId, user_id: userId, support_type: "PRAYER" });
   return "added";
-}
-
-/**
- * Upload a profile avatar to Supabase Storage and update the user's avatar_url.
- * Bucket: avatars (public). Path: {userId}/avatar.{ext}
- */
-export async function uploadAvatar(
-  userId: string,
-  fileBuffer: ArrayBuffer,
-  mimeType: string
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return { ok: false, error: "Storage not available" };
-
-  const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
-  const path = `${userId}/avatar.${ext}`;
-
-  const { error: uploadError } = await admin.storage
-    .from("avatars")
-    .upload(path, fileBuffer, { contentType: mimeType, upsert: true });
-
-  if (uploadError) return { ok: false, error: uploadError.message };
-
-  const { data: urlData } = admin.storage.from("avatars").getPublicUrl(path);
-  const url = `${urlData.publicUrl}?t=${Date.now()}`;
-
-  const { error: updateError } = await admin
-    .from("users")
-    .update({ avatar_url: url })
-    .eq("id", userId);
-
-  if (updateError) return { ok: false, error: updateError.message };
-
-  return { ok: true, url };
 }
 
 // =============================================================

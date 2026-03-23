@@ -12,24 +12,11 @@ import { useToast } from "@/components/ui/Toast";
 import { MentionText } from "@/components/MentionText";
 import { deleteCommentAction as deleteCommentActionDefault, updateCommentAction as updateCommentActionDefault, toggleCommentLikeAction } from "../actions";
 import { IconHeart } from "@/components/ui/Icon";
+import { formatRelativeTime } from "@/lib/utils/time";
 
 type CommentWithAuthor = Comment & { author: User };
 type DeleteCommentAction = (commentId: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
 type UpdateCommentAction = (commentId: string, content: string, postId?: string) => Promise<{ ok: boolean; error?: string }>;
-
-function relativeTime(iso: string): string {
-  const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffM = Math.floor(diffMs / 60000);
-  const diffH = Math.floor(diffMs / 3600000);
-  const diffD = Math.floor(diffMs / 86400000);
-  if (diffM < 1) return "now";
-  if (diffM < 60) return `${diffM}m ago`;
-  if (diffH < 24) return `${diffH}h ago`;
-  if (diffD < 7) return `${diffD}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 export function CommentItem({
   comment,
@@ -157,7 +144,7 @@ export function CommentItem({
             {ROLE_DISPLAY[comment.author.role]}
           </Badge>
           <time dateTime={comment.createdAt} className="text-xs text-theme-muted">
-            {relativeTime(comment.createdAt)}
+            {formatRelativeTime(new Date(comment.createdAt))}
           </time>
         </div>
 

@@ -5,7 +5,10 @@ import {
   toggleBookmarkAction,
   toggleReactionAction,
   getCommentsForPostAction,
+  getReactorsAction,
   addCommentAction,
+  deleteCommentAction,
+  updateCommentAction,
   deletePostAction,
   updatePostAction,
 } from "../actions";
@@ -24,8 +27,11 @@ export function BookmarkedPostCard({ post, currentUserId }: Props) {
       initialBookmarked
       onToggleReaction={currentUserId ? toggleReactionAction : undefined}
       onToggleBookmark={currentUserId ? toggleBookmarkAction : undefined}
+      getReactorsAction={getReactorsAction}
       getCommentsForPost={getCommentsForPostAction}
       addCommentAction={addCommentAction}
+      deleteCommentAction={deleteCommentAction}
+      updateCommentAction={updateCommentAction}
       deletePostAction={deletePostAction}
       updatePostAction={updatePostAction}
     />

@@ -521,25 +521,6 @@ function toPostWithAuthor(post: DomainPost, currentUserId: string | null): PostW
   };
 }
 
-/** Feed posts, chronological. scope FOLLOWING = only posts by users current user follows. */
-export async function listFeedPosts(options: {
-  scope: "ALL" | "FOLLOWING";
-  currentUserId?: string | null;
-}): Promise<PostWithAuthor[]> {
-  if (DATA_MODE === "supabase") return supabaseRepo.listFeedPosts(options);
-  const session = await getSession();
-  const uid = options.currentUserId ?? session?.userId ?? null;
-  let source = [...posts];
-  if (options.scope === "FOLLOWING" && uid) {
-    const followingIds = listFollowingIdsSync(uid);
-    source = source.filter((p) => followingIds.includes(p.authorId));
-  }
-  const sorted = source.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-  return sorted.map((p) => toPostWithAuthor(p, uid));
-}
-
 export type ListFeedPostsPageParams = {
   currentUserId: string | null;
   scope: "ALL" | "FOLLOWING";
@@ -1296,20 +1277,6 @@ export async function listMessages(userId: string, partnerId: string, limit?: nu
 
 export async function markConversationRead(userId: string, partnerId: string): Promise<void> {
   if (DATA_MODE === "supabase") return supabaseRepo.markConversationRead(userId, partnerId);
-}
-
-export async function countUnreadDMs(userId: string): Promise<number> {
-  if (DATA_MODE === "supabase") return supabaseRepo.countUnreadDMs(userId);
-  return 0;
-}
-
-export async function uploadAvatar(
-  userId: string,
-  fileBuffer: ArrayBuffer,
-  mimeType: string
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  if (DATA_MODE === "supabase") return supabaseRepo.uploadAvatar(userId, fileBuffer, mimeType);
-  return { ok: false, error: "Not supported" };
 }
 
 export async function getTodaysDailyPrayer(): Promise<import("@/lib/domain/types").PostWithAuthor | null> {

@@ -30,17 +30,7 @@ function getRequestType(tags: string[]): RequestType {
   return FALLBACK_TYPE;
 }
 
-function relativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diffMs / 60000);
-  const h = Math.floor(diffMs / 3600000);
-  const d = Math.floor(diffMs / 86400000);
-  if (m < 1) return "방금";
-  if (m < 60) return `${m}분`;
-  if (h < 24) return `${h}시간`;
-  if (d < 7) return `${d}일`;
-  return new Date(iso).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
-}
+import { relativeTimeKo } from "@/lib/utils/time";
 
 export function CollabRequestCard({ post }: { post: PostWithAuthor }) {
   const tags = Array.isArray(post.tags) ? post.tags : [];
@@ -61,7 +51,7 @@ export function CollabRequestCard({ post }: { post: PostWithAuthor }) {
               {requestType.label}
             </span>
             <time dateTime={post.createdAt} className="text-[12px] text-theme-muted ml-auto">
-              {relativeTime(post.createdAt)}
+              {relativeTimeKo(post.createdAt)}
             </time>
           </div>
 

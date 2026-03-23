@@ -23,8 +23,15 @@ const nextConfig: NextConfig = {
       // Note: scope-based feed remains at /feed for backward compat
       // /profile/:id/edit → /settings/profile
       { source: "/profile/:id/edit", destination: "/settings/profile", permanent: false },
-      // /me → /profile (redirect to settings)
-      // Keep /me as My Space, don't redirect
+      // /profile/:id/prayers (removed tab) → /profile/:id
+      { source: "/profile/:id/prayers", destination: "/profile/:id", permanent: false },
+      // /notifications/settings (moved) → /settings/notifications
+      { source: "/notifications/settings", destination: "/settings/notifications", permanent: false },
+      // /cells/:id/prayer (removed tab) → /cells/:id
+      { source: "/cells/:id/prayer", destination: "/cells/:id", permanent: false },
+      // /admin/invites and /admin/signups (removed pages) → /admin/signup-requests
+      { source: "/admin/invites", destination: "/admin/signup-requests", permanent: false },
+      { source: "/admin/signups", destination: "/admin/signup-requests", permanent: false },
     ];
   },
 };

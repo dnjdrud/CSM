@@ -1,11 +1,17 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
-import { addComment, deleteComment, updateComment, deletePost, updatePost, toggleCommentLike, getCommentById, searchPeople } from "@/lib/data/repository";
-import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
+import { getSession } from "@/backend/connection";
+import { addComment, toggleCommentLike, getCommentById, searchPeople } from "@/lib/data/repository";
+import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/backend/permissions";
+import { revalidatePostPaths } from "@/lib/utils/revalidation";
 import type { User } from "@/lib/domain/types";
+
+export {
+  deleteCommentAction,
+  updateCommentAction,
+  updatePostAction,
+  deletePostAction,
+} from "@/app/(app)/_actions/postMutations";
 
 export async function searchMentionUsersAction(q: string): Promise<Pick<User, "id" | "name" | "username">[]> {
   const session = await getSession();
@@ -14,6 +20,10 @@ export async function searchMentionUsersAction(q: string): Promise<Pick<User, "i
   return results.slice(0, 8).map((u) => ({ id: u.id, name: u.name, username: u.username ?? null }));
 }
 
+/**
+ * Post-detail addCommentAction: includes mention notification firing.
+ * Shadows the shared version intentionally.
+ */
 export async function addCommentAction(
   postId: string,
   content: string,
@@ -35,8 +45,7 @@ export async function addCommentAction(
       content: trimmed,
       parentId: parentId || undefined,
     });
-    revalidatePath(`/post/${postId}`);
-    revalidatePath("/feed");
+    revalidatePostPaths(postId);
 
     // Fire mention notifications for @name / @username patterns
     const mentionMatches = [...new Set(trimmed.match(/@([^\s@,!?.]+)/g) ?? [])];
@@ -63,10 +72,7 @@ export async function addCommentAction(
 
     return { ok: true };
   } catch (e) {
-    console.error(
-      "[addCommentAction] supabase error",
-      e instanceof Error ? e.message : e
-    );
+    console.error("[addCommentAction] supabase error", e instanceof Error ? e.message : e);
     return {
       ok: false,
       error: e instanceof Error && e.message ? e.message : "Failed to add comment",
@@ -86,38 +92,6 @@ export async function addCommentFormAction(formData: FormData): Promise<void> {
   );
 }
 
-export async function deleteCommentAction(commentId: string, postId?: string): Promise<{ ok: boolean; error?: string }> {
-  const session = await getSession();
-  if (!session) return { ok: false, error: "Not logged in" };
-  const ok = await deleteComment(commentId, session.userId);
-  if (!ok) return { ok: false, error: "Not allowed or not found" };
-  revalidatePath("/feed");
-  if (postId) revalidatePath(`/post/${postId}`);
-  return { ok: true };
-}
-
-export async function updateCommentAction(commentId: string, content: string, postId?: string): Promise<{ ok: boolean; error?: string }> {
-  const session = await getSession();
-  if (!session) return { ok: false, error: "Not logged in" };
-  const trimmed = content.trim();
-  if (!trimmed) return { ok: false, error: "Content is required" };
-  const updated = await updateComment(commentId, session.userId, trimmed);
-  if (!updated) return { ok: false, error: "Not allowed or not found" };
-  revalidatePath("/feed");
-  if (postId) revalidatePath(`/post/${postId}`);
-  return { ok: true };
-}
-
-export async function deletePostAction(postId: string): Promise<{ ok: boolean; error?: string }> {
-  const session = await getSession();
-  if (!session) return { ok: false, error: "Not logged in" };
-  const ok = await deletePost(postId, session.userId);
-  if (!ok) return { ok: false, error: "Not allowed or not found" };
-  revalidatePath("/feed");
-  revalidatePath(`/post/${postId}`);
-  redirect("/feed");
-}
-
 export async function toggleCommentLikeAction(
   commentId: string,
   postId: string
@@ -126,7 +100,6 @@ export async function toggleCommentLikeAction(
   if (!session) return { ok: false, error: "Not logged in" };
   try {
     const result = await toggleCommentLike(commentId, session.userId);
-    // Fire notification if liked (not on unlike)
     if (result.liked) {
       const { supabaseServer } = await import("@/lib/supabase/server");
       const supabase = await supabaseServer();
@@ -144,27 +117,4 @@ export async function toggleCommentLikeAction(
 
 export async function getCommentByIdAction(commentId: string) {
   return getCommentById(commentId);
-}
-
-export async function updatePostAction(
-  postId: string,
-  content: string,
-  category?: string,
-  visibility?: string,
-  tags?: string[]
-): Promise<{ ok: boolean; error?: string }> {
-  const session = await getSession();
-  if (!session) return { ok: false, error: "Not logged in" };
-  const trimmed = content.trim();
-  if (!trimmed) return { ok: false, error: "Content is required" };
-  const updated = await updatePost(postId, session.userId, {
-    content: trimmed,
-    category: category as "DEVOTIONAL" | "MINISTRY" | "GENERAL" | undefined,
-    visibility: visibility as "PUBLIC" | "MEMBERS" | "FOLLOWERS" | "PRIVATE" | undefined,
-    tags,
-  });
-  if (!updated) return { ok: false, error: "Not allowed or not found" };
-  revalidatePath("/feed");
-  revalidatePath(`/post/${postId}`);
-  return { ok: true };
 }

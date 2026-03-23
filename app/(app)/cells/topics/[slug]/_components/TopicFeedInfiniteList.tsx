@@ -8,19 +8,7 @@ import type { PostWithAuthor } from "@/lib/domain/types";
 import type { CellTopic } from "@/lib/cells/topics";
 import { TOPIC_COLOR_CLASSES } from "@/lib/cells/topics";
 
-/* ─── Time helper ────────────────────────────────────────────── */
-
-function relativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diffMs / 60000);
-  const h = Math.floor(diffMs / 3600000);
-  const d = Math.floor(diffMs / 86400000);
-  if (m < 1) return "방금";
-  if (m < 60) return `${m}분`;
-  if (h < 24) return `${h}시간`;
-  if (d < 7) return `${d}일`;
-  return new Date(iso).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
-}
+import { relativeTimeKo } from "@/lib/utils/time";
 
 /* ─── CellPostCard ────────────────────────────────────────────── */
 
@@ -46,7 +34,7 @@ function CellPostCard({ post, topicColor }: { post: PostWithAuthor; topicColor: 
           </Link>
         </div>
         <time dateTime={post.createdAt} className="text-[12px] text-theme-muted shrink-0">
-          {relativeTime(post.createdAt)}
+          {relativeTimeKo(post.createdAt)}
         </time>
       </div>
 

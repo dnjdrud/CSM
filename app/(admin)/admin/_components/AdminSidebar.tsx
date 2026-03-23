@@ -37,7 +37,7 @@ export function AdminSidebar() {
       </nav>
       <div className="mt-8 pt-4 border-t border-theme-border">
         <Link
-          href="/feed"
+          href="/home"
           className="text-sm text-theme-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent focus-visible:ring-offset-2 rounded"
         >
           ← Back to app

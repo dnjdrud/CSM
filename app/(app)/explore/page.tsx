@@ -49,7 +49,7 @@ async function CategorySection({ categoryKey, label, icon, desc }: {
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center mb-3">
         <div className="flex items-center gap-2">
           <span className="text-xl" aria-hidden>{icon}</span>
           <div>
@@ -57,12 +57,6 @@ async function CategorySection({ categoryKey, label, icon, desc }: {
             <p className="text-[12px] text-theme-muted">{desc}</p>
           </div>
         </div>
-        <Link
-          href={`/feed?scope=ALL&category=${categoryKey}`}
-          className="text-[12px] text-theme-primary hover:opacity-80 shrink-0"
-        >
-          더 보기
-        </Link>
       </div>
 
       {posts.length === 0 ? (

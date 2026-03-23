@@ -20,27 +20,7 @@ import { useClientSession } from "@/lib/auth/useClientSession";
 import { ReactorsModal } from "@/components/ReactorsModal";
 import { useT } from "@/lib/i18n";
 import { IconHands, IconHeart, IconLock, IconMessageCircle, IconUsers, IconFeather } from "@/components/ui/Icon";
-
-function relativeTime(iso: string, locale: string): string {
-  const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffM = Math.floor(diffMs / 60000);
-  const diffH = Math.floor(diffMs / 3600000);
-  const diffD = Math.floor(diffMs / 86400000);
-  if (locale === "en") {
-    if (diffM < 1) return "just now";
-    if (diffM < 60) return `${diffM}m`;
-    if (diffH < 24) return `${diffH}h`;
-    if (diffD < 7) return `${diffD}d`;
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
-  if (diffM < 1) return "방금";
-  if (diffM < 60) return `${diffM}분`;
-  if (diffH < 24) return `${diffH}시간`;
-  if (diffD < 7) return `${diffD}일`;
-  return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
-}
+import { relativeTimeLocale } from "@/lib/utils/time";
 
 type CommentWithAuthor = Comment & { author: User };
 
@@ -265,7 +245,7 @@ export function PostCard({
             )}
           </div>
           <div className="mt-1 flex items-center gap-2 text-xs text-theme-muted">
-            <time dateTime={post.createdAt}>{relativeTime(post.createdAt, locale)}</time>
+            <time dateTime={post.createdAt}>{relativeTimeLocale(post.createdAt, locale)}</time>
             {post.visibility === "PRIVATE" && (
               <span title="나만 보기" aria-label="비공개" className="inline-flex items-center">
                 <IconLock className="h-3.5 w-3.5" />

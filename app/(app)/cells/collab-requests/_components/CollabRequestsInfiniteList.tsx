@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback } from "react";
 import type { PostWithAuthor } from "@/lib/domain/types";
 import { loadMoreCollabRequestsAction } from "../actions";
 import { CollabRequestCard } from "./CollabRequestCard";
+import { useInfiniteScroll } from "@/lib/hooks/useInfiniteScroll";
 
 type Props = {
   initialItems: PostWithAuthor[];
@@ -11,47 +12,17 @@ type Props = {
 };
 
 export function CollabRequestsInfiniteList({ initialItems, initialNextCursorStr }: Props) {
-  const [items, setItems] = useState<PostWithAuthor[]>(initialItems);
-  const [nextCursorStr, setNextCursorStr] = useState<string | null>(initialNextCursorStr);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadMore = useCallback(
+    (cursor: string) => loadMoreCollabRequestsAction({ cursorStr: cursor }),
+    []
+  );
 
-  useEffect(() => {
-    if (initialItems[0]?.id !== items[0]?.id) {
-      setItems(initialItems);
-      setNextCursorStr(initialNextCursorStr);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialItems, initialNextCursorStr]);
-
-  const loadMore = useCallback(async () => {
-    if (!nextCursorStr || loading) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await loadMoreCollabRequestsAction({ cursorStr: nextCursorStr });
-      setItems((prev) => [...prev, ...result.items]);
-      setNextCursorStr(result.nextCursorStr);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "더 불러오기 실패");
-    } finally {
-      setLoading(false);
-    }
-  }, [nextCursorStr, loading]);
-
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting && nextCursorStr && !loading) loadMore();
-      },
-      { rootMargin: "300px", threshold: 0 }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore, nextCursorStr, loading]);
+  const { items, loading, error, hasMore, sentinelRef } =
+    useInfiniteScroll<PostWithAuthor>({
+      initialItems,
+      initialNextCursorStr,
+      loadMore,
+    });
 
   if (items.length === 0 && !loading) {
     return (
@@ -98,7 +69,7 @@ export function CollabRequestsInfiniteList({ initialItems, initialNextCursorStr 
         </p>
       )}
 
-      {!loading && nextCursorStr === null && items.length > 0 && (
+      {!loading && !hasMore && items.length > 0 && (
         <p className="py-8 px-4 text-center text-[13px] text-theme-muted border-t border-theme-border/40">
           모두 확인했습니다 ✓
         </p>
@@ -106,4 +77,3 @@ export function CollabRequestsInfiniteList({ initialItems, initialNextCursorStr 
     </div>
   );
 }
-
