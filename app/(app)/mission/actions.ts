@@ -1,16 +1,9 @@
 "use server";
 
 import { runFeedPageAction } from "@/backend/features/feed/feedPage";
+import { hasAnyTag, MISSION_TAGS } from "@/backend/features/feed/feedFilters";
 import { findCountryByCode } from "@/lib/mission/countries";
 import type { PostWithAuthor } from "@/lib/domain/types";
-
-const MISSION_TAGS = ["mission", "선교"];
-
-function hasAnyTag(postTags: string[] | null | undefined, candidates: string[]): boolean {
-  if (!Array.isArray(postTags) || postTags.length === 0) return false;
-  const lower = postTags.map((t) => t.toLowerCase());
-  return candidates.some((c) => lower.includes(c.toLowerCase()));
-}
 
 /** Mission hub feed: posts tagged with mission + optional country tag. */
 export async function loadMoreMissionHubAction(input: {

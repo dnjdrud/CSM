@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { TimelineContainer } from "@/components/TimelineContainer";
-import { getCurrentUser } from "@/lib/data/repository";
-import { listFeedPostsPage, isBlocked, isMuted } from "@/lib/data/repository";
-import { canViewPost } from "@/lib/domain/guards";
+import { getCurrentUser, listFeedPostsPage } from "@/lib/data/repository";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { findCountryByCode } from "@/lib/mission/countries";
+import { filterVisiblePosts, hasAnyTag, MISSION_TAGS } from "@/backend/features/feed/feedFilters";
 import { MissionCountryFilter } from "./_components/MissionCountryFilter";
 import { MissionHubInfiniteList } from "./_components/MissionHubInfiniteList";
 
@@ -12,13 +11,6 @@ export const metadata = { title: "선교 – Cellah" };
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 20;
-const MISSION_TAGS = ["mission", "선교"];
-
-function hasAnyTag(postTags: string[] | null | undefined, candidates: string[]): boolean {
-  if (!Array.isArray(postTags) || postTags.length === 0) return false;
-  const lower = postTags.map((t) => t.toLowerCase());
-  return candidates.some((c) => lower.includes(c.toLowerCase()));
-}
 
 export default async function MissionPage({
   searchParams,
@@ -39,13 +31,7 @@ export default async function MissionPage({
     includeCategories: ["MISSION", "CONTENT", "PHOTO"],
   });
 
-  const visibleItems = currentUser
-    ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId)) return false;
-        if (isMuted(currentUser.id, post.authorId)) return false;
-        return canViewPost(post, currentUser, () => false);
-      })
-    : firstPage.items;
+  const visibleItems = filterVisiblePosts(firstPage.items, currentUser);
 
   const missionItems = visibleItems.filter((post) => {
     const tags = post.tags ?? [];

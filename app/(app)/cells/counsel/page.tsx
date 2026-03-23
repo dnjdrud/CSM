@@ -1,21 +1,14 @@
 import Link from "next/link";
 import { TimelineContainer } from "@/components/TimelineContainer";
-import { listFeedPostsPage, getCurrentUser, isBlocked, isMuted } from "@/lib/data/repository";
-import { canViewPost } from "@/lib/domain/guards";
+import { listFeedPostsPage, getCurrentUser } from "@/lib/data/repository";
 import { encodeCursor } from "@/lib/domain/pagination";
+import { filterVisiblePosts, hasCounselTag } from "@/backend/features/feed/feedFilters";
 import { CounselInfiniteList } from "./_components/CounselInfiniteList";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "고민상담 – Cellah" };
 
 const PAGE_SIZE = 40;
-const COUNSEL_TAGS = ["고민상담", "신학", "질문", "상담"];
-
-function hasCounselTag(tags: string[]): boolean {
-  return COUNSEL_TAGS.some((ct) =>
-    tags.some((t) => t.toLowerCase() === ct.toLowerCase())
-  );
-}
 
 export default async function CounselPage() {
   const currentUser = await getCurrentUser();
@@ -28,14 +21,8 @@ export default async function CounselPage() {
     includeCategories: ["CELL", "GENERAL", "DEVOTIONAL"],
   });
 
-  const visibleItems = (currentUser
-    ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId)) return false;
-        if (isMuted(currentUser.id, post.authorId)) return false;
-        return canViewPost(post, currentUser, () => false);
-      })
-    : firstPage.items
-  ).filter((post) => hasCounselTag(post.tags ?? []));
+  const visibleItems = filterVisiblePosts(firstPage.items, currentUser)
+    .filter((post) => hasCounselTag(post.tags));
 
   return (
     <TimelineContainer>

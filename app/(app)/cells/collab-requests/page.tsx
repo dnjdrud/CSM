@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { TimelineContainer } from "@/components/TimelineContainer";
-import { listFeedPostsPage, getCurrentUser, isBlocked, isMuted } from "@/lib/data/repository";
-import { canViewPost } from "@/lib/domain/guards";
+import { listFeedPostsPage, getCurrentUser } from "@/lib/data/repository";
 import { encodeCursor } from "@/lib/domain/pagination";
+import { filterVisiblePosts } from "@/backend/features/feed/feedFilters";
 import { CollabRequestsInfiniteList } from "./_components/CollabRequestsInfiniteList";
 
 export const dynamic = "force-dynamic";
@@ -21,13 +21,7 @@ export default async function CollabRequestsPage() {
     includeCategories: ["REQUEST"],
   });
 
-  const visibleItems = currentUser
-    ? firstPage.items.filter((post) => {
-        if (isBlocked(currentUser.id, post.authorId)) return false;
-        if (isMuted(currentUser.id, post.authorId)) return false;
-        return canViewPost(post, currentUser, () => false);
-      })
-    : firstPage.items;
+  const visibleItems = filterVisiblePosts(firstPage.items, currentUser);
 
   return (
     <TimelineContainer>

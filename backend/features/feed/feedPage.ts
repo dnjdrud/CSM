@@ -8,8 +8,7 @@
 import { getSession, getCurrentUser } from "@/backend/connection";
 import { listFeedPostsPage } from "@/lib/data/repository";
 import { decodeCursor, encodeCursor } from "@/lib/domain/pagination";
-import { isBlocked, isMuted } from "@/backend/features/profile";
-import { canViewPost } from "@/backend/permissions";
+import { filterVisiblePosts } from "@/backend/features/feed/feedFilters";
 import type { PostWithAuthor } from "@/lib/domain/types";
 import type { ListFeedPostsPageParams } from "@/lib/data/repository";
 
@@ -62,12 +61,7 @@ export async function runFeedPageAction(
   if (options.withVisibilityFilter) {
     const currentUser = await getCurrentUser();
     if (!currentUser) return { items: [], nextCursorStr: null };
-
-    items = items.filter((post) => {
-      if (isBlocked(currentUser.id, post.authorId)) return false;
-      if (isMuted(currentUser.id, post.authorId)) return false;
-      return canViewPost(post, currentUser, () => false);
-    });
+    items = filterVisiblePosts(items, currentUser);
   }
 
   if (options.postFilter) {
