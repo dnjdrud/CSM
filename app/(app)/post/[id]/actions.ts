@@ -6,12 +6,12 @@ import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/back
 import { revalidatePostPaths } from "@/lib/utils/revalidation";
 import type { User } from "@/lib/domain/types";
 
-export {
-  deleteCommentAction,
-  updateCommentAction,
-  updatePostAction,
-  deletePostAction,
-} from "@/app/(app)/_actions/postMutations";
+import * as postMutations from "@/app/(app)/_actions/postMutations";
+
+export async function deleteCommentAction(commentId: string, postId?: string) { return postMutations.deleteCommentAction(commentId, postId); }
+export async function updateCommentAction(commentId: string, content: string, postId?: string) { return postMutations.updateCommentAction(commentId, content, postId); }
+export async function updatePostAction(postId: string, content: string, category?: string, visibility?: string, tags?: string[]) { return postMutations.updatePostAction(postId, content, category, visibility, tags); }
+export async function deletePostAction(postId: string) { return postMutations.deletePostAction(postId); }
 
 export async function searchMentionUsersAction(q: string): Promise<Pick<User, "id" | "name" | "username">[]> {
   const session = await getSession();

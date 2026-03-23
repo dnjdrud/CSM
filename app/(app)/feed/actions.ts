@@ -6,20 +6,19 @@ import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/back
 import { createPost } from "@/backend/features/posts";
 import { runFeedPageAction } from "@/backend/features/feed/feedPage";
 import { toggleFollow } from "@/backend/features/profile";
-import type { PostWithAuthor, PostCategory, Visibility } from "@/lib/domain/types";
+import * as postMutations from "@/app/(app)/_actions/postMutations";
+import type { PostWithAuthor, PostCategory, Visibility, ReactionType, User } from "@/lib/domain/types";
 import { logInfo, logWarn, logError } from "@/lib/logging/systemLogger";
 
-export {
-  toggleReactionAction,
-  toggleBookmarkAction,
-  getReactorsAction,
-  getCommentsForPostAction,
-  addCommentAction,
-  deleteCommentAction,
-  updateCommentAction,
-  updatePostAction,
-  deletePostAction,
-} from "@/app/(app)/_actions/postMutations";
+export async function toggleReactionAction(postId: string, type: ReactionType) { return postMutations.toggleReactionAction(postId, type); }
+export async function toggleBookmarkAction(postId: string) { return postMutations.toggleBookmarkAction(postId); }
+export async function getReactorsAction(postId: string, type: ReactionType): Promise<User[]> { return postMutations.getReactorsAction(postId, type); }
+export async function getCommentsForPostAction(postId: string) { return postMutations.getCommentsForPostAction(postId); }
+export async function addCommentAction(postId: string, content: string, parentId?: string) { return postMutations.addCommentAction(postId, content, parentId); }
+export async function deleteCommentAction(commentId: string, postId?: string) { return postMutations.deleteCommentAction(commentId, postId); }
+export async function updateCommentAction(commentId: string, content: string, postId?: string) { return postMutations.updateCommentAction(commentId, content, postId); }
+export async function updatePostAction(postId: string, content: string, category?: string, visibility?: string, tags?: string[]) { return postMutations.updatePostAction(postId, content, category, visibility, tags); }
+export async function deletePostAction(postId: string) { return postMutations.deletePostAction(postId); }
 
 /** Toggle follow (used on feed post card and post detail). Revalidates feed and profile. */
 export async function toggleFollowAction(profileId: string): Promise<boolean> {
