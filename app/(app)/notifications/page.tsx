@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { getCurrentUser, getUserById } from "@/lib/data/repository";
+import { getCurrentUser } from "@/lib/data/repository";
 import { listNotifications } from "@/lib/data/repository";
+import { supabaseServer } from "@/lib/supabase/server";
+import { getAuthorMap } from "@/lib/data/_internal/postHelpers";
 import { redirect } from "next/navigation";
 import { groupNotifications } from "@/lib/notifications/groupNotifications";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,9 +17,10 @@ export default async function NotificationsPage() {
   if (!currentUser) redirect("/onboarding");
 
   const raw = await listNotifications(currentUser.id);
-  const withActors = await Promise.all(
-    raw.map(async (n) => ({ ...n, actor: await getUserById(n.actorId) }))
-  );
+  const supabase = await supabaseServer();
+  const actorIds = [...new Set(raw.map((n) => n.actorId))];
+  const actorMap = await getAuthorMap(supabase, actorIds);
+  const withActors = raw.map((n) => ({ ...n, actor: actorMap.get(n.actorId) ?? null }));
   const grouped = groupNotifications(withActors);
   const hasUnread = withActors.some((n) => !n.readAt);
 
