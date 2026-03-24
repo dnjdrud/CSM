@@ -18,9 +18,6 @@ type Props = {
   postsCount: number;
   followerCount: number;
   followingCount: number;
-  subscriberCount?: number;
-  /** Whether the current viewer is an active subscriber of this profile */
-  viewerIsActiveSubscriber?: boolean;
   children: React.ReactNode;
 };
 
@@ -33,8 +30,6 @@ export function ProfileShell({
   postsCount,
   followerCount,
   followingCount,
-  subscriberCount = 0,
-  viewerIsActiveSubscriber = false,
   children,
 }: Props) {
   const t = useT();
@@ -137,19 +132,6 @@ export function ProfileShell({
               <strong className="text-theme-text font-semibold">{followingCount}</strong>{" "}
               {t.profile.following}
             </Link>
-            {subscriberCount > 0 && (
-              <span>
-                <strong className="text-theme-text font-semibold">
-                  {subscriberCount.toLocaleString()}
-                </strong>{" "}
-                {t.profilePage.crowTab}
-              </span>
-            )}
-            {viewerIsActiveSubscriber && !isOwnProfile && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-theme-primary/10 border border-theme-primary/30 text-theme-primary text-[11px] font-semibold">
-                <span aria-hidden>🐦</span> 구독자
-              </span>
-            )}
           </div>
 
         </section>

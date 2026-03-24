@@ -30,7 +30,7 @@ export default async function MissionDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-col">
         {/* Header */}
         <div className="px-4 py-4 border-b border-theme-border">
-          <Link href="/missions" className="text-[12px] text-theme-muted hover:text-theme-primary">← 선교</Link>
+          <Link href="/missions" className="text-[12px] text-theme-muted hover:text-theme-primary">← 선교 프로젝트</Link>
         </div>
 
         {/* Mission info */}

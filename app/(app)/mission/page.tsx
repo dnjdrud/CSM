@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TimelineContainer } from "@/components/TimelineContainer";
 import { getCurrentUser, listFeedPostsPage } from "@/lib/data/repository";
+import { getAuthUserId } from "@/lib/auth/session";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { findCountryByCode } from "@/lib/mission/countries";
 import { filterVisiblePosts, hasAnyTag, MISSION_TAGS } from "@/backend/features/feed/feedFilters";
@@ -17,19 +18,25 @@ export default async function MissionPage({
 }: {
   searchParams: Promise<{ country?: string }>;
 }) {
-  const currentUser = await getCurrentUser();
-  const params = await searchParams;
+  // getAuthUserId is a fast cookie read (~1ms). Having the userId lets us start
+  // listFeedPostsPage in parallel with getCurrentUser() (which does a DB lookup).
+  const [currentUserId, params] = await Promise.all([getAuthUserId(), searchParams]);
   const countryCode = params.country?.toUpperCase() ?? null;
   const country = countryCode ? findCountryByCode(countryCode) : undefined;
   const countryTags = country?.tags ?? null;
 
-  const firstPage = await listFeedPostsPage({
-    currentUserId: currentUser?.id ?? null,
-    scope: "ALL",
-    limit: PAGE_SIZE,
-    cursor: null,
-    includeCategories: ["MISSION", "CONTENT", "PHOTO"],
-  });
+  // Feed fetch and full user profile resolve concurrently.
+  // getCurrentUser() is still needed for filterVisiblePosts + role check below.
+  const [firstPage, currentUser] = await Promise.all([
+    listFeedPostsPage({
+      currentUserId,
+      scope: "ALL",
+      limit: PAGE_SIZE,
+      cursor: null,
+      includeCategories: ["MISSION", "CONTENT", "PHOTO"],
+    }),
+    getCurrentUser(),
+  ]);
 
   const visibleItems = filterVisiblePosts(firstPage.items, currentUser);
 

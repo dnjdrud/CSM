@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useT } from "@/lib/i18n";
-import { IconCross, IconFeather, IconFilm } from "@/components/ui/Icon";
+import { IconFilm } from "@/components/ui/Icon";
 
-export type ProfileTabKey = "posts" | "shorts" | "crow" | "spiritual";
+export type ProfileTabKey = "posts" | "shorts";
 
 export function ProfileTabs({ profileId }: { profileId: string }) {
   const t = useT();
@@ -17,10 +17,8 @@ export function ProfileTabs({ profileId }: { profileId: string }) {
     label: string;
     Icon: React.ComponentType<{ className?: string }>;
   }[] = [
-    { value: "posts",     label: t.profilePage.postsTab,     Icon: IconMessageSquareText },
-    { value: "shorts",    label: "숏츠",                      Icon: IconFilm },
-    { value: "crow",      label: t.profilePage.crowTab,      Icon: IconFeather },
-    { value: "spiritual", label: t.profilePage.spiritualTab, Icon: IconCross },
+    { value: "posts",  label: t.profilePage.postsTab, Icon: IconMessageSquareText },
+    { value: "shorts", label: "숏츠",                 Icon: IconFilm },
   ];
 
   return (

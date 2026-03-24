@@ -13,6 +13,57 @@ type UploadUrlResult =
   | { signedUrl: string; publicUrl: string }
   | { error: string };
 
+interface UploadConfig {
+  bucket: string;
+  allowedTypes: string[];
+  maxBytes: number;
+  typeError: string;
+  sizeError: string;
+  /** Derive the storage path from the authenticated user's id and resolved file extension. */
+  getPath: (userId: string, ext: string) => string;
+  /** When true, passes { upsert: true } to createSignedUploadUrl (avatar overwrite). */
+  upsert?: boolean;
+  /** Optional suffix appended to the public URL (e.g. cache-buster for avatars). */
+  publicUrlSuffix?: () => string;
+}
+
+/**
+ * Shared internal helper — NOT a server action.
+ * Centralizes: session guard, MIME validation, size validation,
+ * signed-upload-url creation, and public URL derivation.
+ */
+async function createUploadUrl(
+  contentType: string,
+  fileSize: number,
+  ext: string,
+  config: UploadConfig,
+): Promise<UploadUrlResult> {
+  const session = await getSession();
+  if (!session) return { error: "로그인이 필요합니다." };
+  if (!config.allowedTypes.includes(contentType)) return { error: config.typeError };
+  if (fileSize > config.maxBytes) return { error: config.sizeError };
+
+  const path = config.getPath(session.userId, ext);
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(config.bucket)
+    .createSignedUploadUrl(path, config.upsert ? { upsert: true } : undefined);
+
+  if (error || !data) return { error: `업로드 URL 생성 실패: ${error?.message}` };
+
+  const { data: pub } = supabaseAdmin.storage.from(config.bucket).getPublicUrl(path);
+  const publicUrl = config.publicUrlSuffix
+    ? `${pub.publicUrl}${config.publicUrlSuffix()}`
+    : pub.publicUrl;
+
+  return { signedUrl: data.signedUrl, publicUrl };
+}
+
+/** Random unique path for posts (images and videos). */
+function randomPostPath(userId: string, ext: string): string {
+  return `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+}
+
 /**
  * Issues a signed upload URL for a post image.
  * The client PUTs the file directly to Supabase Storage — no file bytes
@@ -23,24 +74,15 @@ export async function getImageUploadUrlAction(
   contentType: string,
   fileSize: number,
 ): Promise<UploadUrlResult> {
-  const session = await getSession();
-  if (!session) return { error: "로그인이 필요합니다." };
-  if (!ALLOWED_IMAGE_TYPES.includes(contentType))
-    return { error: "JPG, PNG, WEBP 파일만 업로드 가능합니다." };
-  if (fileSize > MAX_IMAGE_BYTES)
-    return { error: "파일 크기는 5MB 이하여야 합니다." };
-
   const ext = filename.split(".").pop()?.toLowerCase() ?? "jpg";
-  const path = `${session.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-  const { data, error } = await supabaseAdmin.storage
-    .from("post-images")
-    .createSignedUploadUrl(path);
-
-  if (error || !data) return { error: `업로드 URL 생성 실패: ${error?.message}` };
-
-  const { data: pub } = supabaseAdmin.storage.from("post-images").getPublicUrl(path);
-  return { signedUrl: data.signedUrl, publicUrl: pub.publicUrl };
+  return createUploadUrl(contentType, fileSize, ext, {
+    bucket: "post-images",
+    allowedTypes: ALLOWED_IMAGE_TYPES,
+    maxBytes: MAX_IMAGE_BYTES,
+    typeError: "JPG, PNG, WEBP 파일만 업로드 가능합니다.",
+    sizeError: "파일 크기는 5MB 이하여야 합니다.",
+    getPath: randomPostPath,
+  });
 }
 
 /**
@@ -53,24 +95,15 @@ export async function getVideoUploadUrlAction(
   contentType: string,
   fileSize: number,
 ): Promise<UploadUrlResult> {
-  const session = await getSession();
-  if (!session) return { error: "로그인이 필요합니다." };
-  if (!ALLOWED_VIDEO_TYPES.includes(contentType))
-    return { error: "MP4, MOV, WebM 파일만 업로드 가능합니다." };
-  if (fileSize > MAX_VIDEO_BYTES)
-    return { error: "파일 크기는 200MB 이하여야 합니다." };
-
   const ext = filename.split(".").pop()?.toLowerCase() ?? "mp4";
-  const path = `${session.userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-  const { data, error } = await supabaseAdmin.storage
-    .from("post-videos")
-    .createSignedUploadUrl(path);
-
-  if (error || !data) return { error: `업로드 URL 생성 실패: ${error?.message}` };
-
-  const { data: pub } = supabaseAdmin.storage.from("post-videos").getPublicUrl(path);
-  return { signedUrl: data.signedUrl, publicUrl: pub.publicUrl };
+  return createUploadUrl(contentType, fileSize, ext, {
+    bucket: "post-videos",
+    allowedTypes: ALLOWED_VIDEO_TYPES,
+    maxBytes: MAX_VIDEO_BYTES,
+    typeError: "MP4, MOV, WebM 파일만 업로드 가능합니다.",
+    sizeError: "파일 크기는 200MB 이하여야 합니다.",
+    getPath: randomPostPath,
+  });
 }
 
 /**
@@ -81,47 +114,18 @@ export async function getAvatarUploadUrlAction(
   contentType: string,
   fileSize: number,
 ): Promise<UploadUrlResult> {
-  const session = await getSession();
-  if (!session) return { error: "로그인이 필요합니다." };
-  if (!ALLOWED_IMAGE_TYPES.includes(contentType))
-    return { error: "JPG, PNG, WEBP 파일만 업로드 가능합니다." };
-  if (fileSize > MAX_IMAGE_BYTES)
-    return { error: "파일 크기는 5MB 이하여야 합니다." };
-
   const ext = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
-  const path = `${session.userId}/avatar.${ext}`;
-
-  const { data, error } = await supabaseAdmin.storage
-    .from("avatars")
-    .createSignedUploadUrl(path, { upsert: true });
-
-  if (error || !data) return { error: `업로드 URL 생성 실패: ${error?.message}` };
-
-  const { data: pub } = supabaseAdmin.storage.from("avatars").getPublicUrl(path);
-  // Append cache-buster so browsers don't show stale avatar
-  return { signedUrl: data.signedUrl, publicUrl: `${pub.publicUrl}?t=${Date.now()}` };
-}
-
-/**
- * Generates a signed read URL for a video stored in post-videos bucket.
- * Extracts the storage path from the public URL and creates a 1-hour signed URL.
- * Use this when the bucket is private (no public read policy).
- */
-export async function getVideoSignedReadUrlAction(
-  publicUrl: string,
-): Promise<string | null> {
-  // Extract path after /public/post-videos/
-  const marker = "/object/public/post-videos/";
-  const idx = publicUrl.indexOf(marker);
-  if (idx === -1) return null;
-  const path = publicUrl.slice(idx + marker.length).split("?")[0];
-
-  const { data, error } = await supabaseAdmin.storage
-    .from("post-videos")
-    .createSignedUrl(path, 3600);
-
-  if (error || !data) return null;
-  return data.signedUrl;
+  return createUploadUrl(contentType, fileSize, ext, {
+    bucket: "avatars",
+    allowedTypes: ALLOWED_IMAGE_TYPES,
+    maxBytes: MAX_IMAGE_BYTES,
+    typeError: "JPG, PNG, WEBP 파일만 업로드 가능합니다.",
+    sizeError: "파일 크기는 5MB 이하여야 합니다.",
+    getPath: (userId, ext) => `${userId}/avatar.${ext}`,
+    upsert: true,
+    // Cache-buster so browsers don't serve the stale previous avatar
+    publicUrlSuffix: () => `?t=${Date.now()}`,
+  });
 }
 
 /**

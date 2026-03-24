@@ -6,4 +6,4 @@ export {
   markNotificationRead,
   markAllNotificationsRead,
   countUnreadNotifications,
-} from "@/lib/data/repository";
+} from "@/lib/data/notificationRepository";

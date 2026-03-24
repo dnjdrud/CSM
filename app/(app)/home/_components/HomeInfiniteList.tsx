@@ -40,7 +40,7 @@ export function HomeInfiniteList({
       <EmptyState
         title="피드가 비어있습니다"
         description="팔로우한 사람들의 글이 여기 표시됩니다. 아직 기도 제목을 제외한 나눔 글이 없습니다."
-        action={{ label: "사람 찾기", href: "/explore" }}
+        action={{ label: "사람 찾기", href: "/search" }}
       />
     );
   }

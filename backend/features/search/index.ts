@@ -5,7 +5,7 @@ export {
   searchPosts,
   searchPeople,
   searchTags,
-  listPostsByTag,
   listAllTags,
   listPopularTags,
-} from "@/lib/data/repository";
+} from "@/lib/data/searchRepository";
+export { listPostsByTag } from "@/lib/data/postRepository";

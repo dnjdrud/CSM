@@ -1,9 +1,6 @@
 /**
  * Backend feature: auth (profile provisioning, deactivate, restore).
  */
-export {
-  createUserProfileInSupabase,
-  deactivateUser,
-  restoreUser,
-} from "@/lib/data/repository";
+export { createUserProfileInSupabase } from "@/lib/data/repository";
+export { deactivateUser, restoreUser } from "@/lib/data/userRepository";
 export { ensureProfileForBypassEmail } from "@/lib/data/userProvisioning";

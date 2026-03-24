@@ -1,12 +1,10 @@
 import { TimelineContainer } from "@/components/TimelineContainer";
-import {
-  getCurrentUser,
-  listFeedPostsPage,
-} from "@/lib/data/repository";
+import { listFeedPostsPage } from "@/lib/data/repository";
+import { getAuthUserId } from "@/lib/auth/session";
 import { encodeCursor } from "@/lib/domain/pagination";
 import { listMySubscriptions } from "@/lib/data/subscriptionRepository";
 import { getUserInteractions, getUserInterestTags } from "@/lib/data/supabaseRepository";
-import { rankPosts, type UserSignals } from "@/lib/recommendation/scorer";
+import { rankPosts, buildUserSignals } from "@/lib/recommendation/scorer";
 import { ContentsInfiniteList } from "./_components/ContentsInfiniteList";
 import { ContentsBottomSearchBar } from "./_components/ContentsBottomSearchBar";
 import { IconFeather } from "@/components/ui/Icon";
@@ -15,49 +13,34 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "컨텐츠 – Cellah" };
 
 const PAGE_SIZE = 20;
-const CANDIDATE_SIZE = PAGE_SIZE * 3;
+const CANDIDATE_SIZE = PAGE_SIZE * 2;
 
 export default async function ContentsPage() {
-  const currentUser = await getCurrentUser();
+  // getAuthUserId reads the JWT from the cookie (~1ms, no DB roundtrip).
+  // The full user profile isn't needed here — only the ID drives all downstream queries.
+  const currentUserId = await getAuthUserId();
 
   const [firstPage, mySubscriptions, interactions, interestTags] = await Promise.all([
     listFeedPostsPage({
-      currentUserId: currentUser?.id ?? null,
+      currentUserId,
       scope: "ALL",
       limit: CANDIDATE_SIZE,
       cursor: null,
       requireYoutubeUrl: true,
     }),
-    currentUser ? listMySubscriptions(currentUser.id) : Promise.resolve([]),
-    currentUser ? getUserInteractions(currentUser.id, 200) : Promise.resolve([]),
-    currentUser ? getUserInterestTags(currentUser.id) : Promise.resolve([]),
+    currentUserId ? listMySubscriptions(currentUserId) : Promise.resolve([]),
+    currentUserId ? getUserInteractions(currentUserId, 100) : Promise.resolve([]),
+    currentUserId ? getUserInterestTags(currentUserId) : Promise.resolve([]),
   ]);
 
   const subscribedCreatorIds = mySubscriptions.map((s) => s.creatorId);
   const items = firstPage.items;
 
-  const signals: UserSignals = {
-    interestTags: new Map(interestTags.map((t) => [t.tag, t.weight])),
-    likedPostIds: new Set(
-      interactions.filter((i) => i.interactionType === "like").map((i) => i.postId)
-    ),
-    bookmarkedAuthorIds: new Set(
-      interactions
-        .filter((i) => i.interactionType === "bookmark")
-        .map((i) => items.find((p) => p.id === i.postId)?.authorId)
-        .filter((id): id is string => !!id)
-    ),
-    watchedAuthorIds: new Set(
-      interactions
-        .filter((i) => i.interactionType === "view" && (i.watchTimeSeconds ?? 0) > 60)
-        .map((i) => items.find((p) => p.id === i.postId)?.authorId)
-        .filter((id): id is string => !!id)
-    ),
-    subscribedCreatorIds: new Set(subscribedCreatorIds),
-  };
-
-  const rankedItems = currentUser
-    ? rankPosts(items, signals).slice(0, PAGE_SIZE)
+  const rankedItems = currentUserId
+    ? rankPosts(
+        items,
+        buildUserSignals(items, interactions, interestTags, subscribedCreatorIds)
+      ).slice(0, PAGE_SIZE)
     : items.slice(0, PAGE_SIZE);
 
   return (
@@ -101,7 +84,7 @@ export default async function ContentsPage() {
             initialNextCursorStr={
               firstPage.nextCursor ? encodeCursor(firstPage.nextCursor) : null
             }
-            currentUserId={currentUser?.id ?? null}
+            currentUserId={currentUserId}
             subscribedCreatorIds={subscribedCreatorIds}
           />
         </div>

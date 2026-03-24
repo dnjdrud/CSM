@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPostById, getCurrentUser, listCommentsByPostId, listFollowingIds } from "@/lib/data/repository";
+import { getAuthUserId } from "@/lib/auth/session";
 import { notFound } from "next/navigation";
 import { canViewPost } from "@/lib/domain/guards";
 import { TimelineContainer } from "@/components/TimelineContainer";
@@ -15,14 +16,20 @@ export default async function PostPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [post, currentUser] = await Promise.all([
+
+  // getAuthUserId reads the JWT cookie (~1ms) so listFollowingIds can start
+  // in parallel with getPostById and getCurrentUser() instead of waiting for
+  // the getCurrentUser() DB roundtrip to complete first.
+  const currentUserId = await getAuthUserId();
+
+  const [post, currentUser, followingIds] = await Promise.all([
     getPostById(id),
     getCurrentUser(),
+    currentUserId ? listFollowingIds(currentUserId) : Promise.resolve([]),
   ]);
 
   if (!post) notFound();
 
-  const followingIds = currentUser ? await listFollowingIds(currentUser.id) : [];
   const isFollowingSnap = (followerId: string, followingId: string) =>
     currentUser != null && followerId === currentUser.id && followingIds.includes(followingId);
   const canView = currentUser && canViewPost(post, currentUser, isFollowingSnap);

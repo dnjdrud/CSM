@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { LanguageSettingRow } from "@/components/layout/LanguageSettingRow";
 import { getServerT } from "@/lib/i18n/server";
 import { logoutAction } from "@/app/actions/auth";
-import { IconChevronRight, IconFeather, IconMessageCircle } from "@/components/ui/Icon";
+import { IconChevronRight, IconMessageCircle } from "@/components/ui/Icon";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "설정 – Cellah" };
@@ -21,8 +21,6 @@ export default async function SettingsPage() {
     { href: "/settings/account", Icon: IconShieldLock, label: t.settings.account, desc: t.settings.accountDesc },
     { href: "/settings/notifications", Icon: IconBell, label: t.settings.notificationsLabel, desc: t.settings.notificationsDesc },
     { href: "/bookmarks", Icon: IconBookmark, label: t.settings.bookmarks, desc: t.settings.bookmarksDesc },
-    { href: "/settings/candles", Icon: IconCandle, label: "캔들 충전", desc: "캔들을 충전하고 크리에이터를 구독하세요" },
-    { href: "/settings/creator", Icon: IconFeather, label: "크리에이터 설정", desc: "구독 가격 설정 및 구독자 관리" },
   ] as const;
 
   return (
@@ -151,16 +149,6 @@ function IconBookmark({ className }: { className?: string }) {
   );
 }
 
-function IconCandle({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M12 2c2 2 2 4 0 6-2-2-2-4 0-6z" />
-      <path d="M10 10h4" />
-      <path d="M9 10v10a3 3 0 0 0 6 0V10" />
-      <path d="M8 22h8" />
-    </svg>
-  );
-}
 
 function IconLogout({ className }: { className?: string }) {
   return (

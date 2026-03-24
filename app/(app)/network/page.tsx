@@ -1,17 +1,20 @@
 import { TimelineContainer } from "@/components/TimelineContainer";
-import { getCurrentUser, listOpenCells, listSuggestedUsers, listMissionaryProjects } from "@/lib/data/repository";
+import { listOpenCells, listSuggestedUsers, listMissionaryProjects } from "@/lib/data/repository";
+import { getAuthUserId } from "@/lib/auth/session";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "네트워크 – Cellah" };
 
 export default async function NetworkPage() {
-  const user = await getCurrentUser();
+  // Cookie read only — full user profile isn't rendered on this page.
+  // All three data queries now start in parallel instead of waiting for a DB roundtrip.
+  const currentUserId = await getAuthUserId();
 
   const [cells, missions, suggested] = await Promise.all([
     listOpenCells(),
     listMissionaryProjects({ limit: 3 }),
-    user ? listSuggestedUsers(user.id, 6) : Promise.resolve([]),
+    currentUserId ? listSuggestedUsers(currentUserId, 6) : Promise.resolve([]),
   ]);
 
   return (

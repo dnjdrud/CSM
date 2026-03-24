@@ -1,7 +1,7 @@
 /**
  * Backend feature: notes (My Space, prayer, gratitude, reflection).
  */
-export type { MySpaceOverview } from "@/lib/data/repository";
+export type { MySpaceOverview } from "@/lib/data/notesRepository";
 export {
   listNotesByType,
   hasNoteOfTypeToday,
@@ -15,4 +15,4 @@ export {
   updatePrayerAnswer,
   publishPrayerAsTestimony,
   getMySpaceOverview,
-} from "@/lib/data/repository";
+} from "@/lib/data/notesRepository";

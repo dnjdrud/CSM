@@ -7,4 +7,4 @@ export {
   deleteComment,
   updateComment,
   getCommentAuthorId,
-} from "@/lib/data/repository";
+} from "@/lib/data/commentRepository";

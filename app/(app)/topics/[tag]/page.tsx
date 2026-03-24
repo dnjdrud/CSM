@@ -17,8 +17,8 @@ export default async function TopicPage({
     return (
       <TimelineContainer>
         <div className="px-4 pt-10">
-          <Link href="/topics" className="text-sm text-neutral-500 hover:text-gray-700">
-            ← All topics
+          <Link href="/search?tab=tags" className="text-sm text-neutral-500 hover:text-gray-700">
+            ← 태그 검색
           </Link>
           <p className="mt-6 text-[15px] text-neutral-500">Invalid topic.</p>
         </div>
@@ -37,10 +37,10 @@ export default async function TopicPage({
     <TimelineContainer>
       <div className="px-4 pt-6">
         <Link
-          href="/topics"
+          href="/search?tab=tags"
           className="text-xs text-neutral-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-700 focus-visible:ring-offset-2 rounded inline-block mb-4"
         >
-          ← All topics
+          ← 태그 검색
         </Link>
         <h1 className="text-base font-medium text-gray-800">
           {displayName}

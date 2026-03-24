@@ -7,5 +7,5 @@ export {
   deletePost,
   getPostById,
   listPostsByAuthorId,
-  toggleReaction,
-} from "@/lib/data/repository";
+} from "@/lib/data/postRepository";
+export { toggleReaction } from "@/lib/data/reactionRepository";

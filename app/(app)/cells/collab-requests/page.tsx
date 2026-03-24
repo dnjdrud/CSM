@@ -5,6 +5,8 @@ import { encodeCursor } from "@/lib/domain/pagination";
 import { filterVisiblePosts } from "@/backend/features/feed/feedFilters";
 import { CollabRequestsInfiniteList } from "./_components/CollabRequestsInfiniteList";
 
+// DISCONNECTED: board card removed from /cells hub in 2026 Q1 surface cleanup.
+// Accessible only via direct URL. See docs/PRODUCT_SURFACE.md — future deletion candidate.
 export const dynamic = "force-dynamic";
 export const metadata = { title: "협업 요청 – Cellah" };
 

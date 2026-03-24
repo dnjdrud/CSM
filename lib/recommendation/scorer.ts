@@ -3,7 +3,7 @@
  * Pure function — no DB calls. Apply after fetching candidates + signals.
  */
 
-import type { PostWithAuthor } from "@/lib/domain/types";
+import type { PostWithAuthor, UserInteraction, UserInterestTag } from "@/lib/domain/types";
 
 export interface UserSignals {
   /** Tag → weight from user_interest_tags */
@@ -45,6 +45,46 @@ function scorePost(post: PostWithAuthor, signals: UserSignals): number {
   score += 2 * Math.pow(0.5, ageDays / 7);
 
   return score;
+}
+
+/**
+ * Build UserSignals from raw data in a single pass over interactions.
+ * Uses a pre-built postId→authorId Map so author lookups are O(1),
+ * not O(posts) per interaction row.
+ */
+export function buildUserSignals(
+  posts: PostWithAuthor[],
+  interactions: UserInteraction[],
+  interestTags: UserInterestTag[],
+  subscribedCreatorIds: string[]
+): UserSignals {
+  // O(posts) — built once, reused for all interaction lookups
+  const postAuthorMap = new Map<string, string>(posts.map((p) => [p.id, p.authorId]));
+
+  const likedPostIds = new Set<string>();
+  const bookmarkedAuthorIds = new Set<string>();
+  const watchedAuthorIds = new Set<string>();
+
+  // O(interactions) single pass — no nested find()
+  for (const i of interactions) {
+    if (i.interactionType === "like") {
+      likedPostIds.add(i.postId);
+    } else if (i.interactionType === "bookmark") {
+      const authorId = postAuthorMap.get(i.postId);
+      if (authorId) bookmarkedAuthorIds.add(authorId);
+    } else if (i.interactionType === "view" && (i.watchTimeSeconds ?? 0) > 60) {
+      const authorId = postAuthorMap.get(i.postId);
+      if (authorId) watchedAuthorIds.add(authorId);
+    }
+  }
+
+  return {
+    interestTags: new Map(interestTags.map((t) => [t.tag, t.weight])),
+    likedPostIds,
+    bookmarkedAuthorIds,
+    watchedAuthorIds,
+    subscribedCreatorIds: new Set(subscribedCreatorIds),
+  };
 }
 
 /**

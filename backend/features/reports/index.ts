@@ -1,4 +1,5 @@
 /**
  * Backend feature: reports (create report, get comment author for report).
  */
-export { createReport, getCommentAuthorId } from "@/lib/data/repository";
+export { createReport } from "@/lib/data/userRepository";
+export { getCommentAuthorId } from "@/lib/data/commentRepository";

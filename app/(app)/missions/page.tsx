@@ -3,7 +3,7 @@ import { getCurrentUser, listMissionaryProjects } from "@/lib/data/repository";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "선교 – Cellah" };
+export const metadata = { title: "선교 프로젝트 – Cellah" };
 
 export default async function MissionsPage() {
   const user = await getCurrentUser();
@@ -14,8 +14,8 @@ export default async function MissionsPage() {
       <div className="flex flex-col">
         <div className="px-4 py-4 border-b border-theme-border">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-theme-text">선교</h1>
-            {user && (
+            <h1 className="text-lg font-semibold text-theme-text">선교 프로젝트</h1>
+            {user?.role === "MISSIONARY" && (
               <Link href="/missionary/project/create" className="text-[13px] text-theme-primary hover:underline">
                 + 프로젝트 등록
               </Link>
@@ -23,7 +23,7 @@ export default async function MissionsPage() {
           </div>
           <nav className="flex gap-4 mt-3 text-[13px]">
             <span className="font-medium text-theme-primary border-b-2 border-theme-primary pb-0.5">전체</span>
-            {user && <Link href="/missionary" className="text-theme-muted hover:text-theme-text">내 대시보드</Link>}
+            {user?.role === "MISSIONARY" && <Link href="/missionary" className="text-theme-muted hover:text-theme-text">내 대시보드</Link>}
           </nav>
         </div>
 

@@ -1,8 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
+import { revalidateNewPostPaths } from "@/lib/utils/revalidation";
 import { createPost } from "@/lib/data/repository";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/lib/security/rateLimit";
 import type { PostCategory, Visibility } from "@/lib/domain/types";
@@ -63,7 +63,7 @@ export async function publishPostAction(
     });
     return { ok: false, error: display };
   }
-  revalidatePath("/feed");
+  revalidateNewPostPaths();
   redirect("/feed");
 }
 
@@ -196,9 +196,7 @@ export async function composePostAction(params: {
       contentLength: trimmed.length,
       tagsCount: tags.length,
     });
-    revalidatePath("/feed");
-    revalidatePath("/home");
-    revalidatePath("/shorts");
+    revalidateNewPostPaths();
     return { ok: true, postId: post.id };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

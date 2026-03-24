@@ -8,7 +8,6 @@
  * respective actions.ts files.
  */
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/backend/connection";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/backend/permissions";
@@ -48,7 +47,7 @@ export async function toggleBookmarkAction(
   if (!session) return { ok: false, bookmarked: false };
   try {
     const { bookmarked } = await toggleBookmark(session.userId, postId);
-    revalidatePath("/bookmarks");
+    revalidatePostPaths(postId);
     if (bookmarked) recordUserInteraction(session.userId, postId, "bookmark").catch(() => {});
     return { ok: true, bookmarked };
   } catch {
@@ -108,10 +107,7 @@ export async function deleteCommentAction(
   if (!session) return { ok: false, error: "Not logged in" };
   const ok = await deleteComment(commentId, session.userId);
   if (!ok) return { ok: false, error: "Not allowed or not found" };
-  revalidatePath("/feed");
-  revalidatePath("/home");
-  revalidatePath("/bookmarks");
-  if (postId) revalidatePath(`/post/${postId}`);
+  revalidatePostPaths(postId);
   return { ok: true };
 }
 
@@ -126,10 +122,7 @@ export async function updateCommentAction(
   if (!trimmed) return { ok: false, error: "Content is required" };
   const updated = await updateComment(commentId, session.userId, trimmed);
   if (!updated) return { ok: false, error: "Not allowed or not found" };
-  revalidatePath("/feed");
-  revalidatePath("/home");
-  revalidatePath("/bookmarks");
-  if (postId) revalidatePath(`/post/${postId}`);
+  revalidatePostPaths(postId);
   return { ok: true };
 }
 

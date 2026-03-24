@@ -8,13 +8,6 @@ export const dynamic = "force-dynamic";
 
 const COMMUNITY_BOARDS = [
   {
-    href: "/cells/collab-requests",
-    icon: "🤝",
-    name: "협업 요청",
-    description: "촬영·편집·기획 등 제작 도움이 필요할 때 올리는 보드",
-    hashtags: ["#협업", "#제작"],
-  },
-  {
     href: "/cells/counsel",
     icon: "💡",
     name: "고민상담",

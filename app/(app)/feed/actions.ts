@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession, getAuthUserId } from "@/backend/connection";
+import { revalidateNewPostPaths } from "@/lib/utils/revalidation";
 import { assertRateLimit, RATE_LIMIT_EXCEEDED, RATE_LIMIT_MESSAGE } from "@/backend/permissions";
 import { createPost } from "@/backend/features/posts";
 import { runFeedPageAction } from "@/backend/features/feed/feedPage";
@@ -95,7 +96,7 @@ export async function composePostAction(params: {
       contentLength: trimmed.length,
       tagsCount: tags.length,
     });
-    revalidatePath("/feed");
+    revalidateNewPostPaths();
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
