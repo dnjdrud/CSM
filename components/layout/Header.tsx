@@ -65,8 +65,8 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
   const t = useT();
   const pathname = usePathname() || "/";
   const showHeader = pathname === "/" || pathname === "/home" || pathname === "/feed";
-  if (!showHeader) return null;
 
+  // All hooks must run unconditionally before any early return (Rules of Hooks).
   const isAdmin = user?.isAdmin === true;
   const [unreadCount, setUnreadCount] = useState(user ? initialUnreadCount : 0);
   const lastCountRef = useRef(unreadCount);
@@ -142,6 +142,9 @@ export function Header({ user, initialUnreadCount = 0 }: HeaderProps) {
 
   const displayCount = user ? unreadCount : 0;
   const iconBtn = "p-2 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-surface-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-1";
+
+  // Early return after all hooks — prevents React hooks-order violation on route change.
+  if (!showHeader) return null;
 
   return (
     <header className="border-b border-theme-border/60 bg-theme-surface sticky top-0 z-20 shrink-0" role="banner">

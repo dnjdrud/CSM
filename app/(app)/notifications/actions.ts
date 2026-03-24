@@ -12,7 +12,8 @@ export const markAllReadAction = wrapServerAction(
     if (!session) return;
     await markAllNotificationsRead(session.userId);
     revalidatePath("/notifications");
-    revalidatePath("/");
+    revalidatePath("/home");
+    revalidatePath("/", "layout");
   },
   "markAllReadAction"
 );
