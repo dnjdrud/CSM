@@ -95,6 +95,7 @@ export default async function ProfilePage({
           currentUserId={currentUserId}
           blocked={blocked}
           isOwnProfile={currentUserId === user.id}
+          following={following}
         />
       )}
       {activeTab === "shorts" && (

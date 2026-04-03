@@ -1,6 +1,6 @@
 # Product Surface Map
 
-Last updated: 2026-03-24
+Last updated: 2026-03-27
 Reflects the cleaned-up surface after the 2026 Q1 data-layer and product-surface cleanup passes.
 
 ---
@@ -29,6 +29,8 @@ These are the routes that constitute the current product.
 | 알림 | `/notifications` |
 | 설정 | `/settings` |
 | 관리자 (ADMIN role only) | `/admin` |
+
+Note: Header is only rendered on `/` · `/home` · `/feed` paths.
 
 ### Core In-Flow Routes
 
@@ -75,6 +77,27 @@ These are reachable from the nav surfaces above via normal user interaction.
 /settings/account              — account management, deactivation
 /settings/notifications        — notification preferences
 /admin/*                       — admin panel (ADMIN role only)
+```
+
+### Public Routes
+
+Not login-gated. Accessible without session.
+
+```
+/login                         — magic link login + invite code entry
+/onboarding                    — first-time profile setup (name, role, bio)
+/onboarding/welcome            — welcome step
+/onboarding/complete           — onboarding completion
+/principles                    — platform principles (no algorithm, no ads)
+/guide                         — help / usage guide
+/contact                       — contact page
+/request-access                — access request form
+/support                       — ministry support landing
+/support/[id]                  — individual ministry support flow
+/support/checkout              — support checkout
+/support/thank-you             — support completion
+/auth/verify-magic             — magic link verification route handler
+/auth/callback/session         — OAuth session callback
 ```
 
 ---

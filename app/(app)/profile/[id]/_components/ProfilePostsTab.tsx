@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PostCard } from "@/components/PostCard";
+import { FeedPostCard } from "@/app/(app)/feed/_components/FeedPostCard";
 import type { PostWithAuthor } from "@/lib/domain/types";
 import { getServerT } from "@/lib/i18n/server";
 
@@ -8,9 +8,10 @@ type Props = {
   currentUserId: string | null;
   blocked: boolean;
   isOwnProfile: boolean;
+  following: boolean;
 };
 
-export async function ProfilePostsTab({ posts, currentUserId, blocked, isOwnProfile }: Props) {
+export async function ProfilePostsTab({ posts, currentUserId, blocked, isOwnProfile, following }: Props) {
   const t = await getServerT();
 
   if (blocked) {
@@ -44,7 +45,7 @@ export async function ProfilePostsTab({ posts, currentUserId, blocked, isOwnProf
     <ul className="list-none p-0" role="list">
       {posts.map((post) => (
         <li key={post.id} className="border-b border-theme-border/50 last:border-b-0">
-          <PostCard post={post} currentUserId={currentUserId} />
+          <FeedPostCard post={post} currentUserId={currentUserId} initialFollowing={following} />
         </li>
       ))}
     </ul>
