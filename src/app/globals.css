@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (contrast verified by scripts/check-contrast.mjs):
+ *   text  #FFF5E8 on bg      #3B261F
+ *   text  #FFF5E8 on surface #4A3228
+ *   btn   #2B1B15 on         #F2D6AE
+ * Sizes are rem-based so the 글씨 크기 control (root font-size) scales everything.
+ */
+@theme {
+  --color-bg: #3b261f;
+  --color-surface: #4a3228;
+  --color-surface-2: #5a3e32;
+  --color-text: #fff5e8;
+  --color-muted: #ecd9c3;
+  --color-btn: #f2d6ae;
+  --color-btn-hover: #f8e3c4;
+  --color-btn-text: #2b1b15;
+  --color-line: #c9a983;
+  --color-focus: #ffd27a;
+  --color-error: #ffd0c2;
+  --color-error-bg: #5c2a22;
+
+  --font-sans: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR",
+    "Segoe UI", sans-serif;
+
+  --text-body: 1.25rem; /* 20px */
+  --text-body--line-height: 1.75;
+  --text-title: 1.875rem; /* 30px (28~32) */
+  --text-title--line-height: 1.35;
+}
+
+html {
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html[data-text="lg"] {
+  font-size: 112.5%;
+}
+html[data-text="xl"] {
+  font-size: 125%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  min-height: 100dvh;
+}
+
+/* Set on pagehide: a page restored from the back/forward cache stays blank until it reloads. */
+html[data-wiped] body {
+  visibility: hidden;
+}
+
+/* Clear, always-visible keyboard focus. */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
+@layer components {
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 3.75rem; /* 60px */
+    padding: 0.75rem 1.25rem;
+    border-radius: 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .btn-primary {
+    background: var(--color-btn);
+    color: var(--color-btn-text);
+    border: 2px solid var(--color-btn);
+  }
+  .btn-primary:hover {
+    background: var(--color-btn-hover);
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-text);
+    border: 2px solid var(--color-line);
+  }
+  .btn-secondary:hover {
+    background: var(--color-surface-2);
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .panel {
+    background: var(--color-surface);
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+  }
+  .prose-warm p + p {
+    margin-top: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

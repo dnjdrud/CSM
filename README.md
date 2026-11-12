@@ -1,183 +1,285 @@
-# CSM
+# 가족 공간 (Family)
 
-A minimal MVP for a Christian-only professional network: text-first, reflection-driven, no backend.
+부모님(엄마/아빠)이 원할 때 아들의 마음과 계획을 읽을 수 있는 가족 전용 모바일 웹.
+요구사항: [docs/00_REQUIREMENTS.md](docs/00_REQUIREMENTS.md) · 단계별 프롬프트: [docs/](docs/)
 
-## Tech
+> 현재 상태: **5단계(저장·개인글 암호화·관리자)까지 완료.** 세션·로그인 잠금·입장 권한·글·대화 제안·편지/카드 게시가 모두 SQLite에 저장되고,
+> 아들은 관리자 화면에서 편지·카드를 고쳐 게시하고 대화 제안에 답할 수 있습니다. 카드·편지는 아직 **게시 전 초안**이라 부모님 화면에는 “준비 중”으로 보입니다.
+> 남은 일: 6단계(통합 점검·실행 문서).
 
-- **Next.js 15** (App Router)
-- **TypeScript**
-- **Tailwind CSS**
-- **Supabase** (Auth, Postgres, Edge Functions) — optional; falls back to in-memory when env is not set.
+## 기술 구성
 
-## Run
+- Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS 4
+- Cache Components는 **꺼져 있음**: 모든 화면이 요청마다 세션을 확인하며 렌더링됩니다.
+- 테스트: Vitest(단위), `scripts/`의 점검 스크립트, playwright-core(로컬 Chrome/Edge 사용)
+
+## 실행
 
 ```bash
 npm install
-npm run dev
+cp .env.example .env.local   # 값 채우기 (아래 참고)
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+운영 빌드 확인:
 
----
+```bash
+npm run build && npm start
+```
 
-## Supabase (Phases 4–4.4)
+### 사내망 TLS 오류(UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
 
-When `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set, the app uses Supabase for auth (magic link), social data (posts, comments, follows, reactions, notifications), and notifications via Edge Function.
+이 PC의 npm 설정 `cafile`(Kaspersky 인증서)이 현재 인증서 체인과 맞지 않아 설치가 실패할 수 있습니다.
+Windows 신뢰 루트 인증서를 PEM으로 내보낸 뒤 `npm install --cafile=<내보낸 파일>`로 설치하면 됩니다.
 
-### Manual steps after cloning / env setup
+## 환경변수
 
-0. **Enable email signups (Auth)**  
-   Supabase Dashboard → **Authentication** → **Providers** → **Email**  
-   - **Enable email signups** (또는 "Allow new users to sign up")를 켜야 로그인 링크·가입 요청이 동작합니다.  
-   - 꺼져 있으면 "Signup is not configured on this server" 같은 오류가 날 수 있습니다.
+| 이름 | 설명 |
+| --- | --- |
+| `SESSION_SECRET` | 세션 서명 키. 32자 이상 무작위 값. 바꾸면 모든 로그인이 끝납니다. |
+| `FATHER_PASSWORD` | 아빠 비밀번호. 숫자 8자리. |
+| `MOTHER_PASSWORD` | 엄마 비밀번호. 숫자 4자리. **비어 있으면 엄마 화면에 “설정 필요”가 표시**됩니다. |
+| `ADMIN_PASSWORD` | 관리자(아들) 비밀번호. **10자 이상.** 비어 있거나 짧으면 관리자 로그인이 막힙니다. |
+| `APP_ORIGIN` | (선택) 운영 주소. 쓰기 요청 출처 확인에 사용. 리버스 프록시 뒤라면 설정 권장. |
+| `FAMILY_DB_PATH` | (선택) SQLite 파일 위치. 기본 `./data/family.db` (커밋 제외). |
 
-1. **Apply SQL migrations**  
-   In Supabase Dashboard → SQL Editor, run in order:
-   - `supabase/migrations/20250228000000_social_tables.sql` (tables + RLS)
-   - `supabase/migrations/20250228000001_notifications_edge_and_visibility_rls.sql` (notifications insert removed, posts visibility RLS)
-   - `supabase/migrations/20250228000002_moderation_reports.sql` (moderation_reports table, posts hidden_at, RLS for admin/reports)
-   - `supabase/migrations/20250228000003_invite_codes.sql` (invite_codes table, single-use codes, RLS)
-   - `supabase/migrations/20250301000000_audit_logs.sql` (audit_logs, blocks, mutes, admin user update policy)
-   - `supabase/migrations/20250308000000_signup_approval.sql` (signup_requests, approval_tokens, users.username/church, APPROVAL invite code)
+비밀번호는 서버 환경변수에만 있고 화면 코드(클라이언트 번들)에는 들어가지 않습니다. 값을 바꾼 뒤에는 서버를 다시 시작하세요.
 
-2. **Optional: Admin moderation (Phase 4-5)**  
-   Set in `.env.local`:
-   ```env
-   ADMIN_EMAILS=you@gmail.com,other@church.org
-   ```
-   Comma-separated list of emails that receive the ADMIN role on login (idempotent). Only these users can access `/admin/*` and the moderation dashboard.
+## 화면 구성
 
-3. **Deploy the `notify` Edge Function**  
-   Notifications are created only by this function (no direct inserts from the app).  
-   Notifications are created only by this function (no direct inserts from the app).
+| 주소 | 내용 |
+| --- | --- |
+| `/login` → `/login/mother`·`/login/father` | 엄마/아빠 선택 후 숫자 비밀번호 입력 |
+| `/welcome` → `/welcome/letter` → `/welcome/guide` | 첫 방문 안내 → 짧은 편지 → 사용 설명 (방 목록에서 다시 보기 가능) |
+| `/rooms` | 일곱 방 목록 (순서 잠금 없음, 방문 표시 없음) |
+| `/rooms/1` | 녹음 없이 입장 |
+| `/rooms/2`~`/rooms/7` | 준비 안내 → 녹음 → 전체 재생 → 확인 → 방 본문 |
+| `/notes` | 내가 적은 글 (본인 글만. 잠긴 글은 개인 비밀번호로 열기) |
+| `/admin/login`, `/admin` | 관리자(아들) 별도 로그인 |
+| `/admin/letters` | 부모님이 **전한** 글 목록(본문 자동 표시 없음) → 하나씩 열기 |
+| `/admin/content` → `/admin/content/<항목>` | 편지·카드 고치기 → 초안 저장 / 게시 / 게시 내리기 / 처음 초안으로 |
+| `/admin/proposals` | 7번 방 대화 제안: 수락 / 다른 시간 제안 / 어렵다고 답하기 (앱 안에서만 전달) |
 
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref <your-project-ref>
-   npx supabase functions deploy notify
-   ```
+## 보안 설계
 
-   Ensure the function has `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (set via Dashboard → Project Settings → Edge Functions or `supabase secrets set`).
+- 세션: HMAC 서명 쿠키 `fh_session` (HttpOnly, SameSite=Strict, 운영에서 Secure). 부모 12시간, 관리자 2시간.
+  **서버에도 세션 기록**이 있어, 서명이 맞아도 기록이 없거나 로그아웃(취소)된 세션은 거부합니다. 복사해 둔 쿠키도 로그아웃 후에는 쓸 수 없습니다.
+  기기 등록·기기 기억·자동 로그인 없음. 로그아웃하면 다시 비밀번호를 입력해야 합니다.
+- 계정은 **서버에서 맞은 비밀번호로 결정**합니다. 화면에서 고른 값(엄마/아빠)을 권한으로 쓰지 않습니다.
+  부모 로그인 API로는 관리자 권한을 얻을 수 없습니다.
+- 로그인 시도 제한: 같은 접속처 5회 실패 시 15분, 계정 전체 20회 실패 시 60분 잠금.
+  DB에 저장되어 **재시작해도 유지**됩니다. 접속 주소는 SHA-256 값으로만 저장합니다.
+- JSON API는 본문이 **JSON 객체일 때만** 필드를 읽습니다. null·배열·문자열·숫자·깨진 JSON은 예외 없이 400입니다
+  (`readJsonObject`, `src/server/request-guard.ts`). 크기 제한은 Content-Length가 크면 읽기 전에 413, 그렇지 않으면 스트림으로 읽다가
+  제한을 넘는 순간 멈추고 413입니다(본문 전체를 먼저 메모리에 올리지 않음). 운영 시에는 앞단 프록시의 본문 크기 제한도 함께 두세요.
+  관리자 폼 요청(formData)은 Content-Length로만 미리 거릅니다.
+- 쓰기 요청(POST)은 Origin/Sec-Fetch-Site로 같은 출처인지 확인합니다. HTML 폼이 `Origin: null`을 보내는 경우에는
+  브라우저가 붙이는 `Sec-Fetch-Site: same-origin`이 있을 때만 허용합니다.
+- `Referrer-Policy: same-origin`: 다른 사이트로는 주소를 보내지 않습니다. (5단계에서 `no-referrer`에서 바꿈: `no-referrer`에서는
+  브라우저가 폼 전송 시 `Origin: null`을 보내 **로그아웃 버튼 등 HTML 폼이 거부되던 문제**가 있었습니다.)
+- 앱 코드에는 로그 출력이 전혀 없습니다(비밀번호·글·접속 주소가 로그에 남지 않음). 단위 테스트가 이를 확인합니다.
+- 콘텐츠(`src/content/`)는 `server-only`로 표시되어 클라이언트에서 불러오면 빌드가 실패합니다.
+  방 2~7의 카드 본문은 준비 화면 데이터에 포함되지 않고, 녹음 게이트를 통과한 응답에서만 내려갑니다.
+- 모든 응답 `Cache-Control: no-store`, `X-Robots-Tag: noindex`, `robots.txt` 전체 차단, 일반적인 제목(“가족 공간”), 미리보기 메타 없음.
 
-4. **Deploy the `send-approval-email` Edge Function (approval-based signup)**  
-   When using approval-based signup, admins approve requests and the app emails a “complete signup” link. Deploy and set secrets:
+## 입장 녹음 게이트 (2~7번 방)
 
-   ```bash
-   npx supabase functions deploy send-approval-email
-   npx supabase secrets set RESEND_API_KEY=re_xxxx
-   npx supabase secrets set EMAIL_FROM="CSM <no-reply@yourdomain.com>"
-   ```
+상태: prelude → ready → requestingPermission → recording → recorded → playing → listened → confirmed → room
+(순수 상태 기계: `src/lib/gate-machine.ts`, 화면: `src/components/EntryGate.tsx`·`RoomFlow.tsx`, 서버: `src/server/room-access.ts`)
 
-   In your app env (e.g. `.env.local`), set:
-   - `NEXT_PUBLIC_APP_URL` (or `APP_URL`) — base URL for completion links (e.g. `https://yourapp.com`).
-   - Resend: use a verified domain in [Resend](https://resend.com) and set `EMAIL_FROM` in Supabase secrets to that sender.
+**방문(visit)과 시도(attempt)**
+- 방 화면에 한 번 머무는 것이 하나의 **방문**이며 탭에서 무작위 방문 ID를 만듭니다. 녹음할 때마다 **시도**가 하나 생기고,
+  시도 요청에는 탭의 시계를 기준으로 계속 커지는 순번(seq)이 붙습니다.
+- 서버는 세션별로 가장 최근 순번을 기억합니다. **더 오래된 순번의 요청이 늦게 도착하면 "stale"(409)로 거절하고 아무것도 바꾸지 않습니다.**
+  더 새 시도는 같은 세션의 이전 시도와 입장 권한(grant)을 모두 무효로 합니다(재녹음, 다른 방 입장 포함).
+- 시도는 1회용이며 세션·계정·방·방문에 묶이고 15분 뒤 만료됩니다. 입장에 성공하면 같은 방문에 묶인 grant(60분)가 발급되고, 그때 처음으로 본문이 내려갑니다.
+- **나가기 취소는 그 방문(또는 그 시도)만** 지웁니다. 이전 화면의 늦은 취소가 새 방문을 지울 수 없습니다. 방문 ID 없는 취소는 거절됩니다.
+  로그아웃은 그 세션의 시도·grant를 모두 지웁니다.
 
-   **Invite link by email:** To use “Send link” on Admin → Invites (email the invite code and sign-in URL to a recipient), deploy the `send-invite-email` Edge Function with the same Resend secrets:
+**grant를 실제로 검사하는 곳**: 4~7번 방에서 **새 글을 만들 때**와 7번 방에서 **대화를 제안할 때**만입니다(`x-room-grant` 헤더,
+현재 세션·계정·방 일치·미만료). 서버가 방 번호와 작업 종류(새로 만들기)로 판단하며 클라이언트가 보낸 모드 값은 믿지 않습니다.
+1번 방 글, 3번 방 준비 화면의 생각 적기, `/notes`에서 내 글 열람·고치기·지우기, 내 제안 취소·수락은 grant 없이 됩니다(소유자 확인만).
+본문 읽기 자체는 서버 요청이 없으므로 grant로 막는 것이 아니라 **본문이 enter 성공 응답에서만 내려가는 것**으로 막습니다.
 
-   ```bash
-   npx supabase functions deploy send-invite-email
-   ```
-   (Uses the same `RESEND_API_KEY` and `EMAIL_FROM` as above.)
+**화면을 벗어나면** (`visibilitychange`가 hidden, `pagehide`, 뒤로/앞으로 캐시 복원)
+- 녹음 중·재생 중·다 들은 상태·입장 확인 중·**이미 들어간 본문(글쓰기 중 포함)**이면: 마이크 트랙 종료, 재생 중지,
+  Blob·Object URL 해제, 진행 중 요청 중단, 서버에서 이 방문 취소 → 돌아오면 **첫 준비 화면부터 새 방문**으로 시작합니다(이유 안내 표시).
+  4~7번 방 글쓰기 화면에는 “다른 앱으로 넘어가면 저장하지 않은 글은 사라져요” 안내가 있습니다.
+- 준비 화면을 읽는 중에는 아무 것도 지우지 않습니다. 본문 안의 스크롤·카드 이동은 다시 들어가는 것이 아닙니다.
+- 탭 전환·앱 전환·화면 잠금·전화 수신이 실제로 `visibilitychange`를 일으키는지는 브라우저·기기마다 다를 수 있어 **실제 기기 확인이 필요**합니다(아래 목록).
 
-5. **Verify**
-   - Follow / comment / react: notifications still appear (created via Edge Function).
-   - Direct insert into `public.notifications` from the app is denied (RLS has no insert policy).
-   - Feed and post detail: FOLLOWERS and PRIVATE posts are enforced at DB level (RLS); only author or followers see FOLLOWERS, only author sees PRIVATE.
-   - **Admin:** Log in with an email in `ADMIN_EMAILS` → you get role ADMIN; visit `/admin/moderation` to see open reports. Report a post/comment from the app → it appears in the queue. Use "Hide post" / "Delete comment" / "Resolve" as needed. Hidden posts no longer appear in feed for non-authors (RLS).
+**비동기 경합**
+- 모든 비동기 단계(시도 요청, 마이크, 녹음기 콜백, 재생 이벤트, 입장 요청)는 시작할 때의 세대 번호와 컴포넌트 mounted 여부를 확인합니다.
+  재녹음·취소·이탈 뒤에 도착한 응답이나 오디오 이벤트는 새 상태를 바꾸지 못합니다. 재생마다 새 `<audio>`를 만들고 이전 것의 리스너는 모두 떼어냅니다.
+- 요청은 AbortController로 중단하지만 **중단해도 서버 처리가 취소되는 것은 아닙니다.** 그래서 늦게 성공한 시도·입장 응답이 오면
+  그 시도/방문만 취소하는 요청을 다시 보냅니다. 응답을 받기 전에 페이지가 사라진 경우 서버에 남은 grant는 클라이언트가 토큰을 모르므로
+  쓸 수 없고, 다음 시도 때 지워지거나 60분 뒤 만료됩니다.
+- React StrictMode(개발 모드)의 effect 재실행에서도 같은 흐름이 동작하는 것을 `next dev`로 확인했습니다.
 
----
+**재생 확인** (`evaluatePlayback`)
+- 버튼으로만 재생, 탐색바·배속 없음. 중단·실패 후에는 새 오디오로 **처음부터** 다시 듣습니다.
+- `ended`만으로 인정하지 않습니다: 시작 위치가 0 근처, `currentTime`이 실제 재생 시간에 맞게 연속으로 진행(되감기·건너뛰기 없음),
+  `seeking`·배속 변경 없음, **실제로 재생 중이던 시간만 합산**(버퍼링 대기 시간 제외)이 녹음 길이에 가깝고, 미디어 위치가 끝에 도달해야 합니다.
+- 녹음은 탭 메모리에만 있고 **서버로 보내지 않습니다**. 음성인식 없음.
+- 마이크 거부/없음/사용 중/미지원/https 아님: 안내 + 다시 시도 + 방 목록만. 글로 대신 확인하는 방법은 없습니다.
+- 최소 녹음 1초(실수 방지용), 최대 60초(메모리 보호용, 60초가 되면 녹음이 멈춤).
 
-## Invite-only Beta (Phase 5-1)
+**한계(과장하지 않기):** 이 게이트는 녹음·재생 절차가 이 화면에서 끝났는지만 확인합니다. 실제로 그 문장을 말했는지,
+진심인지, 소리를 실제로 들었는지는 알 수 없으며(무음도 녹음되고, 볼륨을 꺼도 재생됨), 브라우저를 조작하는 사람은
+클라이언트 측 확인을 우회할 수 있습니다. 시도/입장 권한은 DB에 해시로만 저장되고 짧은 시간 뒤 만료됩니다. 녹음을 건너뛰는 상시 면제 기록은 없습니다.
 
-The app can run in **invite-only** mode: only users who have a valid invite code can complete onboarding and become members.
+### 자동 테스트로 확인한 것 (Chrome 가짜 마이크, 화면 숨김은 `visibilityState` 흉내)
 
-- **Admins:** Log in with an email in `ADMIN_EMAILS`, then go to **Admin → Invite codes** (`/admin/invites`). Click **Generate Invite Code** to create a new single-use code. Copy the code and share it (e.g. by email) with the person you want to invite.
-- **New users:** After signing in via magic link, they land on the onboarding page. They must enter a valid invite code (and name, role, etc.). If the code is invalid or already used, they see an error and cannot complete onboarding. Once the code is consumed, their profile is created and they are redirected to the feed.
-- **Single-use:** Each code can be used exactly once. Used codes are shown in the admin invite table with "Used by" and "Used at".
-- **Middleware:** Authenticated users without a profile (e.g. just clicked the magic link) cannot access `/feed` or other protected routes until they complete onboarding; they are redirected to `/onboarding`.
+녹음 중/재생 중/다 들은 뒤/본문 안에서 숨김 → 처음부터, 트랙·Object URL 정리, 서버 시도·grant 취소 / 입장 응답 지연 중 이탈·숨김·뒤로 →
+본문 미표시·늦은 grant 취소 / 시도 응답 지연 중 재녹음 → 늦은 응답 무시 / 늦은 이전 방문 취소·오래된 시도 요청 → 새 방문 영향 없음 /
+이전 오디오의 늦은 `ended` 무시, 끝까지 안 간 `ended`·배속·건너뛰기 거부 / 계정·세션·방·방문 교차, 재사용, 만료(단위 테스트) /
+grant 필요·불필요 작업 구분 / 로그아웃 시 전체 폐기 / StrictMode(`next dev`).
 
-Apply the migration `supabase/migrations/20250228000003_invite_codes.sql` to enable invite codes.
+### 실제 기기 수동 확인 목록 (자동 테스트로 대신할 수 없음)
 
----
+- [ ] iPhone Safari(https): 권한 창 → 녹음 → 끝내기 → 듣기(스피커) → 입장
+- [ ] Android Chrome(https): 같은 흐름
+- [ ] 권한 거부 후 설정에서 허용으로 바꾸고 “다시 녹음 시작하기”
+- [ ] **녹음 중** 다른 앱으로 전환 → 복귀: 마이크 표시가 꺼지고 첫 준비 화면부터인지
+- [ ] **재생 중** 화면 잠금 / 전화 수신 → 복귀: 처음부터 다시 해야 하는지
+- [ ] **본문을 읽는 중** 홈 화면으로 나갔다가 복귀 / 다른 탭으로 전환 후 복귀: 본문이 사라지고 다시 녹음해야 하는지
+- [ ] 알림 센터·제어 센터만 잠깐 내렸을 때의 동작(브라우저마다 hidden 여부가 다름) 기록
+- [ ] 블루투스 이어폰 연결 상태에서 녹음/재생, 재생 도중 이어폰 연결 끊기
+- [ ] 느린 네트워크(3G 등)에서 “들어가고 있어요” 중 뒤로 가기
+- [ ] 스크린리더(VoiceOver/TalkBack)로 각 단계 안내가 읽히는지
+- [ ] (개인글) 잠긴 글을 연 상태에서 다른 앱/탭으로 갔다가 뒤로·앞으로 버튼으로 돌아왔을 때(실제 bfcache 복원) 화면이 비었다가 새로고침되고 잠긴 상태인지 — iPhone Safari, Android Chrome
+- [ ] (개인글) 로그아웃 후 브라우저 뒤로 가기로 글이 다시 보이지 않는지 — 같은 두 브라우저
 
-## Approval-based signup
+## 방 4~7 (4단계)
 
-New users can **request access** (no password until approved):
+- 모두 준비 안내 → 녹음·끝까지 듣기 → 본문. 다시 들어올 때마다 새로 녹음합니다. 본문 안의 카드 이동·글쓰기·제안은 재입장이 아닙니다.
+- 본문 끝 선택지(게이트 뒤에서만 내려감):
+  4번 “어떤 부분이 가장 걱정되시나요?” [걱정 남기기]/[지금은 읽기만 할게요],
+  5번 [걱정 남기기]/[응원 남기기]/[나중에 생각하기],
+  6번 [서운했던 일 적기]/[미안한 마음 전하기]/[앞으로 바라는 점 적기]/[더 생각하기].
+  ‘적기’는 1번 방과 같은 글쓰기 화면(제목만 미리 골라 둠, 공개 범위는 직접 선택). 나머지 선택은 아무것도 기록하지 않습니다.
+- 7번 방: 대화 원칙 5가지 + 글로 대화하기/전화 제안/만남 제안/다른 사람과 함께/시간이 더 필요해요.
+  제안은 희망 일시(한국 시간, 지난 시간·1년 이후 거부)·장소·함께할 분·하고 싶은 말을 모두 선택으로 적고, 다시 확인한 뒤 보냅니다.
+  아들이 답하기 전까지 ‘제안 중’이며 자동 확정·문자 발송은 없습니다. ‘내가 적은 글’에서 확인·취소합니다. 다른 부모의 제안은 보이지 않습니다(404).
+- 카드 초안: 4번은 확인된 수치(차용 540,000,000원·월 1,575,000원 약정·증여 150,000,000원)만 쓰고 합산하지 않았으며 상환 기록·예산·시점은 비움.
+  5번은 여자친구 개인정보·발언, 날짜·자금 계획을 넣지 않았고 상견례·결혼식 참석은 부탁으로 적었습니다.
+  6번 ‘제가 미안한 일’은 지어내지 않으려고 비워 두었습니다(검토 메모 참고).
+- 4~7번 방 문구(선택지·제목 보기·대화 방법)는 서버에서 게이트 통과 후에만 내려가며, 클라이언트 번들 검사로 확인합니다.
 
-1. **Request:** Anyone visits `/onboarding`, fills email, name, role, church, bio, affiliation, and submits. No Auth account is created.
-2. **Review:** Admins go to **Admin → Signup requests** (`/admin/signup-requests`), see pending requests, and **Approve** or **Reject** (with optional note).
-3. **Approve:** On approve, the system sends an email (via Edge Function `send-approval-email`) with a “Complete signup” link valid for 7 days.
-4. **Complete:** User opens the link (`/onboarding/complete?token=...`), sets password (and optional username), confirms profile fields; the app creates the Auth user and `public.users` row, then redirects to `/login`.
-5. **Sign in:** User signs in at `/login` with email+password or Google/Kakao. Only users with a `public.users` row can access protected routes; others are redirected to `/login?message=profile_missing`.
+## 부모님 글쓰기 (1번 방 내 마음 적기, 3번 방 생각 적어두기, 4~7번 방)
 
-**Env:** Apply `supabase/migrations/20250308000000_signup_approval.sql`. In `.env.local` set **`SUPABASE_SERVICE_ROLE_KEY`** (from Supabase Dashboard → Project Settings → API → `service_role` secret); the app uses it to create signup requests and complete signup. Deploy `send-approval-email` and set `RESEND_API_KEY`, `EMAIL_FROM` in Supabase secrets; set `NEXT_PUBLIC_APP_URL` (or `APP_URL`) in the app.
+- 제목은 고르지 않아도 되고(보기 중 선택 또는 직접 적기), 본문은 필수입니다.
+  **나만 간직하기 / 아들에게 전하기는 기본 선택이 없고**, 고르지 않으면 다시 읽기로 넘어가지 않습니다.
+- 흐름: 쓰기 → 다시 읽기 → (나만 간직하기) 저장 / (아들에게 전하기) “아들에게 전할까요?” 최종 확인 → 전송. 초안으로 두기, 고쳐 쓰기, 지우기 제공.
+- 3번 방에서 생각을 적어도 방이 열리지 않습니다. 같은 질문 화면으로 돌아오고, 노력 카드는 여전히 녹음 게이트 뒤에만 있습니다.
+- **나만 간직하기·초안 = 브라우저 암호화.** 로그인 비밀번호와 별개인 개인 비밀번호(6자 이상)로
+  PBKDF2-SHA256(600,000회, 무작위 salt) → AES-GCM-256(매번 무작위 nonce)으로 제목·본문을 함께 암호화합니다(Web Crypto).
+  서버에는 암호문·salt·검증용 암호문만 저장되고, 비밀번호와 키는 전송되지 않습니다(저장소·쿠키에도 두지 않음).
+  암호화에 실패하면 저장하지 않습니다(평문 대체 없음).
+- **키의 수명** (`src/lib/vault.ts`, `src/components/VaultGuard.tsx`)
+  - 키는 내보낼 수 없는 형태로 탭 메모리에만 있고, **현재 로그인(부모+세션)에 묶입니다**(서버가 세션 ID에서 만든 불투명한 값).
+    다른 부모·새 로그인·로그아웃이면 키는 버려집니다. 새로고침 등 전체 페이지 이동에서도 사라져 다시 입력해야 합니다.
+  - 지우는 시점: “잠긴 글 다시 잠그기”, 로그아웃, `pagehide`(떠나기·닫기·뒤로/앞으로 캐시 진입), 뒤로/앞으로 캐시 복원,
+    API가 401(세션 만료)을 돌려줄 때. 지울 때마다 “잠금 회차(epoch)”가 올라갑니다.
+  - `pagehide` 때 화면을 즉시 비우고(`data-wiped`), 캐시에서 복원되면 **새로고침**합니다. 서버가 로그인을 다시 확인하고 잠긴 상태로 시작하거나
+    로그인 화면으로 보냅니다. 복원된 화면에 복호화된 글이 다시 보이지 않게 하려는 것입니다.
+  - 복호화한 제목·본문, 고쳐 쓰기용 평문은 잠금 회차가 바뀌면 화면과 메모리 상태에서 함께 버립니다. 잠그기 전에 시작한 느린 복호화가
+    나중에 끝나도(키·회차가 바뀌었으면) 결과를 쓰지 않습니다.
+  - 개인 비밀번호 만들기/입력 중에 취소·화면 이동·잠금·세션 변경이 있으면, 늦게 끝난 키 계산·서버 요청은 **키를 저장하지 않고 자동 저장도 하지 않습니다.**
+    이미 서버에 만들어진 개인 비밀번호 정보는 지우지 않으며, 다음에 열 때 서버 상태를 다시 읽어 “입력” 화면으로 시작합니다.
+    여러 번 눌러도 저장은 한 번만 됩니다.
+  - 나만 간직한 글을 아들에게 전하려면 여전히 복호화 → 고쳐 쓰기에서 선택 → “아들에게 전할까요?” 최종 확인이 필요합니다.
+  - **한계:** 자바스크립트 메모리를 즉시 덮어쓰는 것은 브라우저가 보장하지 않습니다(참조를 끊고 가비지 컬렉션에 맡김).
+    서버 운영자가 화면 코드를 바꿔 배포하는 위협까지 막는다고 보장하지 않습니다.
+- 개인 비밀번호를 잊으면 **되찾을 수 없습니다.** “비밀번호를 잊었어요”로 새로 만들면 잠긴 글과 초안이 모두 지워집니다(전한 글은 유지).
+  다른 휴대폰에서도 로그인 후 같은 개인 비밀번호로 열 수 있습니다.
+- 아들에게 전한 글은 작성한 부모와 아들만 볼 수 있습니다. 다른 부모는 목록·수정·삭제 모두 불가(404). 읽음 기록·알림 없음.
+- 데이터베이스 차원에서도 잠긴 글 행에 평문 제목/본문이 들어갈 수 없도록 CHECK 제약을 두었습니다.
+- **한계:** 서버 운영자가 화면 코드를 바꿔 배포하면 입력 중인 비밀번호를 가로챌 수 있습니다. 이 방식은 저장된 데이터를 보호하는 것이며,
+  그런 위협까지 절대적으로 막는다고 보장하지 않습니다.
 
-**Bootstrapping the first admin:** Invite codes can only be generated by an ADMIN. To get the first admin, create their auth user (e.g. via Supabase Dashboard → Authentication), then insert a row into `public.users` with that `id`, a `name`, and `role = 'ADMIN'`. Add their email to `ADMIN_EMAILS` so they keep the ADMIN role on login. They can then generate invite codes for others.
+## 저장소 (5단계)
 
----
+- Node 내장 `node:sqlite`(추가 의존성 없음), 파일 하나(`data/family.db`, `FAMILY_DB_PATH`로 변경). 처음 실행 시 표가 자동으로 만들어집니다.
+- **서버 한 대로 계속 실행하는 환경**(개인 서버, VPS 등)에 맞습니다. 서버리스(Vercel 등)나 여러 인스턴스로 운영하면 파일이 공유·보존되지
+  않으므로 **별도 영속 DB(Postgres 등)로 옮겨야** 합니다.
+- 표: `users`(엄마/아빠/아들. 비밀번호는 저장하지 않음, 환경변수에만), `sessions`, `login_buckets`, `room_attempts`·`room_grants`
+  (1회용 ID의 해시만, 짧은 수명, 세션·방별), `entries`(나만 간직하기 = 암호문만 / 아들에게 전한 글), `keyrings`(개인 비밀번호 salt·검증용 암호문),
+  `proposals`(대화 제안과 아들의 답, Asia/Seoul), `content_versions`(편지·카드 초안과 게시본).
+- **입장 녹음을 저장하는 표나 칸은 없습니다.** 녹음 면제 플래그도 없습니다(단위 테스트로 확인).
+- `data/` 폴더에는 부모님 글이 있으니 백업 시 파일 권한에 주의하세요. 백업은 서버를 멈춘 뒤 `family.db*` 파일을 함께 복사하세요.
 
-## Admin Console v1 (Phase 5-1.5)
+## 관리자(아들) 화면 (5단계)
 
-The admin area at `/admin/*` is protected by middleware (auth + ADMIN role) and a shared layout with sidebar.
+- 별도 로그인(`/admin/login`, `ADMIN_PASSWORD`). 부모 계정으로는 관리자 화면·관리자 API를 쓸 수 없습니다(401/리디렉션).
+- **부모님이 전한 글**: 목록에는 본문이 없고, 하나씩 열어야 보입니다. 읽음 기록·알림 없음.
+  나만 간직한 글과 초안은 목록·개수 어디에도 나오지 않고, ID로 직접 열어도 404입니다. 관리자가 복호화하는 기능은 없습니다.
+- **대화 제안**: 답과 메시지는 이 앱 안에서 제안한 부모에게만 보이며 문자·메일·일정 초대는 보내지 않습니다.
+  상태 변경은 아래 표에 있는 것만 가능합니다(`PROPOSAL_TRANSITIONS`, `src/lib/proposal-rules.ts`). 서버는 허용된 이전 상태와
+  시간 조건을 UPDATE 조건에 넣어 한 번에 바꾸므로, 동시에 두 번 눌러도 한 번만 바뀝니다.
 
-- **Layout:** All admin routes use `app/admin/layout.tsx`, which calls `requireAdmin()` and renders `AdminSidebar` (Dashboard, Moderation, Invites, Users, Audit Log) plus the page content.
-- **Dashboard (`/admin`):** Cards for open reports today, new users today, and active users (last 7 days).
-- **Moderation (`/admin/moderation`):** Open reports table. **Hide post** and **Delete comment** use a Danger Zone confirmation (user must type e.g. "hide post" / "delete comment" to enable the button). Resolve is a simple button. All actions are written to `audit_logs`.
-- **Signup requests (`/admin/signup-requests`):** List pending approval requests. **Approve** sends an email with a 7-day completion link; **Reject** (with optional note) logs the action.
-- **Invites (`/admin/invites`):** List invite codes, generate new ones. Generating logs `CREATE_INVITE` to the audit log.
-- **Users (`/admin/users`):** Search users by name. For each user: role, blocked/muted status (by you as admin). Actions: **Block** / Unblock, **Mute** / Unmute, **Change role** (with Danger Zone: type the role code to confirm). Block and role change are destructive and require confirmation.
-- **Audit Log (`/admin/audit`):** Read-only table of latest admin actions (time, actor, action, target).
+  | 누가 | 동작 | 가능한 상태 → 결과 |
+  | --- | --- | --- |
+  | 아들 | 수락 | 제안 중 → 수락됨. **서버 현재 시각 기준으로 제안 시간이 이미 지났으면 거절(past_time)**, 시간 미정은 가능 |
+  | 아들 | 다른 시간 제안 | 제안 중 → 다른 시간 제안됨 (앞으로 1년 안의 한국 시간) |
+  | 아들 | 취소(어렵다고 답하기 / 이 약속 취소하기) | 제안 중·수락됨·다른 시간 제안됨 → 취소됨. **확인 화면을 한 번 더 거쳐야 함** |
+  | 부모 | 아들이 제안한 시간으로 하기 | 다른 시간 제안됨 → 수락됨 (그 시간이 아직 지나지 않았을 때만) |
+  | 부모 | 제안 취소하기 | 자기 제안만, 제안 중·수락됨·다른 시간 제안됨 → 취소됨 |
 
-**Architecture:**
+  **취소됨은 끝 상태**입니다. 이미 처리된 요청을 다시 보내거나 허용되지 않은 변경은 모두 같은 방식으로 거절됩니다(`not_allowed`, 409).
+  다른 부모의 제안은 없는 제안처럼 404입니다.
+- 부모님 ‘내가 적은 글’의 대화 제안 목록은 불러오는 중 / 불러오지 못함(+다시 불러오기) / 아직 없음을 구분해 보여주고,
+  요청 중에는 버튼을 잠가 여러 번 눌러도 한 번만 보냅니다.
+- **편지·카드 관리**: 고치기 → 초안 저장(부모님께 안 보임) → 게시(부모님께 보임) → 필요하면 게시 내리기. 칸 제목(예: 확인된 변화)은 고정이고
+  내용만 고칩니다. 비운 칸은 부모님 화면에 “준비 중”. 글은 항상 텍스트로만 표시됩니다(HTML 해석 안 함).
+- 공유 글에 대한 답장 기능은 만들지 않았습니다(요구사항상 선택).
+- 감정 점수·체류 시간·방문/읽음 기록은 없습니다. 관리자 첫 화면은 개수만 보여줍니다.
 
-- **Admin-only logic** lives under `lib/admin/*` (guard, audit, constants). **Admin UI** under `app/admin/*`. No admin business logic inside general repositories; admin mutations go through `lib/data/adminRepository.ts`, which performs the action and calls `logAdminAction()`.
-- **Audit:** Every mutating admin action (hide post, delete comment, resolve report, create invite, block/mute user, change role) inserts a row into `public.audit_logs` (actor_id, action, target_type, target_id, metadata, created_at). RLS: only ADMIN can select/insert.
-- **Danger Zone:** The `<DangerZoneConfirm />` component requires the user to type an exact confirmation string before enabling the action button (red). Used for hide post, delete comment, block user, and role change.
+## 콘텐츠 수정
 
-Apply `supabase/migrations/20250301000000_audit_logs.sql` to create `audit_logs`, `blocks`, `mutes`, and the admin user-update policy.
+- 첫 안내/편지/사용 설명: `src/content/intro.ts`
+- 방 목록·준비 안내·입장 문장·카드 정의: `src/content/rooms.ts`
+- **부모님께는 게시한 글만 보입니다.** 편지·카드 내용은 `/admin/content`에서 고치고 게시하면 됩니다(코드 수정 불필요).
+  관리자 화면에서 한 번도 고치지 않은 항목은 `src/content/`의 처음 초안을 쓰며, 그 `status`가 `approved`일 때만 보입니다(지금은 모두 `needs_review`).
+- 2번 방 카드: 요구사항의 확인된 사실(2026-06-06 파혼, 아들이 전한 원인은 상대방 외도, 외모 비하·여자친구 욕설에 대한 사과 요청)만 사용했고,
+  사실과 마음을 나눠 적었으며 부모님의 의도는 단정하지 않았습니다. 구체적인 기억·사과 내용은 비워 두고 검토 메모로 남겼습니다.
+- 3번 방 카드: 지금 하고 있는 일 / 확인된 변화 / 다음 계획. 실제 기록이 없어 **확인된 변화와 다음 계획은 모두 “준비 중”** 입니다.
+  금액은 요구사항의 차용 540,000,000원·월 1,575,000원 약정만 사용했습니다.
+- 상환 기록, 결혼 예산·일정 등 확정되지 않은 내용은 넣지 않았습니다. 4~7번 방 카드 본문은 4단계에서 작성합니다.
 
-**Extracting to a standalone admin app later:** Keep `lib/admin/*` and `lib/data/adminRepository.ts` as the only places that depend on admin semantics. The admin app would use the same guard (`requireAdmin()` with your session source), the same `logAdminAction` and `adminRepository` (pointing to the same Supabase project). Move `app/admin/*` into the new app’s routes and reuse `AdminSidebar` and `DangerZoneConfirm`. Middleware in the new app would enforce `/admin` → auth + ADMIN the same way.
+## 점검 명령
 
----
+```bash
+npm run lint
+npm run typecheck
+npm test                        # 인증/세션/잠금/출처/방 레지스트리/게이트 상태·서버 권한 단위 테스트
+npm run build
+npm run check:bundle            # 콘텐츠 문장이 클라이언트 번들에 없는지
+node scripts/check-contrast.mjs # 색 대비
+# 서버 실행 중일 때. 실제 비밀번호·실제 DB 대신 테스트 전용 값으로 서버를 띄우세요
+# (예: FATHER_PASSWORD=11112222 MOTHER_PASSWORD=4321 ADMIN_PASSWORD=<테스트용> SESSION_SECRET=<테스트용> FAMILY_DB_PATH=<임시 파일> npx next start).
+# 프로세스 환경변수가 .env.local보다 우선합니다. 테스트용 값도 커밋하지 마세요.
+BASE_URL=http://localhost:3000 E2E_FATHER_PASSWORD=<아빠> node scripts/check-layout.mjs
+BASE_URL=http://localhost:3000 E2E_FATHER_PASSWORD=<아빠> E2E_MOTHER_PASSWORD=<엄마> node scripts/check-gate.mjs
+# 글쓰기/암호화/계정 격리/아들 화면. 반드시 버리는 DB로 실행한 서버에 대고 실행하세요(글을 만들고 지웁니다).
+BASE_URL=... E2E_FATHER_PASSWORD=<아빠> E2E_MOTHER_PASSWORD=<엄마> E2E_ADMIN_PASSWORD=<관리자> FAMILY_DB_PATH=<서버와 같은 파일> node scripts/check-writing.mjs
+# 방 4~7(게이트 통과 후 본문·선택지·글쓰기·대화 제안·격리·아들 화면). 역시 버리는 DB로.
+BASE_URL=... E2E_FATHER_PASSWORD=<아빠> E2E_MOTHER_PASSWORD=<엄마> E2E_ADMIN_PASSWORD=<관리자> FAMILY_DB_PATH=<서버와 같은 파일> node scripts/check-rooms.mjs
+# 5단계(편지·카드 게시, 제안 답하기, 로그아웃 후 쿠키 재사용 거부, 미인증 API). 역시 버리는 DB로.
+BASE_URL=... E2E_FATHER_PASSWORD=<아빠> E2E_MOTHER_PASSWORD=<엄마> E2E_ADMIN_PASSWORD=<관리자> FAMILY_DB_PATH=<서버와 같은 파일> node scripts/check-admin.mjs
+# 게이트 이탈·복귀·경합·grant 사용 범위. HAPPY_ONLY=1 로 next dev(StrictMode)에 한 번 입장만 확인할 수도 있음.
+BASE_URL=... E2E_FATHER_PASSWORD=<아빠> E2E_MOTHER_PASSWORD=<엄마> FAMILY_DB_PATH=<서버와 같은 파일> node scripts/check-gate-races.mjs
+# 개인 비밀번호·키 수명(잠금, 느린 복호화, 만들기/입력 중 취소, 캐시 복원 흉내, 로그아웃 후 뒤로, 다른 부모, 세션 만료, 요청·DB에 평문 없음)
+BASE_URL=... E2E_FATHER_PASSWORD=<테스트용> E2E_MOTHER_PASSWORD=<테스트용> FAMILY_DB_PATH=<테스트 DB> node scripts/check-vault.mjs
+# 대화 제안 상태 변경(지난 시간 수락 거절, 수락·재제안 후 취소, 확인 단계, 중복 요청), 목록 오류·재시도, JSON 본문 검증
+BASE_URL=... E2E_FATHER_PASSWORD=<테스트용> E2E_MOTHER_PASSWORD=<테스트용> E2E_ADMIN_PASSWORD=<테스트용> FAMILY_DB_PATH=<테스트 DB> node scripts/check-proposals.mjs
+```
 
-## Public launch checklist
+`check-layout.mjs`는 360/390/430px에서 가로 스크롤, 버튼 높이, 글자 크기, 키보드 포커스, 키패드 로그인, 녹음 화면 배치를 확인합니다.
+`check-gate.mjs`는 Chrome 가짜 마이크로 녹음 게이트 전체를 확인합니다:
+재생 중단·재녹음·새로고침·뒤로가기·토큰 재사용/다른 방/다른 계정·세션 만료·마이크 거부/미지원·트랙 종료·Object URL 해제·업로드 없음.
+같은 서버에 반복 실행하면 잘못된 비밀번호 테스트가 누적되어 잠금이 걸릴 수 있습니다(서버 재시작으로 해제).
 
-Before going live, ensure:
+## 배포
 
-1. **Sentry (errors & source maps)**  
-   - Create a project at [sentry.io](https://sentry.io) and set in `.env` / deployment:
-     - `SENTRY_DSN` (server/edge)
-     - `NEXT_PUBLIC_SENTRY_DSN` (client)
-     - `SENTRY_ENVIRONMENT` (e.g. `production`, `preview`)
-   - Optional (for source map upload and readable stack traces): `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
-   - Errors from client, server, and edge will appear in the Sentry dashboard; stack traces map to source when source maps are uploaded.
-
-2. **Notify Edge Function**  
-   - Deploy `notify` and confirm logs in Supabase Dashboard → Edge Functions → Logs. Each request logs `type`, `actorId`, `recipientId`, `postId`; failures log clearly for debugging.
-
-3. **Admin signals**  
-   - Dashboard shows “Today errors” and “Notify failures (today)” cards (placeholders until wired to Sentry API or system_logs). Use Sentry and Supabase logs to confirm “something broke today” when needed.
-
-4. **Env and infra**  
-   - All required Supabase and auth env vars set in production. Migrations applied. Rate limiting and RLS in place.
-
-5. **Legal and trust**  
-   - Publish and link `/privacy`, `/terms`, and `/contact` (footer links in root layout). Set `CONTACT_EMAIL` in production. Content is short, plain English, community-first.
-
-6. **Security headers**  
-   - Production responses include: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security`, `Permissions-Policy` (camera/microphone/geolocation disabled). Configured in `next.config.ts` via `lib/security/headers.ts`.
-
----
-
-## Pages
-
-- **/** — Landing (value prop, links to Feed / Write)
-- **/feed** — List of reflections
-- **/post/[id]** — Single reflection + optional reflection prompt
-- **/write** — Compose form (demo; does not persist)
-
-## Design
-
-- **Tokens & components:** See [docs/DESIGN.md](docs/DESIGN.md) for principles, tokens (`lib/design/tokens.ts`), and how to add UI without breaking tone.
-- Neutral palette (gray, off-white, muted blue); typography-first (serif for reading, system UI for chrome).
-- Accessibility: skip link, focus-visible, semantic HTML. No gamification or flashy UI.
+배포하지 않았습니다. 배포 전 준비 사항은 6단계에서 정리합니다. HTTPS가 없으면 마이크(2단계)가 동작하지 않습니다(localhost 제외).

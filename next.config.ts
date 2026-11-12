@@ -1,44 +1,46 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
-import { securityHeaders } from "@/lib/security/headers";
+
+/**
+ * Cache Components is intentionally OFF.
+ * Every page in this app depends on the signed session and must be rendered
+ * per request; gated room content must never be prefetched or cached in the
+ * browser/server cache. Pages read cookies() and therefore render dynamically.
+ */
+const securityHeaders = [
+  { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
+  { key: "Referrer-Policy", value: "same-origin" }, // nothing is sent to other sites; same-origin form POSTs keep a real Origin
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+  },
+  // Microphone is needed later for the room entry recording (same origin only).
+  { key: "Permissions-Policy", value: "microphone=(self), camera=(), geolocation=(), interest-cohort=()" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+];
 
 const nextConfig: NextConfig = {
-  productionBrowserSourceMaps: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  turbopack: {
+    rules: {
+      "*.css": {
+        loaders: ["@tailwindcss/turbopack"],
+        as: "*.css",
+      },
+    },
+  },
   async headers() {
     return [
+      { source: "/:path*", headers: securityHeaders },
       {
-        source: "/(.*)",
-        headers: securityHeaders,
+        // Everything except hashed static assets: never store responses.
+        source: "/((?!_next/static|_next/image|favicon.ico).*)",
+        headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }],
       },
-    ];
-  },
-  async redirects() {
-    return [
-      // /cell/* → /cells/*
-      { source: "/cell", destination: "/cells", permanent: true },
-      { source: "/cell/:id", destination: "/cells/:id", permanent: true },
-      { source: "/cell/join/:token", destination: "/cells/join/:token", permanent: true },
-      // /cells/join/:token — already handled natively at /cells/join/[token]
-      // /feed (no scope) → /home
-      // Note: scope-based feed remains at /feed for backward compat
-      // /profile/:id/edit → /settings/profile
-      { source: "/profile/:id/edit", destination: "/settings/profile", permanent: false },
-      // /profile/:id/prayers (removed tab) → /profile/:id
-      { source: "/profile/:id/prayers", destination: "/profile/:id", permanent: false },
-      // /notifications/settings (moved) → /settings/notifications
-      { source: "/notifications/settings", destination: "/settings/notifications", permanent: false },
-      // /cells/:id/prayer (removed tab) → /cells/:id
-      { source: "/cells/:id/prayer", destination: "/cells/:id", permanent: false },
-      // /admin/invites and /admin/signups (removed pages) → /admin/signup-requests
-      { source: "/admin/invites", destination: "/admin/signup-requests", permanent: false },
-      { source: "/admin/signups", destination: "/admin/signup-requests", permanent: false },
     ];
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: !process.env.CI,
-});
+export default nextConfig;
